@@ -1,0 +1,2945 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STAY UP 현장 상황판</title>
+<!--
+  ============================================================================
+  STAY UP 현장 상황판 (전북소방 드론팀 실종자 수색 현장 대시보드)
+  단일 HTML 파일 · 외부 의존성 없음 · file:// 로 직접 열어 사용
+  ----------------------------------------------------------------------------
+  사용법
+    - 이 파일을 더블클릭하면 [조작 패널]이 열립니다 (운영요원 노트북)
+    - 상단 "표출 화면 열기" 버튼 -> 대형 스크린용 [표출 화면]이 새 창으로 열림
+    - 표출 화면을 대형 모니터로 옮기고 F11 (전체화면)
+    - 화면이 하나뿐이면 표출 화면에서 Ctrl+E 로 조작 패널을 겹쳐 열 수 있음
+  권장 브라우저: Chrome / Edge
+  ============================================================================
+-->
+<style>
+/* ==========================================================================
+   1. 색·타이포 토큰
+   ========================================================================== */
+:root{
+  --bg:#070A0E;
+  --surface:#101720;
+  --surface2:#18212C;
+  --surface3:#1F2A38;
+  --border:#22303F;
+  --border2:#2E3E51;
+  --text:#E9F0F7;
+  --muted:#8FA3B8;
+  --muted2:#63788E;
+  --accent:#FF6A1A;
+  --ok:#22C55E;
+  --warn:#F5A524;
+  --danger:#EF4444;
+  --info:#38BDF8;
+  --s:1;          /* 배율 슬라이더 */
+  --dim:0;        /* 야간 밝기 저감 */
+  --fw-num:700;
+}
+*,*::before,*::after{box-sizing:border-box}
+
+/* hidden 속성은 브라우저 기본 스타일([hidden]{display:none})로 걸리는데,
+   아래의 .board{display:grid} / .drawer{display:flex} 같은 작성자 규칙이 그것을 이긴다.
+   그러면 숨겨야 할 드로어 오버레이와 배너가 계속 깔려 클릭이 막힌다. 반드시 !important 로 못박는다. */
+[hidden]{display:none !important}
+
+/* 표출 화면의 모든 크기는 rem 기반.
+   1rem = 16px @1920x1080 이며 화면 크기에 따라 자동 스케일된다.
+   min() 을 쓰므로 4K·프로젝터·와이드 모두 한 화면에 들어온다. */
+html{
+  font-size:calc(min(100vw / 120, 100vh / 67.5) * var(--s));
+  -webkit-text-size-adjust:100%;
+}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:'Pretendard','Pretendard Variable','Apple SD Gothic Neo',
+              'Malgun Gothic','맑은 고딕','Noto Sans KR',system-ui,sans-serif;
+  font-size:1.25rem; line-height:1.35;
+  -webkit-font-smoothing:antialiased;
+}
+body.mode-display{height:100vh;overflow:hidden}
+body.mode-console{min-height:100vh;overflow-y:auto;background:#0A0F15}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;letter-spacing:-0.01em}
+b,strong{font-weight:700}
+
+/* 야간 밝기 저감 오버레이 */
+#dimmer{
+  position:fixed;inset:0;background:#000;pointer-events:none;z-index:9000;
+  opacity:calc(var(--dim) * 0.55);transition:opacity .3s;
+}
+
+/* ==========================================================================
+   2. 표출 화면 - 전체 골격
+   ========================================================================== */
+.board{
+  display:grid; height:100vh;
+  grid-template-rows:auto 1fr auto;
+  gap:.55rem; padding:.65rem .75rem .6rem;
+}
+.board.manned-alert{background:
+  repeating-linear-gradient(135deg,#1a0505 0 40px,#230707 40px 80px);}
+
+/* ---- 헤더 ---- */
+.hdr{
+  display:grid; grid-template-columns:22.5rem 1fr 13.5rem;
+  gap:.75rem; align-items:stretch;
+}
+.hdr-id{
+  background:var(--surface); border:1px solid var(--border);
+  border-left:.32rem solid var(--accent); border-radius:.55rem;
+  padding:.62rem .85rem; display:flex; flex-direction:column; justify-content:center;
+  min-width:0;
+}
+.brand{
+  font-size:1.6rem; font-weight:800; letter-spacing:.01em; line-height:1.1;
+  display:flex; align-items:center; gap:.45rem; white-space:nowrap;
+}
+.brand .su{color:var(--accent)}
+.brand .sep{color:var(--border2);font-weight:400}
+.mission{
+  font-size:1.55rem;font-weight:700;margin-top:.28rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.mission-sub{
+  font-size:1.15rem;color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
+.kpi{
+  background:var(--surface);border:1px solid var(--border);border-radius:.55rem;
+  padding:.5rem .8rem .55rem; position:relative; overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;min-width:0;
+}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:.22rem;background:var(--border2)}
+.kpi-l{font-size:1.08rem;color:var(--muted);font-weight:600;letter-spacing:.02em;white-space:nowrap}
+.kpi-v{font-size:4.3rem;font-weight:800;line-height:1.02;white-space:nowrap}
+.kpi-v small{font-size:1.5rem;font-weight:700;color:var(--muted);margin-left:.2rem}
+.kpi-s{font-size:.98rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi.lv-ok::before{background:var(--ok)}      .kpi.lv-ok    .kpi-v{color:var(--ok)}
+.kpi.lv-warn::before{background:var(--warn)}  .kpi.lv-warn  .kpi-v{color:var(--warn)}
+.kpi.lv-danger::before{background:var(--danger)} .kpi.lv-danger .kpi-v{color:var(--danger)}
+.kpi.lv-crit{background:#2A0B0B;border-color:#7F1D1D;animation:critpulse 1.6s ease-in-out infinite}
+.kpi.lv-crit::before{background:var(--danger)} .kpi.lv-crit .kpi-v{color:#FF6B6B}
+@keyframes critpulse{0%,100%{background:#2A0B0B}50%{background:#3D0F0F}}
+.kpi.lv-idle .kpi-v{color:var(--muted2)}
+
+.kpi-flight .kpi-v{font-size:3.1rem;display:flex;align-items:center;gap:.4rem}
+.dot{width:1.5rem;height:1.5rem;border-radius:50%;flex:0 0 auto;box-shadow:0 0 .8rem currentColor}
+.dot.ok{background:var(--ok);color:var(--ok)}
+.dot.warn{background:var(--warn);color:var(--warn)}
+.dot.danger{background:var(--danger);color:var(--danger)}
+.dot.idle{background:var(--muted2);color:var(--muted2);box-shadow:none}
+
+.hdr-clock{
+  background:var(--surface);border:1px solid var(--border);border-radius:.55rem;
+  padding:.5rem .7rem;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.clock{font-size:3.05rem;font-weight:800;line-height:1}
+.cdate{font-size:1.05rem;color:var(--muted)}
+
+/* ---- 3열 본문 ---- */
+.cols{display:grid;grid-template-columns:21.5rem 1fr 25.5rem;gap:.6rem;min-height:0}
+.col{display:flex;flex-direction:column;gap:.6rem;min-height:0;min-width:0}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:.55rem;
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
+}
+.card-h{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.42rem .7rem;border-bottom:1px solid var(--border);
+  background:var(--surface2);flex:0 0 auto;
+}
+.card-h h2{
+  margin:0;font-size:1.25rem;font-weight:700;letter-spacing:.02em;
+  color:#CFDCE9;white-space:nowrap;
+}
+.card-h .h-right{margin-left:auto;font-size:1.1rem;color:var(--muted);white-space:nowrap}
+.card-b{padding:.6rem .7rem;overflow:auto;min-height:0;flex:1 1 auto}
+.card-b::-webkit-scrollbar{width:.4rem}
+.card-b::-webkit-scrollbar-thumb{background:var(--border2);border-radius:.2rem}
+.empty{color:var(--muted2);font-size:1.05rem;padding:.6rem .2rem;text-align:center}
+
+/* ==========================================================================
+   3. 좌열 - 실종자 / 배터리 자원 / 인원
+   ========================================================================== */
+.subj-name{
+  display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;
+  padding-bottom:.4rem;margin-bottom:.45rem;border-bottom:1px solid var(--border);
+}
+.subj-name .nm{font-size:2.35rem;font-weight:800;line-height:1}
+.subj-name .ag{font-size:1.5rem;font-weight:700;color:var(--accent)}
+.subj-name .sx{font-size:1.2rem;color:var(--muted)}
+
+/* 인상착의: 열화상/주광 판독 중 반복 확인하므로 색상칩을 크게 */
+.wear{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.45rem}
+.wear-row{display:flex;align-items:center;gap:.5rem}
+.wear-lb{
+  flex:0 0 2.5rem;font-size:1rem;color:var(--muted);font-weight:700;
+  background:var(--surface3);border-radius:.25rem;text-align:center;padding:.15rem 0;
+}
+.chip{
+  width:2.1rem;height:2.1rem;border-radius:.3rem;flex:0 0 auto;
+  border:1px solid rgba(255,255,255,.35);box-shadow:0 0 0 1px rgba(0,0,0,.5) inset;
+}
+.wear-tx{font-size:1.34rem;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.kv{display:grid;grid-template-columns:4.9rem 1fr;gap:.18rem .5rem;font-size:1.25rem}
+.kv dt{color:var(--muted);font-size:1.06rem;padding-top:.14rem}
+.kv dd{margin:0;font-weight:600;word-break:break-all}
+.tagline{display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.5rem}
+.tag{
+  font-size:1.02rem;font-weight:700;padding:.12rem .45rem;border-radius:.25rem;
+  background:var(--surface3);border:1px solid var(--border2);color:#C3D2E1;
+}
+.tag.hot{background:#3B1010;border-color:#7F1D1D;color:#FCA5A5}
+.tag.cool{background:#0C2A3A;border-color:#155E75;color:#7DD3FC}
+.radchip{
+  flex:0 0 auto;display:flex;align-items:center;gap:.5rem;
+  padding:.22rem .6rem;border-radius:.35rem;
+  background:var(--surface2);border:1px solid var(--border);border-left:.2rem solid var(--info);
+}
+.radchip .rl{font-size:1rem;color:var(--muted);line-height:1.15;white-space:nowrap}
+.radchip .rv{font-size:2rem;font-weight:800;color:var(--info);line-height:1}
+.radchip .rv small{font-size:1rem;font-weight:700;color:var(--muted);margin-left:.1rem}
+
+/* 배터리 자원 */
+.batt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;text-align:center}
+.batt-cell{background:var(--surface2);border:1px solid var(--border);border-radius:.35rem;padding:.35rem .2rem}
+.batt-cell .bn{font-size:2.1rem;font-weight:800;line-height:1.05}
+.batt-cell .bl{font-size:.95rem;color:var(--muted)}
+.batt-cell.ready .bn{color:var(--ok)}
+.batt-cell.charging .bn{color:var(--warn)}
+.batt-cell.empty .bn{color:var(--muted2)}
+.endur{
+  margin-top:.5rem;padding:.42rem .6rem;border-radius:.35rem;
+  background:var(--surface2);border:1px solid var(--border);border-left:.22rem solid var(--info);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.endur.warn{border-left-color:var(--warn)}
+.endur.danger{border-left-color:var(--danger)}
+.endur .el{font-size:1rem;color:var(--muted)}
+.endur .ev{font-size:2.1rem;font-weight:800}
+.endur.warn .ev{color:var(--warn)} .endur.danger .ev{color:var(--danger)}
+
+/* 인원 */
+.crew-list{display:flex;flex-direction:column;gap:.16rem}
+.crew-row{
+  display:grid;grid-template-columns:1fr auto auto;gap:.4rem;align-items:center;
+  font-size:1.2rem;padding:.08rem .3rem;border-radius:.25rem;background:var(--surface2);
+}
+.crew-row .cn{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crew-row .cr{font-size:1rem;color:#9FB6CB;background:var(--surface3);padding:.05rem .35rem;border-radius:.2rem;white-space:nowrap}
+.crew-row .ct{font-size:1.12rem;color:var(--muted);font-weight:600}
+.crew-row.tired{background:#33210A;box-shadow:inset 0 0 0 1px #7C4A0A}
+.crew-row.tired .ct{color:var(--warn)}
+
+/* ==========================================================================
+   4. 중앙열 - 수색구역(지도+격자) / 안전·규제
+   ========================================================================== */
+.card-grid{flex:1 1 auto}
+.card-grid .card-b{display:flex;flex-direction:column;gap:.5rem;padding:.55rem .6rem;overflow:hidden}
+.mapwrap{
+  position:relative;flex:1 1 auto;min-height:0;border-radius:.4rem;overflow:hidden;
+  background:
+    linear-gradient(0deg,#0B1219,#0B1219),
+    repeating-linear-gradient(45deg,#0E151D 0 12px,#101922 12px 24px);
+  border:1px solid var(--border);
+}
+.mapimg{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  transform-origin:center center;pointer-events:none;user-select:none;
+}
+.mapnote{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--muted2);font-size:1.08rem;text-align:center;padding:1rem;line-height:1.5;
+}
+.gridlayer{position:absolute;inset:0;display:grid;gap:2px;padding:2px}
+.gcell{
+  position:relative;border-radius:.2rem;display:flex;align-items:center;justify-content:center;
+  font-size:1.18rem;font-weight:800;letter-spacing:.02em;
+  border:1px solid rgba(143,163,184,.28);
+  background:rgba(7,10,14,.16);color:rgba(233,240,247,.62);
+  transition:background .15s,border-color .15s;
+  padding:0;font-family:inherit;
+}
+.gcell.s0{border-style:dashed}
+.gcell.s1{background:rgba(245,165,36,.30);border-color:#F5A524;color:#FFE3AE}
+.gcell.s2{background:rgba(34,197,94,.28);border-color:#22C55E;color:#C6F6D5}
+.gcell.s3{background:rgba(239,68,68,.30);border-color:#EF4444;color:#FECACA}
+.gcell .by{
+  position:absolute;top:.1rem;right:.2rem;font-size:.88rem;font-weight:700;
+  opacity:.9;letter-spacing:0;
+}
+.gcell.act{outline:.14rem solid var(--accent);outline-offset:-.14rem}
+.pin{
+  position:absolute;transform:translate(-50%,-100%);pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;z-index:5;
+}
+.pin .pdot{
+  width:1.05rem;height:1.05rem;border-radius:50%;border:.16rem solid #fff;
+  box-shadow:0 0 .5rem rgba(0,0,0,.9);
+}
+.pin .plb{
+  font-size:.9rem;font-weight:800;padding:.05rem .3rem;border-radius:.2rem;
+  background:rgba(7,10,14,.85);margin-bottom:.12rem;white-space:nowrap;
+}
+.pin.last .pdot{background:var(--info)}   .pin.last .plb{color:#7DD3FC;border:1px solid #155E75}
+.pin.found .pdot{background:var(--danger)}.pin.found .plb{color:#FCA5A5;border:1px solid #7F1D1D}
+.pin .stem{width:.14rem;height:.8rem;background:#fff;opacity:.75}
+.rcircle{
+  position:absolute;border-radius:50%;border:.14rem dashed rgba(56,189,248,.75);
+  background:rgba(56,189,248,.07);transform:translate(-50%,-50%);pointer-events:none;z-index:4;
+}
+.cov{display:flex;align-items:center;gap:.75rem;flex:0 0 auto}
+.cov-pct{font-size:3.1rem;font-weight:800;line-height:1;color:var(--ok)}
+.cov-pct small{font-size:1.15rem;color:var(--muted);font-weight:700;margin-left:.15rem}
+.cov-bar{flex:1 1 auto;height:1.15rem;background:var(--surface3);border-radius:.6rem;overflow:hidden;display:flex}
+.cov-bar i{display:block;height:100%}
+.cov-bar i.done{background:var(--ok)} .cov-bar i.doing{background:var(--warn)} .cov-bar i.re{background:var(--danger)}
+.legend{display:flex;gap:.75rem;flex:0 0 auto;font-size:1.15rem;font-weight:700}
+.legend span{display:flex;align-items:center;gap:.28rem;color:#B8C9D9}
+.legend i{width:.9rem;height:.9rem;border-radius:.15rem;border:1px solid rgba(143,163,184,.4)}
+.legend i.l0{background:rgba(7,10,14,.2);border-style:dashed}
+.legend i.l1{background:#F5A524} .legend i.l2{background:#22C55E} .legend i.l3{background:#EF4444}
+
+/* 안전·규제 */
+.card-safety{flex:0 0 auto}
+.safety-row{display:flex;flex-wrap:wrap;gap:.4rem;align-items:stretch}
+.sf{
+  flex:1 1 8rem;background:var(--surface2);border:1px solid var(--border);
+  border-radius:.35rem;padding:.32rem .5rem;min-width:0;
+}
+.sf .sl{font-size:1rem;color:var(--muted);white-space:nowrap}
+.sf .sv{font-size:1.34rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sf.ok .sv{color:var(--ok)} .sf.warn .sv{color:var(--warn)} .sf.danger .sv{color:var(--danger)}
+.sf.wide{flex:2.2 1 15rem}
+.sf.wide .sv{white-space:normal;font-size:1.15rem;line-height:1.18;max-height:2.4em;overflow:hidden}
+.sf.danger{background:#2A0B0B;border-color:#7F1D1D}
+.wx{display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap}
+.wx .sf{flex:1 1 6rem}
+
+/* ==========================================================================
+   5. 우열 - 드론 운용 현황 / 이벤트 타임라인
+   ========================================================================== */
+.card-drones{flex:0 0 auto;max-height:82%}
+.drones{display:flex;flex-direction:column;gap:.34rem}
+.drone{
+  background:var(--surface2);border:1px solid var(--border);
+  border-left:.28rem solid var(--border2);border-radius:.4rem;padding:.34rem .5rem;
+}
+.drone.st-flying{border-left-color:var(--ok);background:#0F1B18}
+.drone.st-flying.low{border-left-color:var(--warn);background:#1C170B}
+.drone.st-flying.crit{border-left-color:var(--danger);background:#20100F;animation:critpulse2 2s ease-in-out infinite}
+@keyframes critpulse2{0%,100%{background:#20100F}50%{background:#2C1413}}
+.drone.st-ready{border-left-color:var(--info)}
+.drone.st-charging,.drone.st-swap{border-left-color:var(--warn)}
+.drone.st-maint,.drone.st-commloss{border-left-color:var(--danger);opacity:.92}
+.d-top{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.2rem}
+.d-name{font-size:1.5rem;font-weight:800;line-height:1}
+.d-model{font-size:1rem;color:var(--muted);font-weight:600}
+.d-st{
+  margin-left:auto;font-size:1.02rem;font-weight:800;padding:.1rem .45rem;
+  border-radius:.25rem;background:var(--surface3);white-space:nowrap;
+}
+.st-flying  .d-st{background:#0B3A22;color:#86EFAC}
+.st-ready   .d-st{background:#0C2A3A;color:#7DD3FC}
+.st-charging .d-st,.st-swap .d-st{background:#33210A;color:#FCD34D}
+.st-maint   .d-st,.st-commloss .d-st{background:#3B1010;color:#FCA5A5}
+.d-batt{display:flex;align-items:center;gap:.45rem;margin-bottom:.22rem}
+.bar{flex:1 1 auto;height:.85rem;background:#0A1016;border:1px solid var(--border2);border-radius:.5rem;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);transition:width .4s}
+.bar.low i{background:var(--warn)} .bar.crit i{background:var(--danger)}
+.d-pct{font-size:1.45rem;font-weight:800;min-width:3.6rem;text-align:right}
+.d-pct.low{color:var(--warn)} .d-pct.crit{color:var(--danger)}
+.d-rows{display:grid;grid-template-columns:repeat(4,1fr);gap:.22rem;margin-bottom:.2rem}
+.d-rows div{background:#0C131A;border-radius:.25rem;padding:.1rem .28rem;min-width:0}
+.d-rows em{display:block;font-size:.95rem;color:var(--muted);font-style:normal;line-height:1.1}
+.d-rows b{font-size:1.25rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.d-foot{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+.sens{display:flex;gap:.2rem}
+.sens span{
+  font-size:.95rem;font-weight:800;padding:.05rem .3rem;border-radius:.2rem;
+  background:#132433;color:#8FD0F5;border:1px solid #1E4256;
+}
+.sens span.ir{background:#2B1206;color:#FDBA74;border-color:#7C3A0D}
+.d-crew{margin-left:auto;font-size:1.1rem;color:#A9BDD0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 타임라인 */
+.card-log{flex:1 1 auto;min-height:6.5rem}
+.card-log .card-b{padding:.35rem .5rem}
+.log{display:flex;flex-direction:column;gap:.18rem}
+.log-row{display:grid;grid-template-columns:7rem auto 1fr;gap:.4rem;align-items:baseline;
+  padding:.2rem .3rem;border-radius:.25rem;background:var(--surface2);font-size:1.22rem}
+.log-row .lt{font-weight:800;color:#B9CBDC;font-size:1.16rem}
+.log-row .lk{font-size:.98rem;font-weight:800;padding:.05rem .32rem;border-radius:.2rem;
+  background:var(--surface3);color:#9FB6CB;white-space:nowrap}
+.log-row .lx{min-width:0;word-break:break-word;line-height:1.25}
+.log-row.k-found{background:#3B1010;box-shadow:inset 0 0 0 1px #7F1D1D}
+.log-row.k-found .lk{background:#7F1D1D;color:#FFE4E6}
+.log-row.k-found .lx{font-weight:800;color:#FECACA}
+.log-row.k-heat{background:#33210A}
+.log-row.k-heat .lk{background:#7C4A0A;color:#FDE68A}
+.log-row.k-order{background:#101F33}
+.log-row.k-order .lk{background:#1E3A5F;color:#BFDBFE}
+.log-row.k-accident{background:#3B1010}
+.log-row.k-accident .lk{background:#991B1B;color:#FFE4E6}
+.log-row.voided{opacity:.58;text-decoration:line-through}
+
+/* ==========================================================================
+   6. 티커 / 발견 배너 / 유인기 경고
+   ========================================================================== */
+.ticker{
+  display:grid;grid-template-columns:auto 1fr auto;gap:.75rem;align-items:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:.55rem;
+  padding:.3rem .75rem;height:3.3rem;overflow:hidden;
+}
+.tk-lb{
+  font-size:1.05rem;font-weight:800;color:#0A0F14;background:var(--accent);
+  padding:.16rem .5rem;border-radius:.25rem;white-space:nowrap;
+}
+.tk-track{overflow:hidden;position:relative;height:2.2rem;display:flex;align-items:center}
+.tk-move{white-space:nowrap;font-size:1.45rem;font-weight:700;will-change:transform}
+.tk-move.scroll{animation:tkscroll linear infinite}
+@keyframes tkscroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk-right{display:flex;gap:.6rem;font-size:1.08rem;color:#B8C9D9;white-space:nowrap}
+.tk-right b{color:var(--text)}
+
+.alert-banner{
+  position:fixed;left:0;right:0;top:0;z-index:8000;
+  background:#B91C1C;color:#fff;padding:.7rem 1.2rem;
+  display:flex;align-items:center;gap:1rem;
+  box-shadow:0 .5rem 2rem rgba(0,0,0,.6);animation:bannerin .25s ease-out;
+}
+@keyframes bannerin{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.alert-banner .ab-k{font-size:2.6rem;font-weight:800;letter-spacing:.06em;white-space:nowrap}
+.alert-banner .ab-x{font-size:1.6rem;font-weight:700;flex:1 1 auto;min-width:0}
+.alert-banner button{
+  font:inherit;font-size:1.1rem;font-weight:800;cursor:pointer;
+  background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.5);
+  border-radius:.3rem;padding:.35rem .8rem;
+}
+.alert-banner.manned{background:#7F1D1D;animation:mannedblink 1.1s steps(1) infinite}
+@keyframes mannedblink{0%,100%{background:#7F1D1D}50%{background:#DC2626}}
+
+/* ==========================================================================
+   7. 조작 패널 (px 단위 - 노트북에서 일반 크기로 보여야 함)
+   ========================================================================== */
+.cons{font-size:14px;color:var(--text);max-width:1240px;margin:0 auto;padding:14px 16px 60px}
+.cons-top{
+  position:sticky;top:0;z-index:50;background:#0A0F15EE;backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--border);margin:-14px -16px 14px;padding:10px 16px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.cons-top .ct-brand{font-size:17px;font-weight:800;white-space:nowrap}
+.cons-top .ct-brand span{color:var(--accent)}
+.cons-top .ct-mode{font-size:12px;color:var(--muted);background:var(--surface2);
+  border:1px solid var(--border);border-radius:4px;padding:2px 7px;white-space:nowrap}
+.cons-top .spacer{flex:1 1 auto}
+.sync-pill{font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;
+  background:#0B3A22;color:#86EFAC;border:1px solid #166534}
+.sync-pill.off{background:#33210A;color:#FCD34D;border-color:#7C4A0A}
+.sync-pill.bad{background:#3B1010;color:#FCA5A5;border-color:#991B1B}
+.save-pill{font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;
+  background:#0C2A3A;color:#7DD3FC;border:1px solid #155E75}
+.save-pill.bad{background:#3B1010;color:#FCA5A5;border-color:#991B1B}
+
+.btn{
+  font:inherit;font-weight:700;cursor:pointer;white-space:nowrap;
+  background:var(--surface2);color:var(--text);border:1px solid var(--border2);
+  border-radius:6px;padding:7px 12px;
+}
+.btn:hover{background:var(--surface3)}
+.btn.primary{background:var(--accent);border-color:#FF8A4C;color:#160800}
+.btn.primary:hover{background:#FF7F35}
+.btn.danger{background:#3B1010;border-color:#7F1D1D;color:#FCA5A5}
+.btn.danger:hover{background:#4C1414}
+.btn.sm{padding:4px 8px;font-size:12px;border-radius:5px}
+.btn.on{background:#0B3A22;border-color:#166534;color:#86EFAC}
+.btn.big{padding:14px 16px;font-size:16px;width:100%}
+.btn.alarm{background:#7F1D1D;border-color:#B91C1C;color:#fff}
+.btn.alarm.on{animation:mannedblink 1.1s steps(1) infinite}
+.btn:disabled{cursor:not-allowed;opacity:.45;filter:saturate(.4)}
+
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.quick-grid{display:grid;grid-template-columns:minmax(280px,.72fr) minmax(0,1.45fr);gap:12px;align-items:start}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+@media (max-width:900px){.grid2,.grid3,.quick-grid{grid-template-columns:1fr}}
+
+.sec{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
+.sec>h3{
+  margin:0;padding:9px 12px;font-size:13.5px;font-weight:800;letter-spacing:.04em;
+  background:var(--surface2);border-bottom:1px solid var(--border);color:#CFDCE9;
+  display:flex;align-items:center;gap:8px;
+}
+.sec>h3 .hint{font-weight:600;font-size:11.5px;color:var(--muted2);letter-spacing:0}
+.sec>h3 .spacer{flex:1 1 auto}
+.sec-b{padding:12px}
+
+label.f{display:block;margin-bottom:9px}
+label.f>span{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+input,select,textarea{
+  font:inherit;width:100%;background:#0B1218;color:var(--text);
+  border:1px solid var(--border2);border-radius:5px;padding:6px 8px;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid #1D4ED8;outline-offset:-1px;border-color:#3B82F6}
+input.invalid,select.invalid,textarea.invalid{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
+input[type=color]{padding:2px;height:32px;cursor:pointer}
+input[type=checkbox]{width:auto;accent-color:var(--accent);transform:scale(1.15)}
+input[type=range]{padding:0;accent-color:var(--accent)}
+textarea{resize:vertical;min-height:52px}
+.inline{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.inline label.f{margin-bottom:0}
+.chkline{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-bottom:7px;cursor:pointer}
+.row-tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.note{font-size:11.5px;color:var(--muted2);line-height:1.5;margin-top:6px}
+.note b{color:#A9BDD0}
+
+/* 조작 패널의 기체/인원 목록 */
+.item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px}
+.item-h{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.item-h .ih-t{font-size:14px;font-weight:800}
+.item-h .spacer{flex:1 1 auto}
+.f4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.f3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:760px){.f4,.f3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sens-pick{display:flex;gap:5px;flex-wrap:wrap}
+.sens-pick button{font-size:11.5px;padding:3px 7px}
+
+/* 조작 패널 안의 격자 편집기 */
+.cons-map{position:relative;width:100%;aspect-ratio:16/10;border:1px solid var(--border2);
+  border-radius:6px;overflow:hidden;background:#0B1219;cursor:crosshair}
+.cons-map .gcell{font-size:12px;cursor:pointer}
+.cons-map .gcell .by{font-size:9px}
+.cons-map .gcell:focus{outline:3px solid var(--accent);outline-offset:-3px}
+.paste-zone{
+  border:2px dashed var(--border2);border-radius:6px;padding:14px;text-align:center;
+  color:var(--muted);font-size:12.5px;line-height:1.6;cursor:pointer;background:#0B1218;
+}
+.paste-zone:focus{outline:2px solid #3B82F6;color:var(--text)}
+.paste-zone.hot{border-color:var(--accent);color:var(--text)}
+.paste-zone.has{border-style:solid;border-color:#166534;color:#B8C9D9}
+.paste-zone kbd{
+  font:inherit;font-weight:800;background:var(--surface3);border:1px solid var(--border2);
+  border-radius:4px;padding:1px 5px;color:var(--text);
+}
+.map-msg{font-size:11.5px;margin-top:6px;line-height:1.55;min-height:17px}
+.map-msg .ok{color:#86EFAC;font-weight:700}
+.map-msg .warn{color:#FCD34D;font-weight:700}
+.map-msg .err{color:#FCA5A5;font-weight:700}
+.warn-strip{
+  background:#33210A;border:1px solid #7C4A0A;color:#FDE68A;border-radius:6px;
+  padding:9px 11px;font-size:12.5px;line-height:1.55;margin-bottom:12px;
+}
+.warn-strip.danger{background:#3B1010;border-color:#991B1B;color:#FCA5A5}
+.system-alert{
+  position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9500;
+  width:min(860px,calc(100vw - 24px));background:#7F1D1D;color:#fff;border:1px solid #EF4444;
+  border-radius:7px;padding:10px 14px;font:700 13px/1.45 system-ui,sans-serif;
+  box-shadow:0 8px 30px rgba(0,0,0,.55)
+}
+.audio-arm{
+  position:fixed;right:1rem;top:.8rem;z-index:9000;border:1px solid #F5A524;
+  background:#33210A;color:#FDE68A;border-radius:.35rem;padding:.35rem .7rem;
+  font:700 1rem/1.2 system-ui,sans-serif;cursor:pointer
+}
+
+/* Ctrl+E 드로어 (표출 화면 위에 겹쳐 열림) */
+.drawer{
+  position:fixed;inset:0;z-index:7000;background:rgba(3,6,10,.72);
+  display:flex;justify-content:flex-end;
+}
+.drawer-in{
+  width:min(760px,94vw);height:100%;overflow-y:auto;background:#0A0F15;
+  border-left:1px solid var(--border2);box-shadow:-1rem 0 3rem rgba(0,0,0,.7);
+}
+.drawer-in .cons{max-width:none;font-size:14px}
+
+@media print{body{background:#fff}}
+</style>
+</head>
+<body>
+<div id="dimmer"></div>
+<div class="system-alert" id="systemAlert" role="alert" hidden></div>
+
+<!-- ======================= 표출 화면 (대형 스크린) ======================= -->
+<div class="board" id="board" hidden>
+
+  <div class="alert-banner" id="alertBanner" hidden></div>
+  <button class="audio-arm" id="audioArm" type="button" hidden>🔊 경보음 준비</button>
+
+  <header class="hdr">
+    <div class="hdr-id">
+      <div class="brand"><span class="su">STAY UP</span><span class="sep">|</span>현장 상황판</div>
+      <div class="mission" id="hMission">상황명 미입력</div>
+      <div class="mission-sub" id="hLoc">수색 장소 미입력</div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi lv-idle" id="kGolden">
+        <div class="kpi-l">골든타임 잔여</div>
+        <div class="kpi-v num" id="vGolden">--:--</div>
+        <div class="kpi-s" id="sGolden">실종시각 미입력</div>
+      </div>
+      <div class="kpi lv-idle" id="kSunset">
+        <div class="kpi-l">일몰까지</div>
+        <div class="kpi-v num" id="vSunset">--:--</div>
+        <div class="kpi-s" id="sSunset">좌표 미입력</div>
+      </div>
+      <div class="kpi kpi-flight lv-idle" id="kFlight">
+        <div class="kpi-l">비행 가능 판정</div>
+        <div class="kpi-v" id="vFlight"><i class="dot"></i>확인중</div>
+        <div class="kpi-s" id="sFlight">&nbsp;</div>
+      </div>
+      <div class="kpi lv-idle" id="kElapsed">
+        <div class="kpi-l">출동 경과</div>
+        <div class="kpi-v num" id="vElapsed">--:--</div>
+        <div class="kpi-s" id="sElapsed">출동시각 미입력</div>
+      </div>
+    </div>
+
+    <div class="hdr-clock">
+      <div class="clock num" id="hClock">--:--:--</div>
+      <div class="cdate" id="hDate">&nbsp;</div>
+    </div>
+  </header>
+
+  <main class="cols">
+    <!-- ---------- 좌열 ---------- -->
+    <section class="col col-l">
+      <div class="card" style="flex:0 0 auto;max-height:54%">
+        <div class="card-h"><h2>실종자 정보</h2><span class="h-right" id="subjTracker"></span></div>
+        <div class="card-b" id="subjBody"></div>
+      </div>
+      <div class="card" style="flex:0 0 auto">
+        <div class="card-h"><h2>배터리 자원</h2><span class="h-right" id="battGen"></span></div>
+        <div class="card-b" id="battBody"></div>
+      </div>
+      <div class="card" style="flex:1 1 auto;min-height:7rem">
+        <div class="card-h"><h2>출동 인원</h2><span class="h-right" id="crewCount"></span></div>
+        <div class="card-b" id="crewBody"></div>
+      </div>
+    </section>
+
+    <!-- ---------- 중앙열 ---------- -->
+    <section class="col col-c">
+      <div class="card card-grid">
+        <div class="card-h">
+          <h2>수색구역 현황</h2>
+          <span class="h-right" id="gridMeta"></span>
+        </div>
+        <div class="card-b">
+          <div class="mapwrap" id="mapWrap"></div>
+          <div class="cov">
+            <div class="cov-pct num"><span id="covPct">0</span><small>%</small></div>
+            <div class="cov-bar" id="covBar"></div>
+            <div class="radchip" id="radChip"></div>
+            <div class="legend">
+              <span><i class="l2"></i><b id="cnt2">0</b> 완료</span>
+              <span><i class="l1"></i><b id="cnt1">0</b> 수색중</span>
+              <span><i class="l3"></i><b id="cnt3">0</b> 재수색</span>
+              <span><i class="l0"></i><b id="cnt0">0</b> 미수색</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-safety">
+        <div class="card-h"><h2>안전 · 규제 · 기상</h2><span class="h-right" id="wxStamp"></span></div>
+        <div class="card-b" id="safetyBody"></div>
+      </div>
+    </section>
+
+    <!-- ---------- 우열 ---------- -->
+    <section class="col col-r">
+      <div class="card card-drones">
+        <div class="card-h"><h2>드론 운용 현황</h2><span class="h-right" id="droneMeta"></span></div>
+        <div class="card-b" id="droneBody"></div>
+      </div>
+      <div class="card card-log">
+        <div class="card-h"><h2>이벤트 타임라인</h2><span class="h-right" id="logMeta"></span></div>
+        <div class="card-b" id="logBody"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="ticker">
+    <span class="tk-lb">지휘부 지시</span>
+    <div class="tk-track"><div class="tk-move" id="tkMove">—</div></div>
+    <div class="tk-right" id="tkRight"></div>
+  </footer>
+</div>
+
+<!-- ======================= 조작 패널 ======================= -->
+<div id="consoleRoot" hidden></div>
+<div class="drawer" id="drawer" hidden><div class="drawer-in" id="drawerIn"></div></div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   S1. 상수 · 기본 상태
+   ========================================================================== */
+var KEY     = 'stayup.dash.v1';
+var MAPKEY  = 'stayup.dash.map.v1';
+var SNAPKEY = 'stayup.dash.snapshots.v1';
+var RECOVERY_KEY = 'stayup.dash.recovery.v1';
+var LOCKKEY = 'stayup.dash.editor.v1';
+var EPOCHKEY = 'stayup.dash.epoch.v1';
+var MAP_PREFIX = 'stayup.dash.map.v2.';
+var STATE_VERSION = 2;
+var MAX_IMPORT_BYTES = 6 * 1024 * 1024;
+var MAX_MAP_CHARS = 3 * 1024 * 1024;
+var MAX_EVENTS = 5000;
+var WEATHER_MAX_AGE_MIN = 30;
+var LOCK_LEASE_MS = 15000;
+var PEER_STALE_MS = 7000;
+var GOLDEN_HOURS = 24;      /* 치매 실종자 발견율이 급락하는 기준 */
+var SHIFT_WARN_MIN = 240;   /* 조종 4시간 초과 시 교대 권고 */
+
+var DRONE_ST = {
+  flying:'비행중', ready:'이륙대기', swap:'배터리교체',
+  charging:'충전중', maint:'정비', commloss:'통신불량'
+};
+var CELL_ST = ['미수색','수색중','완료','재수색'];
+var EV_TYPE = {
+  takeoff:'이륙', landing:'착륙', heat:'열원감지', found:'발견',
+  order:'지휘부 지시', note:'특이사항', accident:'안전사고', zone:'구역완료',
+  correction:'정정', crew:'인원교대'
+};
+var EV_CLASS = {found:'k-found', heat:'k-heat', order:'k-order', accident:'k-accident',correction:'k-order'};
+var ROLES = ['조종','관측','통신','안전','충전지원','지휘'];
+/* macOS 와 Windows 의 캡처·붙여넣기 단축키가 다르다.
+   특히 macOS 의 ⌘⇧4 는 파일로 저장되고 클립보드에 들어가지 않는다. */
+var IS_MAC   = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
+var K_PASTE  = IS_MAC ? '⌘ V' : 'Ctrl + V';
+var K_SHOT   = IS_MAC ? '⌘ + Control + Shift + 4' : 'Win + Shift + S';
+var SENSORS = ['EO','IR','스피커','서치라이트','줌'];
+
+function defaultState(){
+  return {
+    meta:{ v:STATE_VERSION, updated:0, revision:0, epoch:'' },
+    mission:{
+      title:'', location:'', dispatchedAt:'', lat:null, lon:null,
+      coordsConfirmedAt:0, trs:'', callsign:'', briefing:'', orders:''
+    },
+    subject:{
+      name:'', age:'', sex:'',
+      topColor:'#E879A6', topText:'', botColor:'#2B2B33', botText:'',
+      missingAt:'', lastSeenPlace:'', notes:'', level:'',
+      tracker:false, walkSpeed:2.0, decay:0.35
+    },
+    drones:[], crew:[],
+    batteries:{ ready:0, charging:0, empty:0, generator:false, avgFlightMin:25, concurrent:2 },
+    grid:{
+      rows:5, cols:6, cells:{}, mapVer:0, mapId:null, hasMap:false, mapW:0, mapH:0, mapKB:0,
+      mapZoom:100, mapX:0, mapY:0, mapOpacity:0.85, widthMeters:2000,
+      pinLast:null, pinFound:null
+    },
+    events:[],
+    safety:{
+      ctrlZone:false, noFly:false, approval:'unknown', nightApproval:false,
+      windLimit:12, gustLimit:12, manned:false, agencies:''
+    },
+    weather:{ auto:true, temp:null, wind:null, gust:null, precip:null,
+              rain:null, stamp:null, observedAt:0, lastAttemptAt:0,
+              error:'', src:'none', confirmed:false, confirmedAt:0, lat:null, lon:null },
+    ui:{ scale:1, dim:0, ackFound:0, gridAction:'status' }
+  };
+}
+var S = defaultState();
+var STARTUP_WARNINGS = [];
+var SAVE_STATUS = { ok:true, at:0, message:'', backupOk:true, backupMessage:'' };
+/* 로컬 저장이 되는 환경인지 미리 확인한다.
+   Safari 로 file:// 을 열면 localStorage 가 차단되어 저장·복구·창간 동기화가 되지 않는다. */
+var STORAGE_OK = (function(){
+  try{ localStorage.setItem('stayup.probe','1'); localStorage.removeItem('stayup.probe'); return true; }
+  catch(e){ return false; }
+})();
+var MAPDATA = null;      /* 지도 이미지 dataURL (용량이 커서 별도 키에 저장) */
+
+/* ==========================================================================
+   S2. 유틸
+   ========================================================================== */
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function p2(n){ return (n<10?'0':'')+n; }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function num(v,d){ var n=parseFloat(v); return isNaN(n)?(d===undefined?0:d):n; }
+function intv(v,d){ var n=parseInt(v,10); return isNaN(n)?(d===undefined?0:d):n; }
+
+/* 'YYYY-MM-DDTHH:MM' (datetime-local) -> ms. 빈 값은 0 */
+function tms(v){ if(!v) return 0; var t=new Date(v).getTime(); return isNaN(t)?0:t; }
+/* ms 간격 -> "H:MM" / "MM:SS" */
+function durHM(ms){
+  if(ms<0) ms=0;
+  var m=Math.floor(ms/60000), h=Math.floor(m/60);
+  return h+':'+p2(m%60);
+}
+function durMS(ms){
+  if(ms<0) ms=0;
+  var s=Math.floor(ms/1000);
+  return p2(Math.floor(s/60))+':'+p2(s%60);
+}
+function hhmm(d){ return p2(d.getHours())+':'+p2(d.getMinutes()); }
+function cellId(r,c){ return String.fromCharCode(65+r)+(c+1); }
+function uid(){
+  try{
+    var a = new Uint32Array(2); crypto.getRandomValues(a);
+    return 'x'+a[0].toString(36)+a[1].toString(36);
+  }catch(e){ return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+}
+function localDateTime(d){
+  d = d || new Date();
+  return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())
+    +'T'+p2(d.getHours())+':'+p2(d.getMinutes());
+}
+function shortDateTime(ms){
+  var d = new Date(ms); if(!isFinite(d.getTime())) return '—';
+  return p2(d.getMonth()+1)+'-'+p2(d.getDate())+' '+p2(d.getHours())+':'+p2(d.getMinutes());
+}
+function hasValidCoordinates(){
+  var lat = num(S.mission.lat, NaN), lon = num(S.mission.lon, NaN);
+  return isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+}
+function coordinateStatus(){
+  var lat=num(S.mission.lat,NaN), lon=num(S.mission.lon,NaN);
+  if(!isFinite(lat)||!isFinite(lon)||lat < -90||lat > 90||lon < -180||lon > 180)
+    return {ok:false,confirmed:false,why:'현장 좌표 미입력 또는 범위 오류'};
+  return {ok:true,confirmed:!!S.mission.coordsConfirmedAt,lat:lat,lon:lon,
+    why:S.mission.coordsConfirmedAt?'':'현장 좌표 확인 미완료'};
+}
+function invalidateSafetyContext(){
+  S.mission.coordsConfirmedAt=0;
+  S.weather.confirmed=false; S.weather.confirmedAt=0;
+  S.safety.approval='unknown';
+}
+function weatherStatus(now){
+  var w=S.weather, cs=coordinateStatus(); now=now||new Date();
+  if(!cs.ok) return {ok:false,why:'현장 좌표 미확인'};
+  if(!w.confirmed) return {ok:false,why:'현장 기상 확인 미완료'};
+  if(['auto','manual'].indexOf(w.src)<0) return {ok:false,why:'기상 출처 미확인'};
+  if(!isFinite(num(w.lat,NaN))||!isFinite(num(w.lon,NaN))
+      ||Math.abs(num(w.lat,NaN)-cs.lat)>0.000001||Math.abs(num(w.lon,NaN)-cs.lon)>0.000001)
+    return {ok:false,why:'현재 좌표와 기상 관측 위치 불일치'};
+  if(w.wind==null||!isFinite(num(w.wind,NaN))||w.gust==null||!isFinite(num(w.gust,NaN))||typeof w.rain!=='boolean')
+    return {ok:false,why:'풍속·돌풍·강수 정보 미입력'};
+  var age=now.getTime()-num(w.observedAt,0);
+  if(!w.observedAt) return {ok:false,why:'기상 관측시각 미입력'};
+  if(age < -5*60000) return {ok:false,why:'기상 관측시각이 미래임'};
+  if(age >= WEATHER_MAX_AGE_MIN*60000) return {ok:false,why:'기상 관측 '+Math.floor(age/60000)+'분 경과 · 갱신 필요'};
+  return {ok:true,ageMin:Math.max(0,Math.floor(age/60000))};
+}
+
+/* ==========================================================================
+   S3. 저장 · 복구 · 창간 동기화
+   두 창(조작 패널 / 표출 화면) 사이를 2중으로 동기화한다.
+     (1) postMessage : 즉시 반영. window.open 으로 얻은 핸들 / window.opener
+     (2) localStorage 500ms 폴링 : 창 핸들이 끊겨도 계속 동작 (file:// 대비)
+   ========================================================================== */
+var MODE = (location.hash.indexOf('display') >= 0) ? 'display' : 'console';
+var TAB_ID = uid();
+var peer = null;          /* 상대 창 핸들 */
+var lastPeerSeen = 0;
+var lastSeenUpdated = 0;
+var applying = false;     /* 원격 상태 반영 중 재전송 방지 */
+var lastSnapshotUpdated = -1;
+var SESSION_EPOCH='';
+var epochInvalidNotified=false;
+function initEpoch(){
+  if(!STORAGE_OK){SESSION_EPOCH='memory-'+TAB_ID;return;}
+  try{SESSION_EPOCH=localStorage.getItem(EPOCHKEY)||uid();localStorage.setItem(EPOCHKEY,SESSION_EPOCH);}
+  catch(e){SESSION_EPOCH='blocked-'+TAB_ID;}
+}
+function epochCurrent(){
+  if(!STORAGE_OK)return false;
+  try{return localStorage.getItem(EPOCHKEY)===SESSION_EPOCH;}catch(e){return false;}
+}
+
+function isPlainObject(v){
+  if(!v || Object.prototype.toString.call(v) !== '[object Object]') return false;
+  var p = Object.getPrototypeOf(v);
+  return p === Object.prototype || p === null;
+}
+function sanText(v, max){
+  var s = (v == null ? '' : String(v));
+  return s.slice(0, max || 500);
+}
+function sanBool(v, fallback){ return typeof v === 'boolean' ? v : !!fallback; }
+function sanNum(v, min, max, fallback, nullable){
+  if((v === null || v === '') && nullable) return null;
+  var n = typeof v === 'number' ? v : parseFloat(v);
+  if(!isFinite(n)) return fallback;
+  return clamp(n, min, max);
+}
+function sanInt(v, min, max, fallback){
+  var n = typeof v === 'number' ? Math.round(v) : parseInt(v,10);
+  if(!isFinite(n)) return fallback;
+  return clamp(n, min, max);
+}
+function sanDate(v){
+  var s = sanText(v, 24);
+  return s && tms(s) ? s : '';
+}
+function sanColor(v, fallback){
+  var s = sanText(v, 16);
+  return /^#[0-9a-f]{6}$/i.test(s) ? s.toUpperCase() : fallback;
+}
+function validMapData(v){
+  return typeof v === 'string' && v.length <= MAX_MAP_CHARS
+    && /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=\r\n]+$/i.test(v);
+}
+function validateImportPackage(raw){
+  if(!isPlainObject(raw)) throw new Error('루트가 객체가 아닙니다.');
+  var requiredObjects = ['meta','mission','subject','batteries','grid','safety','weather','ui'];
+  for(var i=0;i<requiredObjects.length;i++){
+    if(!isPlainObject(raw[requiredObjects[i]])) throw new Error(requiredObjects[i]+' 항목이 없거나 올바르지 않습니다.');
+  }
+  ['drones','crew','events'].forEach(function(k){
+    if(!Array.isArray(raw[k])) throw new Error(k+' 항목은 배열이어야 합니다.');
+  });
+  if(raw.events.length>MAX_EVENTS) throw new Error('이벤트가 '+MAX_EVENTS+'건을 초과합니다. 먼저 원본을 별도 보관하세요.');
+  var v = Number(raw.meta.v);
+  if(!Number.isInteger(v)||v<1||v>STATE_VERSION) throw new Error('지원하지 않는 데이터 버전입니다.');
+  if(raw.map != null && !validMapData(raw.map)) throw new Error('지도 데이터가 올바른 PNG/JPG/WebP 형식이 아닙니다.');
+  return true;
+}
+/* 저장값과 가져오기 값을 허용 목록 기반으로 정규화한다. */
+function migrate(raw){
+  raw = isPlainObject(raw) ? raw : {};
+  var d = defaultState();
+  var m = isPlainObject(raw.mission) ? raw.mission : {};
+  d.mission.title = sanText(m.title,120); d.mission.location = sanText(m.location,180);
+  d.mission.dispatchedAt = sanDate(m.dispatchedAt);
+  d.mission.lat = sanNum(m.lat,-90,90,null,true); d.mission.lon = sanNum(m.lon,-180,180,null,true);
+  d.mission.coordsConfirmedAt=sanNum(m.coordsConfirmedAt,0,Number.MAX_SAFE_INTEGER,0,false);
+  d.mission.trs = sanText(m.trs,40); d.mission.callsign = sanText(m.callsign,60);
+  d.mission.briefing = sanText(m.briefing,60); d.mission.orders = sanText(m.orders,2000);
+
+  var s = isPlainObject(raw.subject) ? raw.subject : {};
+  d.subject.name = sanText(s.name,80); d.subject.age = sanNum(s.age,0,130,'',true);
+  d.subject.sex = ['','남','여'].indexOf(s.sex)>=0 ? s.sex : '';
+  d.subject.topColor = sanColor(s.topColor,d.subject.topColor); d.subject.botColor = sanColor(s.botColor,d.subject.botColor);
+  d.subject.topText = sanText(s.topText,100); d.subject.botText = sanText(s.botText,100);
+  d.subject.missingAt = sanDate(s.missingAt); d.subject.lastSeenPlace = sanText(s.lastSeenPlace,180);
+  d.subject.notes = sanText(s.notes,1000); d.subject.level = sanText(s.level,80);
+  d.subject.tracker = sanBool(s.tracker,false);
+  d.subject.walkSpeed = sanNum(s.walkSpeed,0,15,2,false); d.subject.decay = sanNum(s.decay,0,1,0.35,false);
+
+  var drones = Array.isArray(raw.drones) ? raw.drones.slice(0,50) : [];
+  d.drones = drones.filter(isPlainObject).map(function(x){
+    var status = Object.prototype.hasOwnProperty.call(DRONE_ST,x.status) ? x.status : 'ready';
+    return { id:/^[a-z0-9_-]{3,80}$/i.test(String(x.id||'')) ? String(x.id) : uid(),
+      name:sanText(x.name,80), model:sanText(x.model,80), status:status,
+      battery:sanNum(x.battery,0,100,0,false), tookOffAt:sanDate(x.tookOffAt),
+      endurance:sanNum(x.endurance,1,240,25,false), zone:sanText(x.zone,40),
+      alt:sanNum(x.alt,0,10000,'',true), pilot:sanText(x.pilot,80), observer:sanText(x.observer,80),
+      sorties:sanInt(x.sorties,0,999,0), sensors:Array.isArray(x.sensors)
+        ? x.sensors.filter(function(z){return SENSORS.indexOf(z)>=0;}).slice(0,SENSORS.length) : [] };
+  });
+  var crew = Array.isArray(raw.crew) ? raw.crew.slice(0,200) : [];
+  d.crew = crew.filter(isPlainObject).map(function(x){
+    return { id:/^[a-z0-9_-]{3,80}$/i.test(String(x.id||'')) ? String(x.id) : uid(),
+      name:sanText(x.name,80), role:ROLES.indexOf(x.role)>=0 ? x.role : '조종',
+      inAt:sanDate(x.inAt), outAt:sanDate(x.outAt) };
+  });
+
+  var b = isPlainObject(raw.batteries) ? raw.batteries : {};
+  d.batteries.ready=sanInt(b.ready,0,999,0); d.batteries.charging=sanInt(b.charging,0,999,0);
+  d.batteries.empty=sanInt(b.empty,0,999,0); d.batteries.generator=sanBool(b.generator,false);
+  d.batteries.avgFlightMin=sanNum(b.avgFlightMin,1,240,25,false);
+  d.batteries.concurrent=sanInt(b.concurrent,1,50,2);
+
+  var g = isPlainObject(raw.grid) ? raw.grid : {};
+  d.grid.rows=sanInt(g.rows,1,12,5); d.grid.cols=sanInt(g.cols,1,12,6); d.grid.cells={};
+  if(isPlainObject(g.cells)) Object.keys(g.cells).slice(0,144).forEach(function(k){
+    var c=g.cells[k]; if(!/^[A-L](?:[1-9]|1[0-2])$/.test(k) || !isPlainObject(c)) return;
+    d.grid.cells[k]={s:sanInt(c.s,0,3,0),by:['','드론','지상','수색견','소방대'].indexOf(c.by)>=0?c.by:''};
+  });
+  d.grid.mapVer=sanInt(g.mapVer,0,2147483647,0);
+  d.grid.mapId=/^[a-z0-9_-]{3,100}$/i.test(String(g.mapId||''))?String(g.mapId):null;
+  d.grid.hasMap=sanBool(g.hasMap,false);
+  d.grid.mapW=sanInt(g.mapW,0,20000,0); d.grid.mapH=sanInt(g.mapH,0,20000,0); d.grid.mapKB=sanInt(g.mapKB,0,20000,0);
+  d.grid.mapZoom=sanNum(g.mapZoom,50,400,100,false); d.grid.mapX=sanNum(g.mapX,-200,200,0,false);
+  d.grid.mapY=sanNum(g.mapY,-200,200,0,false); d.grid.mapOpacity=sanNum(g.mapOpacity,0.1,1,0.85,false);
+  d.grid.widthMeters=sanNum(g.widthMeters,50,100000,2000,false);
+  function pin(v){ return isPlainObject(v) ? {x:sanNum(v.x,0,100,50,false),y:sanNum(v.y,0,100,50,false)} : null; }
+  d.grid.pinLast=pin(g.pinLast); d.grid.pinFound=pin(g.pinFound);
+
+  var events = Array.isArray(raw.events) ? raw.events : [];
+  d.events = events.filter(isPlainObject).map(function(e){
+    var typ=Object.prototype.hasOwnProperty.call(EV_TYPE,e.type)?e.type:'note';
+    var tm=sanNum(e.t,1,Number.MAX_SAFE_INTEGER,Date.now(),false);
+    return {id:/^[a-z0-9_-]{3,80}$/i.test(String(e.id||''))?String(e.id):uid(),t:tm,type:typ,
+      recordedAt:sanNum(e.recordedAt,1,Number.MAX_SAFE_INTEGER,tm,false),
+      text:sanText(e.text,1000),zone:sanText(e.zone,40),voided:sanBool(e.voided,false),
+      voidedAt:sanNum(e.voidedAt,0,Number.MAX_SAFE_INTEGER,0,false),voidReason:sanText(e.voidReason,300)};
+  });
+
+  var sf = isPlainObject(raw.safety) ? raw.safety : {};
+  d.safety.ctrlZone=sanBool(sf.ctrlZone,false); d.safety.noFly=sanBool(sf.noFly,false);
+  d.safety.approval=['unknown','none','pending','done','na'].indexOf(sf.approval)>=0?sf.approval:'unknown';
+  d.safety.nightApproval=sanBool(sf.nightApproval,false); d.safety.windLimit=sanNum(sf.windLimit,1,40,12,false);
+  d.safety.gustLimit=sanNum(sf.gustLimit,1,60,d.safety.windLimit,false);
+  d.safety.manned=sanBool(sf.manned,false); d.safety.agencies=sanText(sf.agencies,500);
+  var w = isPlainObject(raw.weather) ? raw.weather : {};
+  d.weather.auto=sanBool(w.auto,true); d.weather.temp=sanNum(w.temp,-60,70,null,true);
+  d.weather.wind=sanNum(w.wind,0,80,null,true); d.weather.gust=sanNum(w.gust,0,100,null,true);
+  d.weather.precip=sanNum(w.precip,0,100,null,true);
+  d.weather.rain=typeof w.rain==='boolean'?w.rain:null; d.weather.stamp=sanText(w.stamp,40)||null;
+  d.weather.observedAt=sanNum(w.observedAt,0,Number.MAX_SAFE_INTEGER,0,false);
+  d.weather.lastAttemptAt=sanNum(w.lastAttemptAt,0,Number.MAX_SAFE_INTEGER,0,false);
+  d.weather.error=sanText(w.error,200); d.weather.src=['none','manual','auto'].indexOf(w.src)>=0?w.src:'none';
+  d.weather.confirmed=sanBool(w.confirmed,false); d.weather.confirmedAt=sanNum(w.confirmedAt,0,Number.MAX_SAFE_INTEGER,0,false);
+  d.weather.lat=sanNum(w.lat,-90,90,null,true); d.weather.lon=sanNum(w.lon,-180,180,null,true);
+
+  var u=isPlainObject(raw.ui)?raw.ui:{};
+  d.ui.scale=sanNum(u.scale,0.75,1.5,1,false); d.ui.dim=sanNum(u.dim,0,1,0,false);
+  d.ui.ackFound=sanNum(u.ackFound,0,Number.MAX_SAFE_INTEGER,0,false);
+  d.ui.gridAction=['status','by:','by:드론','by:지상','by:수색견','by:소방대'].indexOf(u.gridAction)>=0?u.gridAction:'status';
+  var meta=isPlainObject(raw.meta)?raw.meta:{};
+  d.meta.v=STATE_VERSION; d.meta.updated=sanNum(meta.updated,0,Number.MAX_SAFE_INTEGER,0,false);
+  d.meta.revision=sanInt(meta.revision,0,Number.MAX_SAFE_INTEGER,0);
+  d.meta.epoch=sanText(meta.epoch,100)||SESSION_EPOCH;
+  return d;
+}
+
+function showSystemAlert(message){
+  var el=$('systemAlert'); if(!el) return;
+  el.textContent=message||''; el.hidden=!message;
+}
+function refreshSystemAlert(){
+  if(!SAVE_STATUS.ok)showSystemAlert('저장 실패: '+(SAVE_STATUS.message||'브라우저 저장공간을 확인하고 즉시 JSON으로 내보내세요.'));
+  else if(!SAVE_STATUS.backupOk)showSystemAlert('현재 입력은 저장됐지만 자동 복구본 생성 실패: '+(SAVE_STATUS.backupMessage||'저장공간을 확인하세요.'));
+  else showSystemAlert('');
+}
+function setSaveStatus(ok, message){
+  SAVE_STATUS.ok=!!ok; SAVE_STATUS.at=ok?Date.now():SAVE_STATUS.at; SAVE_STATUS.message=message||'';
+  refreshSystemAlert();
+}
+function persistCandidate(candidate){
+  try{
+    if(!epochCurrent())throw new Error('출동 종료 후 열린 이전 창입니다. 새로고침하세요.');
+    candidate.meta.epoch=SESSION_EPOCH;
+    var raw=JSON.stringify(candidate); localStorage.setItem(KEY,raw);
+    if(localStorage.getItem(KEY)!==raw) throw new Error('저장 확인 실패');
+    setSaveStatus(true,''); return true;
+  }catch(e){ console.warn('저장 실패',e); setSaveStatus(false,e&&e.name?e.name:String(e)); return false; }
+}
+function touchState(state){
+  var now=Date.now(); state.meta.v=STATE_VERSION;state.meta.epoch=SESSION_EPOCH;
+  state.meta.updated=Math.max(now,sanNum(state.meta.updated,0,Number.MAX_SAFE_INTEGER,0,false)+1);
+  state.meta.revision=sanInt(state.meta.revision,0,Number.MAX_SAFE_INTEGER-1,0)+1;
+}
+function touch(){ touchState(S); }
+function persist(){ return persistCandidate(S); }
+function commit(){
+  if(applying) return true;
+  touch(); var ok=persist(); lastSeenUpdated=S.meta.updated;
+  broadcast(); renderAll(); return ok;
+}
+
+function getSnapshots(){
+  try{ var a=JSON.parse(localStorage.getItem(SNAPKEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){return [];}
+}
+function createSnapshot(reason){
+  if(!STORAGE_OK||!epochCurrent()||S.meta.updated===lastSnapshotUpdated)return true;
+  try{
+    var a=getSnapshots(); a.push({t:Date.now(),reason:reason||'자동',state:JSON.parse(JSON.stringify(S))});
+    if(a.length>5) a=a.slice(-5); localStorage.setItem(SNAPKEY,JSON.stringify(a));
+    lastSnapshotUpdated=S.meta.updated;SAVE_STATUS.backupOk=true;SAVE_STATUS.backupMessage='';refreshSystemAlert();gcMapBlobs();return true;
+  }catch(e){console.warn('복구본 저장 실패',e);SAVE_STATUS.backupOk=false;SAVE_STATUS.backupMessage=e&&e.name?e.name:String(e);refreshSystemAlert();return false;}
+}
+function saveRecoveryPoint(reason){
+  if(!STORAGE_OK||!epochCurrent())return false;
+  try{
+    localStorage.setItem(RECOVERY_KEY,JSON.stringify({t:Date.now(),reason:reason||'작업 전',state:S,
+      map:S.grid.mapId?null:(MAPDATA||null)}));
+    gcMapBlobs();return true;
+  }catch(e){
+    try{var st=migrate(S);st.grid.hasMap=false;st.grid.mapId=null;st.grid.mapW=0;st.grid.mapH=0;st.grid.mapKB=0;
+      localStorage.setItem(RECOVERY_KEY,JSON.stringify({t:Date.now(),reason:(reason||'작업 전')+' (지도 제외)',state:st,map:null}));return true;}
+    catch(e2){ return false; }
+  }
+}
+function gcMapBlobs(){
+  if(!STORAGE_OK)return;
+  try{
+    var keep={};if(S.grid.mapId)keep[S.grid.mapId]=true;
+    getSnapshots().forEach(function(x){var id=x&&x.state&&x.state.grid&&x.state.grid.mapId;if(id)keep[id]=true;});
+    var rr=JSON.parse(localStorage.getItem(RECOVERY_KEY)||'null');
+    var rid=rr&&rr.state&&rr.state.grid&&rr.state.grid.mapId;if(rid)keep[rid]=true;
+    var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf(MAP_PREFIX)===0)keys.push(k);}
+    keys.forEach(function(k){var id=k.slice(MAP_PREFIX.length);if(!keep[id])localStorage.removeItem(k);});
+  }catch(e){}
+}
+function restoreRecovery(){
+  try{
+    var r=JSON.parse(localStorage.getItem(RECOVERY_KEY)||'null');
+    if(!r){var snaps=getSnapshots();if(snaps.length)r=snaps[snaps.length-1];}
+    if(!r||!isPlainObject(r.state))throw new Error('복구할 작업이 없습니다.');
+    var map=r.map||null,mid=r.state.grid&&r.state.grid.mapId;
+    if(!map&&mid)map=localStorage.getItem(MAP_PREFIX+mid);
+    if(r.state.grid&&r.state.grid.hasMap&&!validMapData(map))throw new Error('복구본의 지도 데이터가 없습니다.');
+    if(!confirm(shortDateTime(r.t)+' · '+(r.reason||'직전 작업')+' 상태로 되돌릴까요?'))return;
+    createSnapshot('복구 적용 전');
+    if(!applyStateTransaction(migrate(r.state),map))throw new Error('복구 상태를 저장하지 못했습니다.');
+    alert('직전 작업을 복구했습니다.');
+  }catch(e){alert('복구 실패: '+(e&&e.message?e.message:e));}
+}
+function purgeIncidentData(){
+  exportJson();
+  alert('JSON 다운로드를 시작했습니다. 다운로드 목록에서 파일이 생성되고 승인된 위치에 보관됐는지 확인하세요.');
+  var answer=prompt('확인 후 모든 개인정보·지도·이벤트·복구본을 삭제하려면 정확히 "완전삭제"를 입력하세요.\n이 작업은 되돌릴 수 없습니다.','');
+  if(answer!=='완전삭제'){alert('삭제를 취소했습니다. 데이터는 그대로 유지됩니다.');return;}
+  try{
+    var newEpoch=uid();localStorage.setItem(EPOCHKEY,newEpoch);
+    sendPeer({type:'purge',epoch:newEpoch});SESSION_EPOCH=newEpoch;
+    var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('stayup.dash.')===0&&k!==EPOCHKEY)keys.push(k);}
+    keys.forEach(function(k){localStorage.removeItem(k);});
+    S=defaultState();S.meta.epoch=SESSION_EPOCH;MAPDATA=null;mapVerLoaded=-1;lastSnapshotUpdated=-1;lastSeenUpdated=0;STARTUP_WARNINGS=[];
+    acquireEditorLock(false);setSaveStatus(true,'');renderAll();
+    alert('브라우저의 상황 데이터와 복구본을 삭제했습니다. 공용 PC의 다운로드 파일도 승인된 위치로 옮기거나 삭제한 뒤 두 창을 닫으세요.');
+  }catch(e){setSaveStatus(false,e&&e.message?e.message:String(e));alert('완전 삭제 중 오류가 발생했습니다. 브라우저 저장공간을 직접 확인하세요.');}
+}
+function applyStateTransaction(nextState,nextMap){
+  var oldState=localStorage.getItem(KEY),newMapKey=null,wroteRaw=null,hadLegacyMap=!!(S.grid.hasMap&&!S.grid.mapId);
+  try{
+    if(!epochCurrent())throw new Error('출동 종료 후 열린 이전 창입니다. 새로고침하세요.');
+    nextState=migrate(nextState);
+    nextState.meta.revision=S.meta.revision; nextState.meta.updated=S.meta.updated;
+    if(nextMap){
+      if(!validMapData(nextMap)) throw new Error('지도 형식 오류');
+      nextState.grid.mapId=uid(); newMapKey=MAP_PREFIX+nextState.grid.mapId;
+      localStorage.setItem(newMapKey,nextMap);
+      if(localStorage.getItem(newMapKey)!==nextMap) throw new Error('지도 저장 확인 실패');
+      nextState.grid.hasMap=true; nextState.grid.mapKB=Math.round(nextMap.length/1024);
+    }else{
+      nextState.grid.mapId=null; nextState.grid.hasMap=false;
+      nextState.grid.mapW=0; nextState.grid.mapH=0; nextState.grid.mapKB=0;
+    }
+    nextState.grid.mapVer=sanInt(nextState.grid.mapVer,0,2147483646,0)+1;
+    touchState(nextState);
+    var raw=JSON.stringify(nextState); localStorage.setItem(KEY,raw);wroteRaw=raw;
+    if(localStorage.getItem(KEY)!==raw) throw new Error('상태 저장 확인 실패');
+    S=nextState;MAPDATA=nextMap||null;mapVerLoaded=S.grid.mapVer;STARTUP_WARNINGS=[];
+    if(hadLegacyMap)try{localStorage.removeItem(MAPKEY);}catch(ignore){}
+    setSaveStatus(true,'');lastSeenUpdated=S.meta.updated;broadcast();renderAll();gcMapBlobs();return true;
+  }catch(e){
+    try{ if(wroteRaw&&localStorage.getItem(KEY)===wroteRaw){if(oldState==null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,oldState);}
+      if(newMapKey)localStorage.removeItem(newMapKey); }catch(ignore){}
+    setSaveStatus(false,e&&e.message?e.message:String(e)); return false;
+  }
+}
+
+function readEditorLock(){
+  try{ var x=JSON.parse(localStorage.getItem(LOCKKEY)||'null'); return isPlainObject(x)?x:null; }catch(e){return null;}
+}
+function ownsEditorLock(){
+  if(!STORAGE_OK||!epochCurrent())return false;
+  var x=readEditorLock(); return !!(x&&x.id===TAB_ID&&x.epoch===SESSION_EPOCH&&x.expires>Date.now());
+}
+function acquireEditorLock(force){
+  if(!STORAGE_OK||!epochCurrent())return false;
+  var cur=readEditorLock(), now=Date.now();
+  if(!force&&cur&&cur.epoch===SESSION_EPOCH&&cur.id!==TAB_ID&&cur.expires>now)return false;
+  try{
+    localStorage.setItem(LOCKKEY,JSON.stringify({id:TAB_ID,epoch:SESSION_EPOCH,expires:now+LOCK_LEASE_MS,mode:MODE}));
+    return ownsEditorLock();
+  }catch(e){return false;}
+}
+function refreshEditorLock(){
+  if(!ownsEditorLock()) return false;
+  try{ localStorage.setItem(LOCKKEY,JSON.stringify({id:TAB_ID,epoch:SESSION_EPOCH,expires:Date.now()+LOCK_LEASE_MS,mode:MODE})); return true; }
+  catch(e){return false;}
+}
+function releaseEditorLock(){
+  if(!STORAGE_OK) return;
+  try{ var x=readEditorLock(); if(x&&x.id===TAB_ID)localStorage.removeItem(LOCKKEY); }catch(e){}
+}
+function ensureEditor(){
+  if(ownsEditorLock()) return true;
+  alert(!STORAGE_OK?'로컬 저장이 차단되어 안전하게 편집할 수 없습니다. Chrome 또는 Edge로 다시 여세요.'
+    :(!epochCurrent()?'출동 종료 후 열린 이전 창입니다. 새로고침하세요.':'다른 조작 화면이 편집권을 사용 중입니다.\n동시 입력으로 기록이 유실되지 않도록 이 화면은 읽기 전용입니다.'));
+  return false;
+}
+
+function sendPeer(msg){
+  msg=msg||{}; msg.ch='stayup'; msg.sender=TAB_ID;
+  try{ if(peer&&!peer.closed){peer.postMessage(msg,'*');return true;} }catch(e){}
+  try{ if(window.opener&&!window.opener.closed){window.opener.postMessage(msg,'*');return true;} }catch(e){}
+  return false;
+}
+function broadcast(){ sendPeer({type:'state',state:S}); }
+function peerConnected(){ return !!(peer&&!peer.closed&&Date.now()-lastPeerSeen<PEER_STALE_MS); }
+function adopt(remote,force){
+  if(!remote||!remote.meta) return false;
+  var rr=sanInt(remote.meta.revision,0,Number.MAX_SAFE_INTEGER,0);
+  var sr=sanInt(S.meta.revision,0,Number.MAX_SAFE_INTEGER,0);
+  if(!force&&rr<sr) return false;
+  if(!force&&rr===sr&&sanNum(remote.meta.updated,0,Number.MAX_SAFE_INTEGER,0)<=S.meta.updated) return false;
+  applying=true; S=migrate(remote); lastSeenUpdated=S.meta.updated; applying=false;
+  applyUi(); renderAll(); return true;
+}
+function loadLocal(){
+  if(!SESSION_EPOCH)initEpoch();
+  if(!STORAGE_OK){S=defaultState();S.meta.epoch=SESSION_EPOCH;MAPDATA=null;return;}
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(raw){ S=migrate(JSON.parse(raw));
+      if(S.meta.epoch&&S.meta.epoch!==SESSION_EPOCH)throw new Error('종료된 출동의 이전 세대 상태');
+      S.meta.epoch=SESSION_EPOCH;lastSeenUpdated=S.meta.updated; }
+  }catch(e){
+    STARTUP_WARNINGS.push('저장된 상태가 손상되어 기본 화면으로 열었습니다. 직전 복구본 또는 JSON을 사용하세요.');
+    try{ localStorage.setItem(KEY+'.corrupt.'+Date.now(),localStorage.getItem(KEY)||''); localStorage.removeItem(KEY); }catch(ignore){}
+    S=defaultState();
+  }
+  readMapFromStore();
+}
+var mapVerLoaded=-1;
+function readMapFromStore(){
+  try{
+    if(!S.grid.hasMap){ MAPDATA=null; mapVerLoaded=S.grid.mapVer; return true; }
+    var m=S.grid.mapId?localStorage.getItem(MAP_PREFIX+S.grid.mapId):localStorage.getItem(MAPKEY);
+    if(!validMapData(m)){
+      MAPDATA=null; S.grid.hasMap=false; S.grid.mapW=0; S.grid.mapH=0; S.grid.mapKB=0;
+      mapVerLoaded=S.grid.mapVer; STARTUP_WARNINGS.push('저장된 지도 형식이 올바르지 않아 제외했습니다.'); return true;
+    }
+    MAPDATA=m; mapVerLoaded=S.grid.mapVer; return true;
+  }catch(e){return false;}
+}
+function saveMap(dataUrl,meta){
+  if(!ensureEditor()) return false;
+  if(dataUrl&&!validMapData(dataUrl)){mapMsg('지원하지 않거나 너무 큰 지도 이미지입니다.','err');return false;}
+  if(S.grid.hasMap&&!saveRecoveryPoint(dataUrl?'지도 교체 전':'지도 삭제 전')){
+    mapMsg('복구본을 만들 수 없어 지도 변경을 중단했습니다. 저장공간을 확인하세요.','err');return false;
+  }
+  var candidate=migrate(S),newMapKey=null,hadLegacyMap=!!(S.grid.hasMap&&!S.grid.mapId);
+  try{
+    if(dataUrl){
+      candidate.grid.mapId=uid(); newMapKey=MAP_PREFIX+candidate.grid.mapId;
+      localStorage.setItem(newMapKey,dataUrl);
+      if(localStorage.getItem(newMapKey)!==dataUrl) throw new Error('지도 저장 확인 실패');
+    }else candidate.grid.mapId=null;
+    candidate.grid.hasMap=!!dataUrl; candidate.grid.mapVer=(candidate.grid.mapVer||0)+1;
+    candidate.grid.mapW=meta?sanInt(meta.w,0,20000,0):0; candidate.grid.mapH=meta?sanInt(meta.h,0,20000,0):0;
+    candidate.grid.mapKB=dataUrl?Math.round(dataUrl.length/1024):0; touchState(candidate);
+    if(!persistCandidate(candidate)) throw new Error('상태 저장 실패');
+    S=candidate;MAPDATA=dataUrl||null;mapVerLoaded=S.grid.mapVer;lastSeenUpdated=S.meta.updated;
+    if(hadLegacyMap)try{localStorage.removeItem(MAPKEY);}catch(ignore){}
+    broadcast();renderAll();gcMapBlobs();
+    sendPeer({type:'map',ver:S.grid.mapVer,data:dataUrl||null});
+    mapMsg(dataUrl?'지도 적용·저장 완료 · '+S.grid.mapW+'×'+S.grid.mapH+' · 약 '+S.grid.mapKB+'KB':'지도 이미지를 삭제했습니다.',dataUrl?'ok':'warn');
+    return true;
+  }catch(e){
+    try{if(newMapKey)localStorage.removeItem(newMapKey);}catch(ignore){}
+    mapMsg('지도 저장에 실패해 이전 지도로 되돌렸습니다. 저장공간을 확인하세요.','err'); renderAll(); return false;
+  }
+}
+
+window.addEventListener('message',function(ev){
+  var m=ev.data; if(!m||m.ch!=='stayup'||ev.source===window) return;
+  var expectedOrigin=location.protocol==='file:'?'null':location.origin;
+  if(ev.origin!==expectedOrigin)return;
+  if(m.type==='hello'){
+    if(MODE!=='console') return; peer=ev.source; lastPeerSeen=Date.now();
+    sendPeer({type:'helloAck'}); broadcast(); if(MAPDATA)sendPeer({type:'map',ver:S.grid.mapVer,data:MAPDATA}); return;
+  }
+  if(ev.source!==peer&&ev.source!==window.opener) return;
+  lastPeerSeen=Date.now(); if(ev.source)peer=ev.source;
+  if(m.type==='helloAck'||m.type==='pong'||m.type==='ack') return;
+  if(m.type==='ping'){sendPeer({type:'pong'});return;}
+  if(m.type==='purge'){
+    S=defaultState();MAPDATA=null;mapVerLoaded=-1;
+    if(MODE==='display'&&m.epoch)SESSION_EPOCH=m.epoch;
+    STARTUP_WARNINGS=['출동 종료로 상황 데이터가 완전 삭제되었습니다.'];renderAll();return;
+  }
+  if(m.type==='state'){adopt(m.state,false);sendPeer({type:'ack',revision:S.meta.revision});}
+  else if(m.type==='map'){
+    if(m.data&&!validMapData(m.data)) return;
+    MAPDATA=m.data||null; if(m.ver!=null)mapVerLoaded=m.ver;
+    renderGridAll(); sendPeer({type:'ack',revision:S.meta.revision});
+  }else if(m.type==='action'&&ownsEditorLock()){handlePeerAction(m);}
+});
+
+/* localStorage 폴링 - 읽기 화면은 저장소의 단일 편집자 상태를 따라간다. */
+function pollStore(){
+  try{
+    if(!epochCurrent()){
+      if(MODE==='display'){
+        SESSION_EPOCH=localStorage.getItem(EPOCHKEY)||SESSION_EPOCH;S=defaultState();S.meta.epoch=SESSION_EPOCH;MAPDATA=null;renderAll();
+      }else if(!epochInvalidNotified){epochInvalidNotified=true;S=defaultState();MAPDATA=null;
+        STARTUP_WARNINGS=['다른 창에서 출동 종료 삭제가 실행되었습니다. 이 창을 새로고침하세요.'];renderAll();}
+      return;
+    }
+    var raw=localStorage.getItem(KEY); if(!raw)return;
+    var o=migrate(JSON.parse(raw)), rr=o.meta.revision, sr=S.meta.revision;
+    if(rr>sr||(rr===sr&&o.meta.updated>S.meta.updated))adopt(o,true);
+    else if(!ownsEditorLock()&&rr===sr&&o.meta.updated===S.meta.updated&&JSON.stringify(o)!==JSON.stringify(S))adopt(o,true);
+    if(S.grid.mapVer!==mapVerLoaded&&readMapFromStore())renderGridAll();
+  }catch(e){console.warn('동기화 상태 읽기 실패',e);}
+}
+
+/* ==========================================================================
+   S4. 일몰 계산 (좌표만으로 오프라인 동작 · NOAA 태양위치 알고리즘)
+   ========================================================================== */
+var RAD = Math.PI/180, J1970 = 2440588, J2000 = 2451545, DAYMS = 86400000;
+var OBLIQ = RAD * 23.4397;
+function toJulian(d){ return d.valueOf()/DAYMS - 0.5 + J1970; }
+function fromJulian(j){ return new Date((j + 0.5 - J1970) * DAYMS); }
+function toDays(d){ return toJulian(d) - J2000; }
+function meanAnomaly(d){ return RAD * (357.5291 + 0.98560028 * d); }
+function eclipticLon(M){
+  var C = RAD*(1.9148*Math.sin(M) + 0.02*Math.sin(2*M) + 0.0003*Math.sin(3*M));
+  return M + C + RAD*102.9372 + Math.PI;
+}
+function declination(L){ return Math.asin(Math.sin(OBLIQ)*Math.sin(L)); }
+function transitJ(ds,M,L){ return J2000 + ds + 0.0053*Math.sin(M) - 0.0069*Math.sin(2*L); }
+function sunTimes(date, lat, lon){
+  var lw = RAD * -lon, phi = RAD * lat;
+  var d = toDays(date), n = Math.round(d - 0.0009 - lw/(2*Math.PI));
+  var ds = 0.0009 + lw/(2*Math.PI) + n;
+  var M = meanAnomaly(ds), L = eclipticLon(M), dec = declination(L);
+  var Jnoon = transitJ(ds, M, L);
+  function ev(hDeg){
+    var h = hDeg * RAD;
+    var cosw = (Math.sin(h) - Math.sin(phi)*Math.sin(dec)) / (Math.cos(phi)*Math.cos(dec));
+    if(cosw > 1 || cosw < -1) return null;             /* 백야/극야 */
+    var w = Math.acos(cosw);
+    var Jset=transitJ(0.0009 + (w + lw)/(2*Math.PI) + n, M, L);
+    return {rise:fromJulian(Jnoon-(Jset-Jnoon)),set:fromJulian(Jset)};
+  }
+  var sun=ev(-0.833), civil=ev(-6);
+  return {sunrise:sun&&sun.rise,sunset:sun&&sun.set,
+    dawn:civil&&civil.rise,dusk:civil&&civil.set,noon:fromJulian(Jnoon)};
+}
+/* 오늘(또는 이미 지났으면 내일)의 일몰 시각 */
+function nextSunset(now, lat, lon){
+  var t = sunTimes(now, lat, lon);
+  if(t.sunset && t.sunset.getTime() > now.getTime()) return t;
+  var t2 = sunTimes(new Date(now.getTime() + DAYMS), lat, lon);
+  t2.tomorrow = true;
+  return t2;
+}
+function sunPhase(now){
+  var cs=coordinateStatus();
+  if(!cs.ok) return {kind:'unknown',times:null};
+  var t=sunTimes(now,cs.lat,cs.lon);
+  if(!t.sunrise||!t.sunset) return {kind:'unknown',times:t};
+  if(now.getTime()<t.sunrise.getTime()) return {kind:'beforeSunrise',times:t};
+  if(now.getTime()>=t.sunset.getTime()) return {kind:'afterSunset',times:t};
+  return {kind:'day',times:t};
+}
+
+/* ==========================================================================
+   S5. 파생 계산
+   ========================================================================== */
+/* 셀 상태 집계 */
+function gridRows(){ return clamp(intv(S.grid.rows,5),1,12); }
+function gridCols(){ return clamp(intv(S.grid.cols,6),1,12); }
+function gridStats(){
+  var n = {0:0,1:0,2:0,3:0};
+  var R = gridRows(), C = gridCols(), total = R*C;
+  for(var r=0;r<R;r++) for(var c=0;c<C;c++){
+    var cel0 = S.grid.cells[cellId(r,c)];
+    n[(cel0 && cel0.s) || 0]++;
+  }
+  return { n:n, total:total, pct: total ? Math.round(n[2]/total*100) : 0 };
+}
+/* 기체 잔여 비행시간 추정: 100% -> 착륙 유보 25% 구간을 항속시간으로 본다 */
+function droneRemainMin(d){
+  var end = num(d.endurance, 25);
+  var b = num(d.battery, 0);
+  if(end <= 0) return 0;
+  var rate = 75 / end;            /* %/분 */
+  return Math.max(0, Math.round((b - 25) / rate));
+}
+/* 지속 운용 가능시간(시간) = 충전완료 배터리 x 평균 항속 / 동시 운용대수 */
+function endurHours(){
+  var b = S.batteries;
+  var conc = Math.max(1, intv(b.concurrent,2));
+  return (intv(b.ready,0) * num(b.avgFlightMin,25)) / conc / 60;
+}
+function isNight(now){
+  var p=sunPhase(now);
+  return p.kind==='unknown'?null:(p.kind!=='day');
+}
+/* 비행 가능 판정 */
+function flightVerdict(now){
+  var sf = S.safety, w = S.weather;
+  var bad = [], hold = [], warn = [], cs=coordinateStatus();
+  if(sf.manned) bad.push('유인기 진입 · 전 기체 즉시 착륙');
+  if(!cs.ok) hold.push(cs.why); else if(!cs.confirmed) hold.push(cs.why);
+  if((sf.noFly||sf.ctrlZone)&&sf.approval!=='done')
+    bad.push((sf.noFly?'비행금지구역':'관제권')+' · 승인완료 확인 필요');
+  else if(['unknown','none','pending'].indexOf(sf.approval)>=0)
+    hold.push('비행승인 '+({unknown:'미확인',none:'미신청',pending:'신청중'}[sf.approval]||'미확인'));
+  var ws=cs.ok?weatherStatus(now):{ok:false,why:'현장 기상 확인 미완료'};
+  if(!ws.ok) hold.push(ws.why);
+  var wind=w.wind, gust=w.gust, lim=num(sf.windLimit,NaN), glim=num(sf.gustLimit,NaN);
+  if(!isFinite(lim)||lim<=0) hold.push('지속풍 한계 미설정');
+  if(!isFinite(glim)||glim<=0) hold.push('돌풍 한계 미설정');
+  if(ws.ok&&isFinite(lim)){
+    if(wind>=lim) bad.push('풍속 '+wind+'m/s (한계 '+lim+')');
+    else if(wind>=lim*0.8-1e-9)warn.push('풍속 '+wind+'m/s 한계 근접');
+  }
+  if(ws.ok&&isFinite(glim)){
+    if(gust>=glim) bad.push('돌풍 '+gust+'m/s (한계 '+glim+')');
+    else if(gust>=glim*0.8-1e-9)warn.push('돌풍 '+gust+'m/s 한계 근접');
+  }
+  if(ws.ok&&w.rain) bad.push('강수 중');
+  else if(ws.ok&&w.precip != null && w.precip >= 60) warn.push('강수확률 '+w.precip+'%');
+  var night = isNight(now);
+  if(night===null) hold.push('일출·일몰 판정 불가');
+  else if(night && !sf.nightApproval) bad.push('야간 · 특별비행승인 없음');
+  else if(night) warn.push('야간 비행(승인 보유)');
+  if(night===false&&cs.ok){
+    var ns = nextSunset(now,cs.lat,cs.lon);
+    if(ns.sunset){
+      var left = ns.sunset.getTime() - now.getTime();
+      if(left > 0 && left <= 30*60000) warn.push('일몰 '+Math.ceil(left/60000)+'분 전');
+    }
+  }
+  function unique(a){return a.filter(function(x,i){return a.indexOf(x)===i;});}
+  if(bad.length)return {lv:'danger',txt:'비행 불가',why:unique(bad.concat(hold))};
+  if(hold.length)return {lv:'idle',txt:'판정 보류',why:unique(hold)};
+  if(warn.length) return { lv:'warn',   txt:'제한 비행', why:warn };
+  return { lv:'ok', txt:'비행 가능', why:['제한사항 없음'] };
+}
+/* 실종 경과시간 기반 이동 추정반경(km) */
+function moveRadiusKm(now){
+  var t = tms(S.subject.missingAt);
+  if(!t) return null;
+  var h = (now.getTime() - t) / 3600000;
+  if(h <= 0) return 0;
+  return num(S.subject.walkSpeed,2) * h * num(S.subject.decay,0.35);
+}
+
+/* ==========================================================================
+   S6. 표출 화면 렌더
+   ========================================================================== */
+function setKpi(id, lv){
+  var el = $(id); if(!el) return;
+  el.className = 'kpi' + (id==='kFlight' ? ' kpi-flight' : '') + ' lv-' + lv;
+}
+function renderHeader(){
+  var now = new Date();
+  $('hClock').textContent = p2(now.getHours())+':'+p2(now.getMinutes())+':'+p2(now.getSeconds());
+  var wd = ['일','월','화','수','목','금','토'][now.getDay()];
+  $('hDate').textContent = (now.getMonth()+1)+'월 '+now.getDate()+'일 ('+wd+')';
+  $('hMission').textContent = S.mission.title || '상황명 미입력';
+  $('hLoc').textContent = S.mission.location || '수색 장소 미입력';
+
+  /* 골든타임 */
+  var mt = tms(S.subject.missingAt);
+  if(mt){
+    var passed = now.getTime() - mt;
+    var left = GOLDEN_HOURS*3600000 - passed;
+    var ph = passed/3600000;
+    var lv = left <= 0 ? 'crit' : (ph < 8 ? 'ok' : (ph < 16 ? 'warn' : 'danger'));
+    $('vGolden').textContent = left <= 0 ? '초과' : durHM(left);
+    $('sGolden').textContent = '실종 후 '+durHM(passed)+' 경과 · 기준 '+GOLDEN_HOURS+'h';
+    setKpi('kGolden', lv);
+  } else {
+    $('vGolden').textContent = '--:--';
+    $('sGolden').textContent = '실종시각 미입력';
+    setKpi('kGolden','idle');
+  }
+
+  /* 일몰 */
+  var cs=coordinateStatus(), sp=sunPhase(now);
+  if(cs.ok&&sp.times&&sp.times.sunset&&sp.times.sunrise){
+    if(sp.kind==='beforeSunrise'){
+      $('vSunset').textContent='일출 전';
+      $('sSunset').textContent='일출 '+hhmm(sp.times.sunrise)+' · 일몰 '+hhmm(sp.times.sunset);
+      setKpi('kSunset',cs.confirmed?(S.safety.nightApproval?'warn':'danger'):'idle');
+    }else if(sp.kind==='afterSunset'){
+      $('vSunset').textContent='일몰 후';
+      $('sSunset').textContent='일몰 '+hhmm(sp.times.sunset)+(sp.times.dusk?' · 박명종료 '+hhmm(sp.times.dusk):'');
+      setKpi('kSunset',cs.confirmed?(S.safety.nightApproval?'warn':'danger'):'idle');
+    }else{
+      var sl=sp.times.sunset.getTime()-now.getTime();
+      $('vSunset').textContent=durHM(sl);
+      $('sSunset').textContent='일몰 '+hhmm(sp.times.sunset)+(cs.confirmed?'':' · 좌표 확인 필요');
+      setKpi('kSunset',cs.confirmed?(sl<=30*60000?'warn':'ok'):'idle');
+    }
+  } else {
+    $('vSunset').textContent = '--:--';
+    $('sSunset').textContent = cs.why || '일출·일몰 계산 불가';
+    setKpi('kSunset','idle');
+  }
+
+  /* 비행 판정 */
+  var v = flightVerdict(now);
+  $('vFlight').innerHTML = '<i class="dot '+v.lv+'"></i>'+esc(v.txt);
+  $('sFlight').textContent = v.why.join(' · ');
+  setKpi('kFlight', v.lv);
+
+  /* 출동 경과 */
+  var dt = tms(S.mission.dispatchedAt);
+  if(dt){
+    $('vElapsed').textContent = durHM(now.getTime()-dt);
+    $('sElapsed').textContent = '출동 '+hhmm(new Date(dt));
+    setKpi('kElapsed','ok');
+  } else {
+    $('vElapsed').textContent = '--:--';
+    $('sElapsed').textContent = '출동시각 미입력';
+    setKpi('kElapsed','idle');
+  }
+
+  $('board').classList.toggle('manned-alert', !!S.safety.manned);
+}
+
+function renderSubject(){
+  var s = S.subject, now = new Date();
+  var tags = [];
+  if(s.level) tags.push('<span class="tag hot">'+esc(s.level)+'</span>');
+  (s.notes||'').split(/[,·\n]+/).forEach(function(t){
+    t = t.trim(); if(t) tags.push('<span class="tag">'+esc(t)+'</span>');
+  });
+  var rad = moveRadiusKm(now);
+  var html =
+    '<div class="subj-name">'
+      + '<span class="nm">'+esc(s.name || '성명 미상')+'</span>'
+      + (s.age ? '<span class="ag">'+esc(s.age)+'세</span>' : '')
+      + (s.sex ? '<span class="sx">'+esc(s.sex)+'</span>' : '')
+    + '</div>'
+    + '<div class="wear">'
+      + '<div class="wear-row"><span class="wear-lb">상의</span>'
+        + '<span class="chip" style="background:'+esc(s.topColor)+'"></span>'
+        + '<span class="wear-tx">'+esc(s.topText || '미상')+'</span></div>'
+      + '<div class="wear-row"><span class="wear-lb">하의</span>'
+        + '<span class="chip" style="background:'+esc(s.botColor)+'"></span>'
+        + '<span class="wear-tx">'+esc(s.botText || '미상')+'</span></div>'
+    + '</div>'
+    + '<dl class="kv">'
+      + '<dt>실종시각</dt><dd>'+(s.missingAt ? esc(s.missingAt.replace('T',' ')) : '—')+'</dd>'
+      + '<dt>최종목격</dt><dd>'+esc(s.lastSeenPlace || '—')+'</dd>'
+    + '</dl>'
+    + (tags.length ? '<div class="tagline">'+tags.join('')+'</div>' : '')
+    ;
+  $('subjBody').innerHTML = html;
+  $('subjTracker').innerHTML = s.tracker
+    ? '<span class="tag cool">배회감지기 착용</span>' : '<span class="tag">감지기 없음</span>';
+}
+
+function renderBatteries(){
+  var b = S.batteries, eh = endurHours();
+  var lv = eh < 1 ? 'danger' : (eh < 2 ? 'warn' : '');
+  $('battBody').innerHTML =
+    '<div class="batt-grid">'
+      + '<div class="batt-cell ready"><div class="bn num">'+intv(b.ready,0)+'</div><div class="bl">충전완료</div></div>'
+      + '<div class="batt-cell charging"><div class="bn num">'+intv(b.charging,0)+'</div><div class="bl">충전중</div></div>'
+      + '<div class="batt-cell empty"><div class="bn num">'+intv(b.empty,0)+'</div><div class="bl">소진</div></div>'
+    + '</div>'
+    + '<div class="endur '+lv+'"><div class="el">지속 운용 가능<br>동시 '+intv(b.concurrent,2)+'대 · 항속 '+num(b.avgFlightMin,25)+'분</div>'
+      + '<div class="ev num">'+eh.toFixed(1)+'<small style="font-size:1rem"> h</small></div></div>';
+  $('battGen').innerHTML = b.generator
+    ? '<span class="tag cool">발전기 가동</span>' : '<span class="tag">발전기 정지</span>';
+}
+
+function renderCrew(){
+  var now = Date.now(), rows = [], tired = 0, active=0;
+  S.crew.forEach(function(c){
+    if(c.outAt) return; active++;
+    var t = tms(c.inAt), mins = t ? Math.floor((now-t)/60000) : 0;
+    var isTired = t && c.role === '조종' && mins >= SHIFT_WARN_MIN;
+    if(isTired) tired++;
+    rows.push('<div class="crew-row'+(isTired?' tired':'')+'">'
+      + '<span class="cn">'+esc(c.name||'—')+'</span>'
+      + '<span class="cr">'+esc(c.role||'')+'</span>'
+      + '<span class="ct num">'+(t ? durHM(now-t) : '—')+'</span></div>');
+  });
+  $('crewBody').innerHTML = rows.length ? '<div class="crew-list">'+rows.join('')+'</div>'
+    : '<div class="empty">인원 미입력</div>';
+  $('crewCount').innerHTML = '현행 <b>'+active+'</b>명 · 누적 '+S.crew.length+'명'
+    + (tired ? ' <span class="tag hot">교대 권고 '+tired+'</span>' : '');
+}
+
+/* --------------------------------------------------------------------------
+   수색구역: 지도 이미지 + 격자 오버레이
+   표출 화면(읽기 전용)과 조작 패널(클릭 편집)이 같은 함수를 공유한다.
+   -------------------------------------------------------------------------- */
+var pinMode = null;      /* 'last' | 'found' | null - 조작 패널에서 핀 배치용 */
+var mapMsgHtml = '';     /* 지도 붙여넣기 결과 안내 (조작 패널 재렌더 시에도 유지) */
+function mapMsg(txt, kind){
+  mapMsgHtml = txt ? '<span class="'+(kind||'')+'">'+esc(txt)+'</span>' : '';
+  var el = document.getElementById('mapMsg');
+  if(el) el.innerHTML = mapMsgHtml;
+}
+
+function buildGrid(host, interactive){
+  var g = S.grid;
+  var html = '';
+  if(MAPDATA){
+    var tf = 'scale('+(num(g.mapZoom,100)/100)+') translate('+num(g.mapX,0)+'%,'+num(g.mapY,0)+'%)';
+    html += '<img class="mapimg" alt="" src="'+MAPDATA+'" style="opacity:'
+          + num(g.mapOpacity,0.85) + ';transform:'+tf+'">';
+  } else {
+    html += '<div class="mapnote">지도 이미지 없음<br>'
+          + '조작 패널 &gt; 수색구역에서 카카오맵·네이버지도 캡처를 붙여넣으면(Ctrl+V) 배경으로 깔립니다</div>';
+  }
+  var R = gridRows(), C = gridCols();
+  html += '<div class="gridlayer" style="grid-template-columns:repeat('+C
+        + ',1fr);grid-template-rows:repeat('+R+',1fr)">';
+  for(var r=0;r<R;r++){
+    for(var c=0;c<C;c++){
+      var id = cellId(r,c), cel = g.cells[id] || {s:0,by:''};
+      var tag=interactive?'button':'div';
+      html += '<'+tag+(interactive?' type="button"':' role="gridcell"')+' class="gcell s'+(cel.s||0)+'" data-cell="'+id+'"'
+            + ' aria-label="'+id+' '+CELL_ST[cel.s||0]+(cel.by?' 담당 '+esc(cel.by):' 담당 없음')+'"'
+            + (interactive ? ' title="선택된 동작 실행"' : '')
+            + '>'+id+(cel.by ? '<span class="by">'+esc(cel.by)+'</span>' : '')+'</'+tag+'>';
+    }
+  }
+  html += '</div>';
+  /* 이동 추정반경 + 핀 */
+  var rad = moveRadiusKm(new Date());
+  if(g.pinLast && rad != null && rad > 0 && num(g.widthMeters,2000) > 0){
+    var pct = Math.min(400, (rad*1000) / num(g.widthMeters,2000) * 100 * 2);  /* 지름 % (상한 400) */
+    html += '<div class="rcircle" style="left:'+g.pinLast.x+'%;top:'+g.pinLast.y
+          + '%;width:'+pct+'%;aspect-ratio:1"></div>';
+  }
+  if(g.pinLast) html += '<div class="pin last" style="left:'+g.pinLast.x+'%;top:'+g.pinLast.y
+    + '%"><span class="plb">최종목격</span><span class="pdot"></span><span class="stem"></span></div>';
+  if(g.pinFound) html += '<div class="pin found" style="left:'+g.pinFound.x+'%;top:'+g.pinFound.y
+    + '%"><span class="plb">발견</span><span class="pdot"></span><span class="stem"></span></div>';
+  host.innerHTML = html;
+
+  if(interactive){
+    host.onclick = function(ev){
+      if(!ensureEditor()) return;
+      var box = host.getBoundingClientRect();
+      if(pinMode){
+        var x = clamp((ev.clientX-box.left)/box.width*100, 0, 100);
+        var y = clamp((ev.clientY-box.top)/box.height*100, 0, 100);
+        S.grid[pinMode === 'last' ? 'pinLast' : 'pinFound'] = {x:+x.toFixed(1), y:+y.toFixed(1)};
+        pinMode = null; commit(); return;
+      }
+      var cellEl = ev.target.closest('.gcell'); if(!cellEl) return;
+      var id = cellEl.getAttribute('data-cell');
+      var cur = S.grid.cells[id] || {s:0,by:''};
+      if(ev.shiftKey){
+        var opts = ['','드론','지상','수색견','소방대'];
+        cur.by = opts[(opts.indexOf(cur.by)+1) % opts.length];
+      } else if(String(S.ui.gridAction||'status').indexOf('by:')===0){
+        cur.by=String(S.ui.gridAction).slice(3);
+      } else {
+        cur.s = ((cur.s||0)+1) % 4;
+        if(cur.s === 2) addEvent('zone', id+' 구역 수색완료', id, true);
+      }
+      S.grid.cells[id]=cur;commit();
+      setTimeout(function(){var n=document.querySelector('#consMap [data-cell="'+id+'"]');if(n)n.focus();},0);
+    };
+  }
+}
+function renderGridAll(){
+  if(MODE === 'display' || !$('board').hidden) buildGrid($('mapWrap'), false);
+  var cm = $('consMap'); if(cm) buildGrid(cm,ownsEditorLock());
+}
+function renderGridStats(){
+  var st = gridStats(), n = st.n, T = Math.max(1, st.total);
+  $('covPct').textContent = st.pct;
+  $('cnt0').textContent = n[0]; $('cnt1').textContent = n[1];
+  $('cnt2').textContent = n[2]; $('cnt3').textContent = n[3];
+  $('covBar').innerHTML =
+      '<i class="done" style="width:'+(n[2]/T*100)+'%"></i>'
+    + '<i class="doing" style="width:'+(n[1]/T*100)+'%"></i>'
+    + '<i class="re" style="width:'+(n[3]/T*100)+'%"></i>';
+  var rad = moveRadiusKm(new Date());
+  $('radChip').innerHTML = rad == null
+    ? '<span class="rl">이동 추정반경<br>실종시각 미입력</span>'
+    : '<span class="rl">이동 추정반경<br>보행 '+num(S.subject.walkSpeed,2)+'km/h · 계수 '+num(S.subject.decay,0.35)
+      + '</span><span class="rv num">'+rad.toFixed(1)+'<small>km</small></span>';
+  $('gridMeta').innerHTML = gridRows()+'×'+gridCols()+' = <b>'+st.total+'</b> 구역'
+    + ' · 완료 <b>'+n[2]+'</b> · 지도폭 '+num(S.grid.widthMeters,2000)+'m';
+}
+
+function renderSafety(){
+  var sf = S.safety, w = S.weather, ws=weatherStatus(new Date());
+  function cell(lb, val, lv, wide){
+    return '<div class="sf '+(lv||'')+(wide?' wide':'')+'"><div class="sl">'+lb+'</div>'
+      + '<div class="sv">'+val+'</div></div>';
+  }
+  var apText = {unknown:'미확인',none:'미신청', pending:'신청중', done:'승인완료', na:'해당없음'}[sf.approval] || '미확인';
+  var apLv   = {unknown:'warn',none:'warn', pending:'warn', done:'ok', na:''}[sf.approval] || 'warn';
+  var html = '<div class="safety-row">'
+    + cell('유인기 진입', sf.manned ? '진입 · 즉시착륙' : '없음', sf.manned ? 'danger' : 'ok')
+    + cell('비행승인', apText, apLv)
+    + cell('야간 특별승인', sf.nightApproval ? '보유' : '없음', sf.nightApproval ? 'ok' : 'warn')
+    + cell('관제권/금지구역',
+        (sf.ctrlZone ? '관제권' : '') + (sf.noFly ? (sf.ctrlZone?' + ':'')+'금지구역' : '')
+        || '해당없음',
+        (sf.noFly ? 'danger' : (sf.ctrlZone ? 'warn' : 'ok')))
+    + cell('인접기관 동시운용', esc(sf.agencies || '없음'), sf.agencies ? 'warn' : '', true)
+    + '</div>'
+    + '<div class="wx">'
+    + cell('풍속', (w.wind==null?'—':w.wind+' m/s'),
+        !ws.ok?'warn':((w.wind!=null && w.wind >= num(sf.windLimit,12)) ? 'danger'
+        : (w.wind!=null && w.wind >= num(sf.windLimit,12)*0.8-1e-9 ? 'warn' : 'ok')))
+    + cell('돌풍', (w.gust==null?'—':w.gust+' m/s'),
+        !ws.ok?'warn':((w.gust!=null && w.gust >= num(sf.gustLimit,12)) ? 'danger'
+        : (w.gust!=null && w.gust >= num(sf.gustLimit,12)*0.8-1e-9 ? 'warn' : 'ok')))
+    + cell('기온', (w.temp==null?'—':w.temp+' °C'), '')
+    + cell('강수', w.rain===null?'미확인':(w.rain?'있음':(w.precip==null?'없음':w.precip+'%')),
+        !ws.ok?'warn':(w.rain ? 'danger' : (w.precip!=null && w.precip>=60 ? 'warn' : 'ok')))
+    + cell('판정용 한계', '지속 '+num(sf.windLimit,12)+' / 돌풍 '+num(sf.gustLimit,12)+' m/s', '')
+    + '</div>';
+  $('safetyBody').innerHTML = html;
+  var src={auto:'자동 모델',manual:'수동 관측',none:'미입력'}[w.src]||'미입력';
+  $('wxStamp').textContent = w.observedAt
+    ? src+' · '+shortDateTime(w.observedAt)+(ws.ok?' · '+ws.ageMin+'분 경과':' · '+ws.why)+(w.error?' · 최근 갱신 실패':'')
+    : '기상 미입력'+(w.error?' · '+w.error:'');
+}
+
+function renderDrones(){
+  if(!S.drones.length){
+    $('droneBody').innerHTML = '<div class="empty">기체 미등록 — 조작 패널에서 기체를 추가하세요</div>';
+    $('droneMeta').textContent = '';
+    return;
+  }
+  var flying = 0, html = '';
+  S.drones.forEach(function(d){
+    var b = num(d.battery,0);
+    var lvl = b < 20 ? 'crit' : (b < 30 ? 'low' : '');
+    if(d.tookOffAt&&(d.status==='flying'||d.status==='commloss'))flying++;
+    var sens = (d.sensors||[]).map(function(s){
+      return '<span'+(s==='IR'?' class="ir"':'')+'>'+esc(s)+'</span>';
+    }).join('');
+    html += '<article class="drone st-'+esc(d.status||'ready')+' '+lvl+'" data-id="'+d.id+'">'
+      + '<div class="d-top"><span class="d-name">'+esc(d.name||'기체')+'</span>'
+        + '<span class="d-model">'+esc(d.model||'')+'</span>'
+        + '<span class="d-st">'+esc(DRONE_ST[d.status]||'대기')+'</span></div>'
+      + '<div class="d-batt"><div class="bar '+lvl+'"><i style="width:'+clamp(b,0,100)+'%"></i></div>'
+        + '<span class="d-pct num '+lvl+'">'+Math.round(b)+'%</span></div>'
+      + '<div class="d-rows">'
+        + '<div><em>비행시간</em><b class="num d-el">—</b></div>'
+        + '<div><em>잔여추정</em><b class="num d-rm">—</b></div>'
+        + '<div><em>담당구역</em><b>'+esc(d.zone||'—')+'</b></div>'
+        + '<div><em>고도</em><b class="num">'+(d.alt?esc(d.alt)+'m':'—')+'</b></div>'
+      + '</div>'
+      + '<div class="d-foot"><div class="sens">'+sens+'</div>'
+        + '<div class="d-crew">'
+          + (d.pilot ? '조종 '+esc(d.pilot) : '')
+          + (d.observer ? ' · 관측 '+esc(d.observer) : '')
+          + ' · 소티 '+intv(d.sorties,0)
+        + '</div></div>'
+      + '</article>';
+  });
+  $('droneBody').innerHTML = '<div class="drones">'+html+'</div>';
+  $('droneMeta').innerHTML = '비행중 <b>'+flying+'</b> / 총 '+S.drones.length+'대';
+  tickDrones();
+}
+/* 비행시간·잔여추정만 1초 주기로 갱신(목록 전체를 다시 그리지 않는다) */
+function tickDrones(){
+  var now = Date.now();
+  var nodes = document.querySelectorAll('.drone');
+  for(var i=0;i<nodes.length;i++){
+    var el = nodes[i], id = el.getAttribute('data-id');
+    var d = null;
+    for(var j=0;j<S.drones.length;j++) if(S.drones[j].id === id) d = S.drones[j];
+    if(!d) continue;
+    var t = tms(d.tookOffAt);
+    var elEl = el.querySelector('.d-el'), rmEl = el.querySelector('.d-rm');
+    if((d.status==='flying'||d.status==='commloss')&&t){
+      elEl.textContent = durMS(now - t);
+      rmEl.textContent = '~'+droneRemainMin(d)+'분';
+    } else {
+      elEl.textContent = '—';
+      rmEl.textContent = d.status === 'charging' ? '충전' : '—';
+    }
+  }
+}
+
+function renderLog(){
+  var ev = S.events.slice().sort(function(a,b){ return b.t - a.t; });
+  if(!ev.length){ $('logBody').innerHTML = '<div class="empty">기록 없음</div>'; $('logMeta').textContent=''; return; }
+  var html = ev.map(function(e){
+    return '<div class="log-row '+(EV_CLASS[e.type]||'')+(e.voided?' voided':'')+'">'
+      + '<span class="lt num">'+shortDateTime(e.t)+'</span>'
+      + '<span class="lk">'+esc(EV_TYPE[e.type]||e.type)+'</span>'
+      + '<span class="lx">'+(e.zone?'<b>'+esc(e.zone)+'</b> ':'')+esc(e.text)
+      +(e.voided?' <b>· 취소됨'+(e.voidReason?' ('+esc(e.voidReason)+')':'')+'</b>':'')+'</span></div>';
+  }).join('');
+  $('logBody').innerHTML = '<div class="log">'+html+'</div>';
+  $('logMeta').innerHTML = '총 <b>'+ev.length+'</b>건';
+}
+
+function renderTicker(){
+  var m = S.mission;
+  var txt = (m.orders||'').trim() || '지시사항 없음';
+  var mv = $('tkMove');
+  if(txt.length > 44){
+    mv.innerHTML = esc(txt)+'&nbsp;&nbsp;&nbsp;&nbsp;'+esc(txt)+'&nbsp;&nbsp;&nbsp;&nbsp;';
+    mv.classList.add('scroll');
+    mv.style.animationDuration = Math.max(14, txt.length*0.45)+'s';
+  } else {
+    mv.textContent = txt; mv.classList.remove('scroll'); mv.style.animationDuration='';
+  }
+  var bits = [];
+  if(m.trs) bits.push('TRS <b>'+esc(m.trs)+'</b>');
+  if(m.callsign) bits.push('호출 <b>'+esc(m.callsign)+'</b>');
+  if(m.briefing) bits.push('브리핑 <b>'+esc(m.briefing)+'</b>');
+  $('tkRight').innerHTML = bits.join(' · ') || '';
+}
+
+/* ==========================================================================
+   S7. 경보 (발견 / 유인기 진입) · 비프음은 외부 음원 없이 코드로 생성
+   ========================================================================== */
+var audioCtx = null, lastBeepFor = 0, AUDIO_ARMED=false;
+function updateAudioArm(){ var b=$('audioArm'); if(b)b.hidden=MODE!=='display'||AUDIO_ARMED; }
+function primeAudio(){
+  try{
+    if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    var p=audioCtx.resume();
+    Promise.resolve(p).then(function(){AUDIO_ARMED=audioCtx.state==='running';updateAudioArm();if(AUDIO_ARMED)beep(1);renderBanner();});
+  }catch(e){AUDIO_ARMED=false;updateAudioArm();}
+}
+function beep(times){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state!=='running'){AUDIO_ARMED=false;updateAudioArm();return false;}
+    var t0 = audioCtx.currentTime;
+    for(var i=0;i<(times||3);i++){
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type='square'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, t0+i*0.36);
+      g.gain.exponentialRampToValueAtTime(0.22, t0+i*0.36+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+i*0.36+0.28);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0+i*0.36); o.stop(t0+i*0.36+0.3);
+    }
+    return true;
+  }catch(e){AUDIO_ARMED=false;updateAudioArm();return false;}
+}
+function latestFound(){
+  var best = null;
+  S.events.forEach(function(e){ if(e.type==='found'&&!e.voided&&(!best||e.t>best.t))best=e; });
+  return best;
+}
+function renderBanner(){
+  var bn = $('alertBanner'); if(!bn) return;
+  if(S.safety.manned){
+    bn.className = 'alert-banner manned';
+    bn.innerHTML = '<span class="ab-k">⚠ 유인기 진입</span>'
+      + '<span class="ab-x">전 기체 즉시 착륙 · 공역 분리 유지</span>';
+    bn.hidden = false;
+    if(MODE==='display'&&lastBeepFor!==-1&&beep(4))lastBeepFor=-1;
+    return;
+  }
+  var f = latestFound();
+  var alarmKey=f&&num(f.recordedAt,f.t);
+  if(f && S.ui.ackFound < alarmKey){
+    bn.className = 'alert-banner';
+    bn.innerHTML = '<span class="ab-k">발견</span>'
+      + '<span class="ab-x">'+(f.zone?'['+esc(f.zone)+'] ':'')+esc(f.text)+'</span>'
+      + '<button type="button" id="ackBtn">확인</button>';
+    bn.hidden = false;
+    $('ackBtn').onclick = function(){
+      if(ownsEditorLock()){S.ui.ackFound=alarmKey;commit();}
+      else sendPeer({type:'action',action:'ackFound',t:alarmKey});
+    };
+    if(MODE==='display'&&lastBeepFor!==alarmKey&&beep(5))lastBeepFor=alarmKey;
+    return;
+  }
+  bn.hidden = true;
+  if(lastBeepFor === -1) lastBeepFor = 0;
+}
+
+function addEvent(type, text, zone, silentCommit, eventTime){
+  if(S.events.length>=MAX_EVENTS){alert('이벤트 '+MAX_EVENTS+'건 한도에 도달했습니다. JSON을 내보낸 뒤 새 상황으로 시작하세요.');return false;}
+  var tm=eventTime instanceof Date?eventTime.getTime():num(eventTime,Date.now());
+  S.events.push({id:uid(),t:tm,recordedAt:Date.now(),type:type,text:text||'',zone:zone||'',voided:false,voidedAt:0,voidReason:''});
+  if(!silentCommit) commit();
+  return true;
+}
+function handlePeerAction(m){
+  if(!m||!ownsEditorLock())return;
+  if(m.action==='ackFound'){S.ui.ackFound=Math.max(num(S.ui.ackFound,0),num(m.t,0));commit();}
+  else if(m.action==='scale'){
+    S.ui.scale=clamp(num(S.ui.scale,1)+clamp(num(m.delta,0),-0.1,0.1),0.75,1.5);commit();
+  }
+}
+
+/* ==========================================================================
+   S8. 전체 렌더 · 배율/밝기 적용
+   ========================================================================== */
+function renderAll(){
+  if(!$('board').hidden){
+    renderHeader(); renderSubject(); renderBatteries(); renderCrew();
+    renderGridAll(); renderGridStats(); renderSafety(); renderDrones();
+    renderLog(); renderTicker(); renderBanner();
+  }
+  if(MODE === 'console'){ renderConsole($('consoleRoot')); }
+  else if(!$('drawer').hidden){ renderConsole($('drawerIn')); }
+  applyUi();
+}
+function applyUi(){
+  document.documentElement.style.setProperty('--s', num(S.ui.scale,1));
+  document.documentElement.style.setProperty('--dim', num(S.ui.dim,0));
+}
+
+/* ==========================================================================
+   S9. 조작 패널
+   입력 필드는 data-path 로 상태 경로를 가리킨다. 예: data-path="mission.title"
+   ========================================================================== */
+function getPath(path){
+  var parts = path.split('.'), o = S;
+  for(var i=0;i<parts.length;i++){ if(o==null) return undefined; o = o[parts[i]]; }
+  return o;
+}
+function setPath(path, val){
+  var parts = path.split('.'), o = S;
+  for(var i=0;i<parts.length-1;i++){
+    if(o[parts[i]] == null) o[parts[i]] = {};
+    o = o[parts[i]];
+  }
+  o[parts[parts.length-1]] = val;
+}
+function fld(label, path, type, attrs){
+  var v = getPath(path);
+  var a = attrs || '';
+  if(type === 'checkbox'){
+    return '<label class="chkline"><input type="checkbox" data-path="'+path+'"'
+      + (v?' checked':'')+'> '+label+'</label>';
+  }
+  if(type === 'textarea'){
+    return '<label class="f"><span>'+label+'</span><textarea data-path="'+path+'" '+a+'>'
+      + esc(v==null?'':v)+'</textarea></label>';
+  }
+  return '<label class="f"><span>'+label+'</span><input type="'+(type||'text')
+    + '" data-path="'+path+'" value="'+esc(v==null?'':v)+'" '+a+'></label>';
+}
+function sel(label, path, opts){
+  var v = getPath(path);
+  var o = opts.map(function(p){
+    return '<option value="'+esc(p[0])+'"'+(String(v)===String(p[0])?' selected':'')+'>'+esc(p[1])+'</option>';
+  }).join('');
+  return '<label class="f"><span>'+label+'</span><select data-path="'+path+'">'+o+'</select></label>';
+}
+
+function renderConsole(root){
+  if(!root) return;
+  var scrollTop = root.scrollTop;
+  var focusPath = document.activeElement && document.activeElement.getAttribute
+    ? document.activeElement.getAttribute('data-path') : null;
+  var focusSelStart = null;
+  if(focusPath && document.activeElement.selectionStart != null)
+    focusSelStart = document.activeElement.selectionStart;
+
+  root.innerHTML = consoleHtml();
+  root.hidden = false;
+  bindConsole(root);
+  renderGridAll();
+
+  root.scrollTop = scrollTop;
+  if(focusPath){
+    var back = root.querySelector('[data-path="'+focusPath+'"]');
+    if(back){ back.focus();
+      try{ if(focusSelStart!=null) back.setSelectionRange(focusSelStart, focusSelStart); }catch(e){}
+    }
+  }
+}
+
+function consoleHtml(){
+  var st = gridStats();
+  var editor=ownsEditorLock();
+  var h = '<div class="cons">';
+
+  /* --- 상단 바 --- */
+  h += '<div class="cons-top">'
+    + '<div class="ct-brand"><span>STAY UP</span> 조작 패널</div>'
+    + '<div class="ct-mode">'+(editor?'편집권 보유':'읽기 전용')+'</div>'
+    + '<div class="spacer"></div>'
+    + '<div class="save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad')+'" id="savePill">'
+      +(SAVE_STATUS.ok?(SAVE_STATUS.backupOk?'저장·복구 정상':'저장 정상 · 복구본 실패'):'저장 실패')+'</div>'
+    + '<div class="sync-pill'+(peerConnected()?'':' off')+'" id="syncPill">'
+      + (peerConnected() ? '표출 화면 연결됨' : '표출 화면 미연결')+'</div>'
+    + (!editor?'<button class="btn danger" data-act="takecontrol">편집권 가져오기</button>':'')
+    + '<button class="btn primary" id="btnOpenDisplay">표출 화면 열기</button>'
+    + (MODE==='display' ? '<button class="btn" id="btnCloseDrawer">닫기 (Esc)</button>' : '')
+    + '</div>';
+
+  if(!STORAGE_OK){
+    h += '<div class="warn-strip danger">이 브라우저에서는 <b>로컬 저장이 차단</b>되어 읽기 전용입니다. '
+      + '입력한 내용이 새로고침 후 사라지고, 표출 화면과의 동기화도 불안정합니다. '
+      + '<b>Chrome 또는 Edge</b>로 열어 주세요. (Safari는 file:// 에서 저장을 막습니다)</div>';
+  }
+  if(!editor&&STORAGE_OK) h+='<div class="warn-strip danger"><b>다른 조작 창이 편집 중입니다.</b> 동시 입력 유실 방지를 위해 이 창의 입력은 잠겨 있습니다. 기존 창이 닫힌 뒤 편집권을 가져오세요.</div>';
+  if(STARTUP_WARNINGS.length)h+='<div class="warn-strip danger">'+esc(STARTUP_WARNINGS.join(' · '))+'</div>';
+
+  /* --- 즉시 조작(가장 많이 쓰는 것 위로) --- */
+  h += '<div class="sec"><h3>즉시 조작 <span class="hint">현장에서 가장 자주 누르는 버튼</span></h3><div class="sec-b">'
+    + '<div class="quick-grid">'
+      + '<button class="btn alarm big'+(S.safety.manned?' on':'')+'" id="btnManned">'
+        + (S.safety.manned ? '유인기 경보 해제' : '⚠ 유인기 진입 (전 기체 즉시 착륙)') + '</button>'
+      + '<div class="inline">'
+        + '<select id="evType" style="flex:0 0 120px">'
+          + Object.keys(EV_TYPE).map(function(k){
+              return '<option value="'+k+'">'+EV_TYPE[k]+'</option>'; }).join('')
+        + '</select>'
+        + '<input id="evTime" type="datetime-local" value="'+localDateTime(new Date())+'" style="flex:0 0 190px" aria-label="사건 발생시각">'
+        + '<input id="evZone" placeholder="구역" style="flex:0 0 72px">'
+        + '<input id="evText" placeholder="내용 입력 후 Enter" style="flex:1 1 140px">'
+        + '<button class="btn primary" id="btnAddEv">기록</button>'
+      + '</div>'
+    + '</div>'
+    + '<div class="note">기록한 이벤트는 표출 화면 타임라인에 즉시 올라가고, 그대로 활동일지가 됩니다. '
+      + '<b>발견</b>을 기록하면 표출 화면 전체에 적색 배너와 경보음이 나갑니다. 발생시각은 사후 입력할 수 있습니다.</div>'
+    + '<div class="item"><div class="item-h"><span class="ih-t">최근 기록 정정 · 취소</span></div>'
+      + S.events.slice().sort(function(a,b){return b.t-a.t;}).slice(0,8).map(function(e){
+          return '<div class="inline" style="margin:5px 0;opacity:'+(e.voided?'.55':'1')+'">'
+            +'<span class="num" style="flex:0 0 92px">'+shortDateTime(e.t)+'</span><b style="flex:0 0 68px">'+esc(EV_TYPE[e.type]||e.type)+'</b>'
+            +'<span style="flex:1">'+esc((e.zone?e.zone+' ':'')+e.text)+(e.voided?' · 취소됨':'')+'</span>'
+            +(e.voided?'':'<button class="btn sm" data-act="correctevent" data-eid="'+esc(e.id)+'">정정</button><button class="btn sm danger" data-act="voidevent" data-eid="'+esc(e.id)+'">취소</button>')+'</div>';
+        }).join('')
+    + '</div>'
+    + '</div></div>';
+
+  /* --- 상황 개요 --- */
+  h += '<div class="sec"><h3>상황 개요</h3><div class="sec-b">'
+    + '<div class="f2">'+fld('상황명','mission.title','text','placeholder="예: 완주군 소양면 실종자 수색"')
+    + fld('수색 장소','mission.location','text','placeholder="예: 소양면 대흥리 일대 (CP: 마을회관)"')+'</div>'
+    + '<div class="f4">'+fld('출동시각','mission.dispatchedAt','datetime-local')
+    + fld('위도','mission.lat','number','step="0.0001" min="-90" max="90"')
+    + fld('경도','mission.lon','number','step="0.0001" min="-180" max="180"')
+    + fld('다음 브리핑','mission.briefing','text','placeholder="18:00"')+'</div>'
+    + '<div class="f3">'+fld('TRS 채널','mission.trs','text','placeholder="소방3"')
+    + fld('호출부호','mission.callsign','text','placeholder="전북드론1"')
+    + '<div></div></div>'
+    + fld('지휘부 지시사항 (하단 티커)','mission.orders','textarea','placeholder="계곡 하류 우선 수색, 18시 이후 야간 장비 투입"')
+    + '<div class="row-tools"><button class="btn sm '+(S.mission.coordsConfirmedAt?'on':'primary')+'" data-act="confirmcoords">'
+      +(S.mission.coordsConfirmedAt?'좌표 확인됨 · 다시 확인':'현장 좌표 확인 완료')+'</button></div>'
+    + '<div class="note">위·경도는 일출·일몰과 기상 조회의 안전 기준입니다. 공란이면 임의 지역으로 대체하지 않으며, 좌표를 바꾸면 기상·비행승인을 다시 확인해야 합니다.</div>'
+    + '</div></div>';
+
+  /* --- 실종자 --- */
+  h += '<div class="sec"><h3>실종자 정보</h3><div class="sec-b">'
+    + '<div class="f4">'+fld('성명','subject.name')+fld('연령','subject.age','number','min="0" max="130"')
+    + sel('성별','subject.sex',[['',''],['남','남'],['여','여']])
+    + fld('치매등급·구분','subject.level','text','placeholder="치매 3등급"')+'</div>'
+    + '<div class="f4">'
+      + fld('상의 색','subject.topColor','color')+fld('상의 설명','subject.topText','text','placeholder="분홍 자켓"')
+      + fld('하의 색','subject.botColor','color')+fld('하의 설명','subject.botText','text','placeholder="검정 바지"')
+    + '</div>'
+    + '<div class="f2">'+fld('실종(최종목격) 시각','subject.missingAt','datetime-local')
+    + fld('최종목격 장소','subject.lastSeenPlace','text','placeholder="마을회관 앞 버스정류장"')+'</div>'
+    + fld('특이사항 (쉼표로 구분 → 태그로 표출)','subject.notes','textarea','placeholder="보행 가능, 혈압약 복용, 청력 저하"')
+    + '<div class="f3">'+fld('보행속도 km/h','subject.walkSpeed','number','step="0.1" min="0" max="15"')
+    + fld('감쇄계수','subject.decay','number','step="0.05" min="0" max="1"')
+    + '<div style="padding-top:18px">'+fld('배회감지기 착용','subject.tracker','checkbox')+'</div></div>'
+    + '<div class="note">이동 추정반경 = 보행속도 × 실종 경과시간 × 감쇄계수. 실제 배회는 직선이 아니므로 '
+      + '감쇄계수(기본 0.35)로 줄여 잡습니다. 지도에 파란 점선 원으로 표시됩니다.</div>'
+    + '</div></div>';
+  return h + consoleHtml2() + '</div>';
+}
+
+function consoleHtml2(){
+  var h = '';
+
+  /* --- 드론 기체 --- */
+  h += '<div class="sec"><h3>드론 운용 <span class="hint">기체별 카드가 표출 화면 우측에 표시됩니다</span>'
+    + '<span class="spacer"></span><button class="btn sm primary" id="btnAddDrone">＋ 기체 추가</button></h3><div class="sec-b">';
+  if(!S.drones.length) h += '<div class="note">등록된 기체가 없습니다. 우측 상단 “기체 추가”를 누르세요.</div>';
+  S.drones.forEach(function(d,i){
+    h += '<div class="item" data-di="'+i+'">'
+      + '<div class="item-h"><span class="ih-t">'+esc(d.name||('기체 '+(i+1)))+'</span>'
+        + '<span class="ct-mode">'+esc(DRONE_ST[d.status]||'')+'</span>'
+        + '<span class="spacer"></span>'
+        + '<button class="btn sm" data-act="takeoff" data-di="'+i+'"'+(d.tookOffAt?' disabled':'')+'>이륙(지금)</button>'
+        + '<button class="btn sm" data-act="land" data-di="'+i+'"'+(!d.tookOffAt?' disabled':'')+'>착륙</button>'
+        + '<button class="btn sm danger" data-act="deldrone" data-di="'+i+'">삭제</button></div>'
+      + '<div class="f4">'
+        + fld('호기명','drones.'+i+'.name','text','placeholder="1호기"')
+        + fld('기종','drones.'+i+'.model','text','placeholder="M350 RTK"')
+        + sel('상태','drones.'+i+'.status', Object.keys(DRONE_ST).map(function(k){return [k, DRONE_ST[k]];}))
+        + fld('배터리 %','drones.'+i+'.battery','number','min="0" max="100"')
+      + '</div>'
+      + '<div class="f4">'
+        + fld('이륙시각','drones.'+i+'.tookOffAt','datetime-local')
+        + fld('항속(분)','drones.'+i+'.endurance','number','min="1" max="240"')
+        + fld('담당구역','drones.'+i+'.zone','text','placeholder="C3"')
+        + fld('고도(m)','drones.'+i+'.alt','number','min="0" max="10000"')
+      + '</div>'
+      + '<div class="f3">'
+        + fld('조종(정)','drones.'+i+'.pilot')
+        + fld('관측(부)','drones.'+i+'.observer')
+        + fld('금일 소티','drones.'+i+'.sorties','number','min="0" max="999"')
+      + '</div>'
+      + '<label class="f"><span>탑재 센서</span><div class="sens-pick">'
+        + SENSORS.map(function(s){
+            var on = (d.sensors||[]).indexOf(s) >= 0;
+            return '<button class="btn sm'+(on?' on':'')+'" data-act="sens" data-di="'+i+'" data-s="'+s+'">'+s+'</button>';
+          }).join('')
+      + '</div></label>'
+      + '</div>';
+  });
+  h += '<div class="note">“이륙(지금)”은 현재 시각을 이륙시각으로 넣고 상태를 비행중으로 바꾸며 타임라인에 기록합니다. '
+    + '잔여 추정은 배터리 100%→25%(착륙 유보) 구간을 항속시간으로 보고 계산합니다.</div>'
+    + '</div></div>';
+
+  /* --- 배터리 자원 --- */
+  h += '<div class="sec"><h3>배터리 자원 <span class="hint">언제 철수해야 하는가를 숫자로</span></h3><div class="sec-b">'
+    + '<div class="f3">'+fld('충전완료','batteries.ready','number','min="0" max="999"')
+    + fld('충전중','batteries.charging','number','min="0" max="999"')
+    + fld('소진','batteries.empty','number','min="0" max="999"')+'</div>'
+    + '<div class="f3">'+fld('평균 항속(분)','batteries.avgFlightMin','number','min="1" max="240"')
+    + fld('동시 운용 대수','batteries.concurrent','number','min="1" max="50"')
+    + '<div style="padding-top:18px">'+fld('발전기 가동','batteries.generator','checkbox')+'</div></div>'
+    + '<div class="row-tools">'
+      + '<button class="btn sm" data-act="batt" data-k="ready" data-v="1">충전완료 +1</button>'
+      + '<button class="btn sm" data-act="batt" data-k="ready" data-v="-1">−1</button>'
+      + '<button class="btn sm" data-act="battswap">교체 1개 (완료→소진)</button>'
+      + '<button class="btn sm" data-act="battdone">충전완료 1개 (충전중→완료)</button>'
+    + '</div>'
+    + '<div class="note">지속 운용 가능시간 = 충전완료 개수 × 평균 항속 ÷ 동시 운용 대수. 2시간 미만이면 주의색으로 바뀝니다.</div>'
+    + '</div></div>';
+
+  /* --- 인원 --- */
+  h += '<div class="sec"><h3>출동 인원'
+    + '<span class="spacer"></span><button class="btn sm primary" id="btnAddCrew">＋ 인원 추가</button></h3><div class="sec-b">';
+  if(!S.crew.length) h += '<div class="note">등록된 인원이 없습니다.</div>';
+  S.crew.forEach(function(c,i){
+    h += '<div class="item"><div class="f4" style="align-items:end">'
+      + fld('성명','crew.'+i+'.name')
+      + sel('역할','crew.'+i+'.role', ROLES.map(function(r){return [r,r];}))
+      + fld('투입시각','crew.'+i+'.inAt','datetime-local')
+      + fld('종료시각','crew.'+i+'.outAt','datetime-local')
+      + '</div><div class="row-tools">'
+      +(c.outAt?'<button class="btn sm" data-act="resumecrew" data-ci="'+i+'">종료 취소</button>'
+        :'<button class="btn sm primary" data-act="endcrew" data-ci="'+i+'">지금 교대 종료</button>')
+      +'<button class="btn sm danger" data-act="delcrew" data-ci="'+i+'">오입력 삭제</button></div></div>';
+  });
+  h += '<div class="note">정상 교대는 삭제하지 말고 <b>교대 종료</b>를 사용합니다. 역할이 조종인 현행 인원은 투입 후 '+(SHIFT_WARN_MIN/60)+'시간이 지나면 교대 권고가 표시됩니다.</div>'
+    + '</div></div>';
+
+  /* --- 수색구역 --- */
+  h += '<div class="sec"><h3>수색구역 · 지도 <span class="hint">셀 클릭: 상태 순환 / Shift+클릭: 담당 변경</span></h3><div class="sec-b">'
+    + '<div class="f2">'+sel('셀 탭 동작','ui.gridAction',[
+      ['status','수색 상태 순환'],['by:','담당 없음'],['by:드론','담당: 드론'],['by:지상','담당: 지상'],['by:수색견','담당: 수색견'],['by:소방대','담당: 소방대']])
+      +'<div class="note">터치·키보드는 위 동작을 사용합니다. 마우스 Shift+클릭은 담당을 빠르게 순환합니다.</div></div>'
+    + '<div class="grid2">'
+      + '<div>'
+        + '<div class="cons-map" id="consMap"></div>'
+        + '<div class="row-tools">'
+          + '<button class="btn sm" data-act="pin" data-p="last">최종목격 핀 배치</button>'
+          + '<button class="btn sm" data-act="pin" data-p="found">발견 핀 배치</button>'
+          + '<button class="btn sm" data-act="clearpins">핀 지우기</button>'
+          + '<button class="btn sm danger" data-act="clearcells">구역 상태 초기화</button>'
+        + '</div>'
+      + '</div>'
+      + '<div>'
+        + '<div class="paste-zone'+(S.grid.hasMap?' has':'')+'" id="pasteZone" tabindex="0">'
+          + (S.grid.hasMap
+              ? '<b>지도 적용됨</b> · '+intv(S.grid.mapW,0)+'×'+intv(S.grid.mapH,0)
+                + ' · 약 '+intv(S.grid.mapKB,0)+'KB<br>새로 붙여넣거나 끌어다 놓으면 교체됩니다.'
+              : '<b>지도 캡처를 여기에 붙여넣으세요</b><br>'
+                + '① <kbd>'+K_SHOT+'</kbd> 로 지도 화면을 캡처 → ② <kbd>'+K_PASTE+'</kbd>')
+          + '<br><span style="opacity:.75">이미지 파일을 창 아무 곳에나 끌어다 놓아도 됩니다.</span>'
+        + '</div>'
+        + '<div class="map-msg" id="mapMsg">'+mapMsgHtml+'</div>'
+        + '<div class="row-tools">'
+          + '<button class="btn sm primary" data-act="mapfile">이미지 파일 선택…</button>'
+          + '<input type="file" id="mapFileInput" accept="image/*" hidden>'
+        + '</div>'
+        + (IS_MAC
+            ? '<div class="note">macOS 주의: <b>⌘⇧4</b>(Control 없이)는 클립보드가 아니라 '
+              + '<b>바탕화면에 파일로 저장</b>됩니다. 이 경우 그 파일을 창으로 끌어다 놓거나 '
+              + '위의 <b>이미지 파일 선택</b>을 쓰세요. 클립보드로 바로 복사하려면 '
+              + '<b>⌘ + Control + Shift + 4</b> 입니다.</div>'
+            : '')
+        + '<div class="f2" style="margin-top:8px">'
+          + fld('행 수','grid.rows','number','min="1" max="12"')
+          + fld('열 수','grid.cols','number','min="1" max="12"')
+        + '</div>'
+        + '<div class="f2">'
+          + fld('지도 가로 실거리(m)','grid.widthMeters','number','min="50" max="100000"')
+          + fld('지도 확대 %','grid.mapZoom','number','min="50" max="400"')
+        + '</div>'
+        + '<div class="f3">'
+          + fld('좌우 이동 %','grid.mapX','number','step="1" min="-200" max="200"')
+          + fld('상하 이동 %','grid.mapY','number','step="1" min="-200" max="200"')
+          + fld('지도 밝기','grid.mapOpacity','number','step="0.05" min="0.1" max="1"')
+        + '</div>'
+        + '<div class="row-tools"><button class="btn sm danger" data-act="delmap">지도 이미지 삭제</button></div>'
+        + '<div class="note">지도 가로 실거리는 이동 추정반경 원의 크기 기준입니다. 캡처한 지도의 축척 바를 보고 대략 입력하세요.</div>'
+      + '</div>'
+    + '</div></div></div>';
+
+  /* --- 안전·규제·기상 --- */
+  h += '<div class="sec"><h3>안전 · 규제 · 기상</h3><div class="sec-b">'
+    + '<div class="f4">'
+      + sel('비행승인(원스톱)','safety.approval',
+          [['unknown','미확인'],['none','미신청'],['pending','신청중'],['done','승인완료'],['na','해당없음']])
+      + fld('지속풍 한계 m/s','safety.windLimit','number','step="0.5" min="0.5" max="40"')
+      + fld('돌풍 한계 m/s','safety.gustLimit','number','step="0.5" min="0.5" max="60"')
+      + '<div style="padding-top:18px">'+fld('야간 특별비행승인 보유','safety.nightApproval','checkbox')+'</div>'
+      + '<div style="padding-top:18px">'+fld('관제권 해당','safety.ctrlZone','checkbox')
+        + fld('비행금지구역 해당','safety.noFly','checkbox')+'</div>'
+    + '</div>'
+    + fld('동시 운용 인접기관','safety.agencies','text','placeholder="경찰 드론(서편), 산림청 헬기 대기"')
+    + '<div class="f2" style="margin-top:10px">'
+      + '<div style="padding-top:6px">'+fld('기상 자동 갱신 (인터넷 연결 시)','weather.auto','checkbox')
+        + '<button class="btn sm" data-act="wxnow" style="margin-top:4px">지금 갱신</button></div>'
+      + '<label class="f"><span>관측시각</span><input type="datetime-local" data-path="weather.observedAt" value="'
+        +(S.weather.observedAt?localDateTime(new Date(S.weather.observedAt)):'')+'"></label>'
+    + '</div>'
+    + '<div class="f4">'+fld('풍속 m/s','weather.wind','number','step="0.1" min="0" max="80"')
+      + fld('돌풍 m/s','weather.gust','number','step="0.1" min="0" max="100"')
+      + fld('기온 °C','weather.temp','number','step="0.1" min="-60" max="70"')
+      + fld('강수확률 %','weather.precip','number','min="0" max="100"')
+    + '</div><div class="f2">'+sel('현재 강수','weather.rain',[[null,'미확인'],[false,'없음'],[true,'있음']])
+      +'<div class="row-tools"><button class="btn primary" data-act="confirmweather">현장 기상 확인 완료</button></div></div>'
+    + '<div class="note">자동값은 Open-Meteo의 모델·보간값이며 현장 계측을 대체하지 않습니다. 수동값을 입력하면 자동 덮어쓰기를 중지하고, 관측시각·풍속·돌풍·강수를 확인한 뒤 확정하세요. 30분이 지나면 판정을 자동 보류합니다.</div>'
+    + '</div></div>';
+
+  /* --- 화면 · 데이터 --- */
+  h += '<div class="sec"><h3>화면 설정 · 데이터</h3><div class="sec-b">'
+    + '<div class="f2">'
+      + '<label class="f"><span>표출 화면 배율 ('+num(S.ui.scale,1).toFixed(2)+')</span>'
+        + '<input type="range" min="0.75" max="1.5" step="0.05" data-path="ui.scale" value="'+num(S.ui.scale,1)+'"></label>'
+      + '<label class="f"><span>야간 밝기 저감 ('+Math.round(num(S.ui.dim,0)*100)+'%)</span>'
+        + '<input type="range" min="0" max="1" step="0.05" data-path="ui.dim" value="'+num(S.ui.dim,0)+'"></label>'
+    + '</div>'
+    + '<div class="row-tools">'
+      + '<button class="btn" data-act="export">JSON 내보내기</button>'
+      + '<button class="btn" data-act="import">JSON 불러오기</button>'
+      + '<button class="btn" data-act="report">활동일지 복사</button>'
+      + '<button class="btn" data-act="recover">직전 작업 복구</button>'
+      + '<button class="btn" data-act="sample">샘플 상황 넣기</button>'
+      + '<button class="btn danger" data-act="reset">전체 초기화</button>'
+      + '<button class="btn danger" data-act="purge">출동 종료 · 개인정보 완전 삭제</button>'
+    + '</div>'
+    + '<input type="file" id="importFile" accept=".json,application/json" hidden>'
+    + '<div class="note">저장 성공 여부를 상단에서 확인하세요. JSON에는 이름·좌표·지도 등 개인정보가 암호화되지 않은 평문으로 포함됩니다. 승인된 위치에 보관한 사실을 확인한 뒤 완전 삭제하세요.</div>'
+    + '</div></div>';
+  return h;
+}
+
+/* --------------------------------------------------------------------------
+   조작 패널 이벤트 결선
+   -------------------------------------------------------------------------- */
+function renderDisplayOnly(){
+  if($('board').hidden) return;
+  renderHeader(); renderSubject(); renderBatteries(); renderCrew();
+  renderGridStats(); renderSafety(); renderDrones(); renderLog();
+  renderTicker(); renderBanner();
+}
+/* 타이핑 중에는 조작 패널을 다시 그리지 않는다(포커스 유지) */
+function commitLight(){
+  if(applying) return;
+  touch(); var ok=persist(); lastSeenUpdated = S.meta.updated;
+  broadcast(); applyUi(); renderDisplayOnly();
+  return ok;
+}
+
+function setDroneStatus(d,next){
+  if(!d||!Object.prototype.hasOwnProperty.call(DRONE_ST,next)||d.status===next)return false;
+  var prev=d.status, wasAir=!!d.tookOffAt&&(prev==='flying'||prev==='commloss');
+  if(next==='flying'){
+    if(!wasAir){d.tookOffAt=localDateTime(new Date());d.sorties=intv(d.sorties,0)+1;
+      addEvent('takeoff',(d.name||'기체')+' 이륙'+(d.zone?' · '+d.zone+' 구역':''),d.zone,true);}
+  }else if(next==='commloss'){
+    addEvent('accident',(d.name||'기체')+' 통신불량'+(wasAir?' · 비행 중':''),d.zone,true);
+  }else if(wasAir){
+    d.tookOffAt=''; addEvent('landing',(d.name||'기체')+' 착륙 · '+(DRONE_ST[next]||next),d.zone,true);
+  }else addEvent('note',(d.name||'기체')+' 상태 변경: '+(DRONE_ST[prev]||prev)+' → '+(DRONE_ST[next]||next),d.zone,true);
+  d.status=next; return true;
+}
+
+function readInput(el){
+  var t = el.getAttribute('type');
+  if(t === 'checkbox') return el.checked;
+  if(t === 'number' || t === 'range'){
+    if(el.value === '') return null;
+    return num(el.value, 0);
+  }
+  return el.value;
+}
+function bindConsole(root){
+  /* 위임 리스너는 root 당 한 번만 붙인다 (재렌더 시 중복 누적 방지) */
+  var first = !root.__delegated;
+  root.__delegated = true;
+
+  /* 입력 */
+  if(first) root.addEventListener('input', function(ev){
+    var el = ev.target, path = el.getAttribute && el.getAttribute('data-path');
+    if(!path) return;
+    if(!ownsEditorLock()){renderConsole(root);return;}
+    if(el.checkValidity&&!el.checkValidity()){
+      el.classList.add('invalid'); setPath(path,null);
+      if(path==='mission.lat'||path==='mission.lon')invalidateSafetyContext();
+      commitLight(); return;
+    }
+    el.classList.remove('invalid');
+    var val=readInput(el);
+    if(path==='weather.observedAt')val=tms(val);
+    if(path==='weather.rain')val=val==='true'?true:(val==='false'?false:null);
+    var co=path.match(/^crew\.(\d+)\.outAt$/);
+    if(co&&val&&S.crew[+co[1]]&&S.crew[+co[1]].inAt&&tms(val)<tms(S.crew[+co[1]].inAt)){
+      el.classList.add('invalid');return;
+    }
+    var sm=path.match(/^drones\.(\d+)\.status$/);
+    if(sm){if(setDroneStatus(S.drones[+sm[1]],val))commit();return;}
+    setPath(path,val);
+    if(path==='mission.lat'||path==='mission.lon'){invalidateSafetyContext();wxRequestSeq++;}
+    if(/^weather\.(wind|gust|rain|temp|precip|observedAt)$/.test(path)){
+      S.weather.src='manual';S.weather.auto=false;S.weather.confirmed=false;S.weather.confirmedAt=0;S.weather.error='';wxRequestSeq++;
+    }
+    if(path === 'grid.rows' || path === 'grid.cols'){ renderGridAll(); }
+    if(path.indexOf('grid.map') === 0 || path === 'grid.widthMeters'){ renderGridAll(); }
+    commitLight();
+  });
+  if(first) root.addEventListener('change', function(ev){
+    var el = ev.target;
+    if(!(el.getAttribute && el.getAttribute('data-path'))) return;
+    if(!ownsEditorLock()){renderConsole(root);return;}
+    if(el.checkValidity&&!el.checkValidity()){el.reportValidity();return;}
+    var path=el.getAttribute('data-path');
+    if(/^crew\.\d+\.outAt$/.test(path)){
+      var ci=+path.split('.')[1],c=S.crew[ci];
+      if(c&&c.outAt&&c.inAt&&tms(c.outAt)<tms(c.inAt)){alert('종료시각은 투입시각보다 빠를 수 없습니다.');c.outAt='';renderConsole(root);return;}
+    }
+    commit();               /* 포커스를 떠날 때 전체 갱신 */
+  });
+
+  /* 표출 화면 열기 / 드로어 닫기 */
+  var od = root.querySelector('#btnOpenDisplay');
+  if(od) od.onclick = function(){
+    var url = location.href.split('#')[0] + '#display';
+    peer = window.open(url, 'stayup_display', 'width=1600,height=900');
+    if(!peer){ alert('팝업이 차단되었습니다. 주소창의 팝업 차단을 허용해 주세요.'); return; }
+    setTimeout(function(){
+      broadcast();
+      if(MAPDATA){ try{ peer.postMessage({ch:'stayup',type:'map',data:MAPDATA},'*'); }catch(e){} }
+      renderConsole(MODE==='console' ? $('consoleRoot') : $('drawerIn'));
+    }, 700);
+  };
+  var cd = root.querySelector('#btnCloseDrawer');
+  if(cd) cd.onclick = closeDrawer;
+
+  /* 유인기 경보 */
+  var mb = root.querySelector('#btnManned');
+  if(mb) mb.onclick = function(){
+    if(!ensureEditor())return;
+    S.safety.manned = !S.safety.manned;
+    addEvent('accident', S.safety.manned ? '유인기 진입 · 전 기체 즉시 착륙 지시' : '유인기 이탈 · 다른 비행조건 재확인 필요', '', true);
+    lastBeepFor = 0;
+    commit();
+  };
+
+  /* 이벤트 기록 */
+  function pushEv(){
+    if(!ensureEditor())return;
+    var t = root.querySelector('#evType').value;
+    var when=tms(root.querySelector('#evTime').value);
+    var z = root.querySelector('#evZone').value.trim().toUpperCase();
+    var x = root.querySelector('#evText').value.trim();
+    if(!x && !z){ return; }
+    if(!when){alert('사건 발생시각을 확인하세요.');return;}
+    if(when>Date.now()+5*60000){alert('사건 발생시각이 현재보다 5분 이상 미래입니다.');return;}
+    if(!addEvent(t,x||EV_TYPE[t],z,false,when))return;
+    root.querySelector('#evText').value = '';
+    root.querySelector('#evZone').value = '';
+  }
+  var ab = root.querySelector('#btnAddEv'); if(ab) ab.onclick = pushEv;
+  var et = root.querySelector('#evText');
+  if(et) et.onkeydown = function(e){ if(e.key === 'Enter'){ e.preventDefault(); pushEv(); } };
+
+  /* 기체 / 인원 추가 */
+  var adr = root.querySelector('#btnAddDrone');
+  if(adr) adr.onclick = function(){
+    if(!ensureEditor())return;
+    S.drones.push({ id:uid(), name:(S.drones.length+1)+'호기', model:'', status:'ready',
+      battery:100, tookOffAt:'', endurance:25, zone:'', alt:'', pilot:'', observer:'',
+      sorties:0, sensors:['EO','IR'] });
+    commit();
+  };
+  var acr = root.querySelector('#btnAddCrew');
+  if(acr) acr.onclick = function(){
+    if(!ensureEditor())return;
+    var d = new Date(), local = d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())
+      +'T'+p2(d.getHours())+':'+p2(d.getMinutes());
+    S.crew.push({ id:uid(), name:'', role:'조종', inAt: local, outAt:'' });
+    commit();
+  };
+
+  /* 액션 버튼 위임 */
+  if(first) root.addEventListener('click', function(ev){
+    var b = ev.target.closest('[data-act]'); if(!b) return;
+    var act = b.getAttribute('data-act');
+    if(act==='takecontrol'){
+      if(acquireEditorLock(false)){renderAll();}
+      else alert('다른 조작 창의 편집권이 아직 유효합니다. 그 창을 닫고 최대 15초 후 다시 시도하세요.');
+      return;
+    }
+    if(['export','report'].indexOf(act)<0&&!ensureEditor())return;
+    var di = b.getAttribute('data-di'), ci = b.getAttribute('data-ci');
+    var d = di != null ? S.drones[+di] : null;
+
+    if(act === 'takeoff' && d){
+      if(setDroneStatus(d,'flying'))commit();
+    }
+    else if(act === 'land' && d&&d.tookOffAt){
+      if(setDroneStatus(d,'swap'))commit();
+    }
+    else if(act === 'deldrone' && d){
+      if(confirm((d.name||'기체')+'을 삭제할까요?')){ S.drones.splice(+di,1); commit(); }
+    }
+    else if(act === 'sens' && d){
+      var s = b.getAttribute('data-s');
+      d.sensors = d.sensors || [];
+      var k = d.sensors.indexOf(s);
+      if(k >= 0) d.sensors.splice(k,1); else d.sensors.push(s);
+      commit();
+    }
+    else if(act === 'delcrew' && ci != null){
+      var dc=S.crew[+ci]; if(confirm((dc&&dc.name||'해당 인원')+' 기록을 오입력으로 삭제할까요? 정상 교대는 종료 버튼을 사용하세요.')){S.crew.splice(+ci,1);commit();}
+    }
+    else if(act==='endcrew'&&ci!=null){
+      var ec=S.crew[+ci]; if(ec){var out=localDateTime(new Date());
+        if(ec.inAt&&tms(out)<tms(ec.inAt)){alert('투입시각이 현재보다 늦습니다. 투입시각을 먼저 수정하세요.');return;}
+        ec.outAt=out;addEvent('crew',(ec.name||'인원')+' 교대 종료', '',true);commit();}
+    }
+    else if(act==='resumecrew'&&ci!=null){
+      var rc=S.crew[+ci];if(rc){rc.outAt='';addEvent('correction',(rc.name||'인원')+' 교대 종료 취소','',true);commit();}
+    }
+    else if(act === 'batt'){
+      var k2 = b.getAttribute('data-k');
+      S.batteries[k2] = Math.max(0, intv(S.batteries[k2],0) + intv(b.getAttribute('data-v'),0));
+      commit();
+    }
+    else if(act === 'battswap'){
+      if(intv(S.batteries.ready,0) > 0){
+        S.batteries.ready--; S.batteries.empty = intv(S.batteries.empty,0)+1; commit();
+      }
+    }
+    else if(act === 'battdone'){
+      if(intv(S.batteries.charging,0) > 0){
+        S.batteries.charging--; S.batteries.ready = intv(S.batteries.ready,0)+1; commit();
+      }
+    }
+    else if(act === 'pin'){
+      pinMode = b.getAttribute('data-p');
+      b.textContent = '지도를 클릭하세요…';
+    }
+    else if(act === 'clearpins'){ S.grid.pinLast = null; S.grid.pinFound = null; commit(); }
+    else if(act === 'clearcells'){
+      if(confirm('모든 구역 상태를 미수색으로 되돌릴까요?')){ S.grid.cells = {}; commit(); }
+    }
+    else if(act === 'mapfile'){ root.querySelector('#mapFileInput').click(); }
+    else if(act === 'delmap'){ if(confirm('지도 이미지를 삭제할까요?')) saveMap(null); }
+    else if(act === 'wxnow'){ fetchWeather(true); }
+    else if(act==='confirmcoords'){
+      var cs=coordinateStatus(); if(!cs.ok){alert(cs.why);return;}
+      S.mission.coordsConfirmedAt=Date.now();commit();
+    }
+    else if(act==='confirmweather'){
+      var cst=coordinateStatus();if(!cst.ok||!cst.confirmed){alert(cst.why||'현장 좌표를 먼저 확인하세요.');return;}
+      var w=S.weather,age=Date.now()-num(w.observedAt,0);
+      if(w.wind==null||w.gust==null||typeof w.rain!=='boolean'||!w.observedAt){alert('풍속·돌풍·강수·관측시각을 모두 입력하세요.');return;}
+      if(age< -5*60000||age>=WEATHER_MAX_AGE_MIN*60000){alert('관측시각은 현재 기준 30분 이내여야 합니다.');return;}
+      w.lat=cst.lat;w.lon=cst.lon;w.confirmed=true;w.confirmedAt=Date.now();w.error='';commit();
+    }
+    else if(act==='voidevent'||act==='correctevent'){
+      var eid=b.getAttribute('data-eid'),oe=null;
+      S.events.forEach(function(e){if(e.id===eid)oe=e;});if(!oe||oe.voided)return;
+      var reason=prompt(act==='correctevent'?'정정 사유를 입력하세요.':'취소 사유를 입력하세요.','오입력');
+      if(!reason||!reason.trim()){alert('감사기록을 위해 사유가 필요합니다.');return;}
+      if(act==='correctevent'){
+        var ntx=prompt('올바른 내용을 입력하세요.',oe.text);if(ntx==null||!ntx.trim())return;
+        oe.voided=true;oe.voidedAt=Date.now();oe.voidReason=reason.trim();
+        addEvent(oe.type,ntx.trim(),oe.zone,true,oe.t);
+        addEvent('correction',shortDateTime(oe.t)+' 기록 정정 · '+reason.trim(),oe.zone,true);
+      }else{
+        oe.voided=true;oe.voidedAt=Date.now();oe.voidReason=reason.trim();
+        addEvent('correction',shortDateTime(oe.t)+' 기록 취소 · '+reason.trim(),oe.zone,true);
+      }
+      commit();
+    }
+    else if(act === 'export'){ exportJson(); }
+    else if(act === 'import'){ root.querySelector('#importFile').click(); }
+    else if(act === 'report'){ copyReport(); }
+    else if(act === 'recover'){ restoreRecovery(); }
+    else if(act === 'sample'){ if(confirm('현재 내용을 샘플 상황으로 덮어씁니다. 계속할까요?')){saveRecoveryPoint('샘플 적용 전');loadSample();} }
+    else if(act === 'reset'){
+      if(confirm('모든 데이터를 지웁니다. 계속할까요?')){
+        if(!saveRecoveryPoint('전체 초기화 전')){alert('복구본을 만들 수 없어 초기화를 중단했습니다.');return;}
+        if(applyStateTransaction(defaultState(),null))alert('초기화했습니다. 직전 작업은 복구 버튼으로 되돌릴 수 있습니다.');
+      }
+    }
+    else if(act==='purge'){purgeIncidentData();}
+  });
+
+  /* 지도 붙여넣기 영역 (실제 드롭 처리는 문서 전역에서 받는다) */
+  var pz = root.querySelector('#pasteZone');
+  if(pz){
+    pz.onclick = function(){ pz.focus(); pz.classList.add('hot'); };
+    pz.onblur  = function(){ pz.classList.remove('hot'); };
+  }
+  var mfi = root.querySelector('#mapFileInput');
+  if(mfi) mfi.onchange = function(){
+    var f = mfi.files && mfi.files[0];
+    mfi.value = '';                       /* 같은 파일을 다시 골라도 동작하도록 */
+    if(f) fileToMap(f);
+  };
+  var imp = root.querySelector('#importFile');
+  if(imp) imp.onchange = function(){
+    var f = imp.files && imp.files[0]; if(!f) return;
+    imp.value='';
+    if(!ensureEditor())return;
+    if(f.size>MAX_IMPORT_BYTES){alert('가져오기 파일이 6MB 한도를 초과합니다. 원본을 별도 보관하고 지도를 축소하세요.');return;}
+    var fr = new FileReader();
+    fr.onerror=function(){alert('파일을 읽지 못했습니다. 기존 데이터는 변경되지 않았습니다.');};
+    fr.onload = function(){
+      try{
+        var o = JSON.parse(fr.result);
+        validateImportPackage(o);
+        if(!confirm('현재 상황을 이 파일로 교체할까요? 작업 전 복구본을 먼저 만듭니다.'))return;
+        if(!saveRecoveryPoint('JSON 가져오기 전'))throw new Error('복구본을 만들 수 없어 가져오기를 중단했습니다.');
+        if(!applyStateTransaction(migrate(o),o.map||null))throw new Error('저장공간 부족 또는 저장 충돌로 적용하지 못했습니다.');
+        alert('검증 후 안전하게 불러왔습니다.');
+      }catch(e){ alert('가져오기 실패: '+(e&&e.message?e.message:'JSON 형식 또는 구조를 확인하세요.')+'\n기존 데이터는 유지됩니다.'); }
+    };
+    fr.readAsText(f);
+  };
+  if(!ownsEditorLock()){
+    root.querySelectorAll('input,textarea,select,button').forEach(function(el){
+      var act=el.getAttribute('data-act');
+      var safe=act==='takecontrol'||act==='export'||act==='report'||el.id==='btnOpenDisplay'||el.id==='btnCloseDrawer';
+      if(!safe)el.disabled=true;
+    });
+  }
+}
+
+/* --------------------------------------------------------------------------
+   클립보드 붙여넣기 (문서 전역 - 어디에 포커스가 있어도 받는다)
+   -------------------------------------------------------------------------- */
+document.addEventListener('paste', function(ev){
+  var dt = ev.clipboardData;
+  var items = dt && dt.items;
+  var f = null;
+
+  if(items){
+    for(var i=0;i<items.length;i++){
+      if(items[i].type && items[i].type.indexOf('image') === 0){
+        f = items[i].getAsFile();
+        break;
+      }
+    }
+  }
+  /* 일부 환경은 items 대신 files 로만 넘어온다 */
+  if(!f && dt && dt.files && dt.files.length){
+    for(var j=0;j<dt.files.length;j++){
+      if(/^image\//.test(dt.files[j].type)){ f = dt.files[j]; break; }
+    }
+  }
+
+  if(f){ ev.preventDefault(); fileToMap(f); return; }
+
+  /* 붙여넣기 영역에 대고 눌렀는데 이미지가 없으면 이유를 알려준다.
+     (입력칸에 텍스트를 붙여넣는 정상 동작은 건드리지 않는다) */
+  var onZone = ev.target && ev.target.closest && ev.target.closest('.paste-zone');
+  if(onZone){
+    ev.preventDefault();
+    mapMsg('클립보드에 이미지가 없습니다. '
+      + (IS_MAC ? '⌘⇧4 는 바탕화면에 파일로 저장됩니다 — ⌘+Control+Shift+4 로 캡처하거나 아래 「이미지 파일 선택」을 쓰세요.'
+                : 'Win+Shift+S 로 캡처한 뒤 다시 붙여넣거나 아래 「이미지 파일 선택」을 쓰세요.'), 'warn');
+  }
+});
+
+/* --------------------------------------------------------------------------
+   드래그앤드롭 (문서 전역)
+   좁은 영역만 받으면 살짝 빗나간 순간 브라우저가 그 이미지 파일로 이동해
+   상황판이 날아간다. 창 전체에서 받고, 그 외의 드롭은 막는다.
+   -------------------------------------------------------------------------- */
+document.addEventListener('dragover', function(ev){
+  ev.preventDefault();
+  var pz = document.getElementById('pasteZone');
+  if(pz) pz.classList.add('hot');
+});
+document.addEventListener('dragleave', function(ev){
+  if(ev.relatedTarget) return;
+  var pz = document.getElementById('pasteZone');
+  if(pz) pz.classList.remove('hot');
+});
+document.addEventListener('drop', function(ev){
+  ev.preventDefault();
+  var pz = document.getElementById('pasteZone');
+  if(pz) pz.classList.remove('hot');
+  var files = ev.dataTransfer && ev.dataTransfer.files;
+  if(!files || !files.length){ mapMsg('끌어다 놓은 항목에서 파일을 찾지 못했습니다.', 'warn'); return; }
+  var f = null;
+  for(var i=0;i<files.length;i++) if(/^image\//.test(files[i].type)){ f = files[i]; break; }
+  if(f) fileToMap(f);
+  else mapMsg('이미지 파일이 아닙니다 (' + (files[0].type || files[0].name) + ').', 'warn');
+});
+
+/* --------------------------------------------------------------------------
+   이미지 -> 최대폭 1600px JPEG 로 축소 (localStorage 용량 확보)
+   -------------------------------------------------------------------------- */
+function fileToMap(file){
+  if(!ensureEditor())return;
+  if(!file){ mapMsg('이미지를 찾지 못했습니다.', 'err'); return; }
+  if(file.type && file.type.indexOf('image') !== 0){
+    mapMsg('이미지 파일이 아닙니다 ('+file.type+').', 'err'); return;
+  }
+  mapMsg('지도 이미지를 처리하는 중…', 'warn');
+  var fr = new FileReader();
+  fr.onerror = function(){ mapMsg('파일을 읽지 못했습니다.', 'err'); };
+  fr.onload = function(){
+    var img = new Image();
+    img.onload = function(){
+      if(!img.width || !img.height){ mapMsg('이미지 크기를 읽지 못했습니다.', 'err'); return; }
+      try{
+        var maxW = 1600;
+        var sc = Math.min(1, maxW / img.width);
+        var cv = document.createElement('canvas');
+        cv.width  = Math.round(img.width * sc);
+        cv.height = Math.round(img.height * sc);
+        var cx = cv.getContext('2d');
+        cx.fillStyle = '#0B1219'; cx.fillRect(0,0,cv.width,cv.height);
+        cx.drawImage(img, 0, 0, cv.width, cv.height);
+        saveMap(cv.toDataURL('image/jpeg', 0.82), {w:cv.width, h:cv.height});
+      }catch(e){
+        mapMsg('이미지 변환에 실패했습니다: '+(e && e.name ? e.name : e), 'err');
+      }
+    };
+    img.onerror = function(){
+      mapMsg('이 형식은 브라우저가 읽지 못합니다. PNG 또는 JPG로 저장해 다시 시도하세요 (HEIC 등은 지원되지 않습니다).', 'err');
+    };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+
+/* ==========================================================================
+   S10. 기상 자동 갱신 (Open-Meteo · API 키 불필요 · CORS 허용)
+        통신이 안 되면 조용히 실패하고 수동 입력값을 유지한다.
+   ========================================================================== */
+var wxBusy=false,wxRequestSeq=0;
+function fetchWeather(manualTrigger){
+  if(!ownsEditorLock())return;
+  if(wxBusy){if(manualTrigger)alert('기상 갱신이 이미 진행 중입니다.');return;}
+  if(!manualTrigger&&!S.weather.auto)return;
+  if(!manualTrigger&&S.weather.src==='manual'&&S.weather.confirmed)return;
+  var cs=coordinateStatus();
+  if(!cs.ok||!cs.confirmed){if(manualTrigger)alert(cs.why||'현장 좌표를 먼저 확인하세요.');return;}
+  if(!navigator.onLine){if(manualTrigger)alert('오프라인입니다. 수동 관측값을 입력하세요.');return;}
+  if(manualTrigger&&S.weather.src==='manual'&&S.weather.confirmed
+      &&!confirm('확정된 수동 관측값을 자동 모델값으로 교체할까요?'))return;
+  var lat=cs.lat,lon=cs.lon,seq=++wxRequestSeq;
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon
+    +'&current=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m'
+    +'&hourly=precipitation_probability&wind_speed_unit=ms&timezone=Asia%2FSeoul&timeformat=unixtime&forecast_days=1';
+  wxBusy=true;S.weather.lastAttemptAt=Date.now();S.weather.error='';commitLight();
+  var controller=typeof AbortController!=='undefined'?new AbortController():null;
+  var timer=setTimeout(function(){if(controller)controller.abort();},12000);
+  fetch(url,{cache:'no-store',signal:controller?controller.signal:undefined})
+    .then(function(r){if(!r.ok)throw new Error(String(r.status));return r.json();})
+    .then(function(j){
+      if(seq!==wxRequestSeq)return;
+      var nowCs=coordinateStatus();
+      if(!nowCs.ok||Math.abs(nowCs.lat-lat)>0.000001||Math.abs(nowCs.lon-lon)>0.000001)return;
+      var c=j.current||{},temp=num(c.temperature_2m,NaN),wind=num(c.wind_speed_10m,NaN);
+      var gust=num(c.wind_gusts_10m,NaN),rainAmt=num(c.precipitation,NaN);
+      var observed=typeof c.time==='number'?c.time*1000:Date.parse(c.time||'');
+      if(!isFinite(temp)||!isFinite(wind)||!isFinite(gust)||!isFinite(rainAmt)||!isFinite(observed))throw new Error('응답 필수값 누락');
+      var precip=null,best=Infinity;
+      if(j.hourly&&j.hourly.time&&j.hourly.precipitation_probability){
+        for(var i=0;i<j.hourly.time.length;i++){
+          var ht=typeof j.hourly.time[i]==='number'?j.hourly.time[i]*1000:Date.parse(j.hourly.time[i]);
+          if(isFinite(ht)&&Math.abs(ht-observed)<best){best=Math.abs(ht-observed);precip=num(j.hourly.precipitation_probability[i],null);}
+        }
+      }
+      var w=S.weather;
+      w.temp=Math.round(temp*10)/10;w.wind=Math.round(wind*10)/10;w.gust=Math.round(gust*10)/10;
+      w.rain=rainAmt>0.05;w.precip=precip;w.observedAt=observed;w.stamp=localDateTime(new Date(observed));
+      w.src='auto';w.lat=lat;w.lon=lon;w.confirmed=false;w.confirmedAt=0;w.error='';commit();
+    })
+    .catch(function(e){
+      if(seq!==wxRequestSeq)return;
+      S.weather.lastAttemptAt=Date.now();S.weather.error='자동 갱신 실패: '+(e&&e.name==='AbortError'?'시간 초과':(e&&e.message||'통신 오류'));
+      commit();if(manualTrigger)alert('기상 자동 갱신 실패 — 기존 관측값은 유지했습니다.\n'+S.weather.error);
+    })
+    .then(function(){clearTimeout(timer);wxBusy=false;});
+}
+
+/* ==========================================================================
+   S11. 내보내기 · 활동일지 · 샘플
+   ========================================================================== */
+function download(name, text, type){
+  var blob = new Blob([text], {type: type || 'application/json;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+function stampName(){
+  var n = new Date();
+  return n.getFullYear()+p2(n.getMonth()+1)+p2(n.getDate())+'-'+p2(n.getHours())+p2(n.getMinutes());
+}
+function exportJson(){
+  var out = JSON.parse(JSON.stringify(S));
+  if(MAPDATA) out.map = MAPDATA;
+  download('stayup-'+stampName()+'.json', JSON.stringify(out, null, 1));
+}
+function buildReport(){
+  var st = gridStats(), now = new Date();
+  var totalSorties = 0, totalMin = 0;
+  S.drones.forEach(function(d){ totalSorties += intv(d.sorties,0); });
+  var lines = [];
+  lines.push('■ STAY UP 드론팀 현장활동 기록');
+  lines.push('작성: '+now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate())
+    +' '+p2(now.getHours())+':'+p2(now.getMinutes()));
+  lines.push('');
+  lines.push('1. 상황 개요');
+  lines.push('  · 상황명   : '+(S.mission.title||'-'));
+  lines.push('  · 장소     : '+(S.mission.location||'-'));
+  lines.push('  · 출동시각 : '+(S.mission.dispatchedAt||'-').replace('T',' '));
+  lines.push('  · 좌표     : '+(hasValidCoordinates()?(S.mission.lat+', '+S.mission.lon)+(S.mission.coordsConfirmedAt?' (현장확인)':' (미확인)'):'미입력'));
+  lines.push('');
+  lines.push('2. 실종자');
+  lines.push('  · 인적사항 : '+(S.subject.name||'-')+' / '+(S.subject.age||'-')+'세 / '+(S.subject.sex||'-')
+    +(S.subject.level?' / '+S.subject.level:''));
+  lines.push('  · 인상착의 : 상의 '+(S.subject.topText||'미상')+' / 하의 '+(S.subject.botText||'미상'));
+  lines.push('  · 실종시각 : '+(S.subject.missingAt||'-').replace('T',' '));
+  lines.push('  · 최종목격 : '+(S.subject.lastSeenPlace||'-'));
+  if(S.subject.notes) lines.push('  · 특이사항 : '+S.subject.notes);
+  lines.push('');
+  lines.push('3. 드론 운용');
+  if(!S.drones.length) lines.push('  · 없음');
+  S.drones.forEach(function(d){
+    lines.push('  · '+(d.name||'기체')+' ('+(d.model||'-')+') 상태 '+(DRONE_ST[d.status]||'-')
+      +' / 배터리 '+num(d.battery,0)+'% / 소티 '+intv(d.sorties,0)
+      +' / 센서 '+((d.sensors||[]).join(',')||'-')
+      +' / 조종 '+(d.pilot||'-')+(d.observer?' · 관측 '+d.observer:''));
+  });
+  lines.push('  · 총 소티 : '+totalSorties+'회');
+  lines.push('');
+  lines.push('4. 수색 결과');
+  lines.push('  · 구역 구성 : '+gridRows()+'×'+gridCols()+' = '+st.total+'구역 (지도 가로 '+num(S.grid.widthMeters,0)+'m)');
+  lines.push('  · 커버리지  : '+st.pct+'%  (완료 '+st.n[2]+' / 수색중 '+st.n[1]
+    +' / 재수색 '+st.n[3]+' / 미수색 '+st.n[0]+')');
+  var f = latestFound();
+  lines.push('  · 발견 여부 : '+(f ? '발견 ('+shortDateTime(f.t)+') '+f.text : '미발견'));
+  lines.push('');
+  lines.push('5. 투입 인원');
+  if(!S.crew.length) lines.push('  · 없음');
+  S.crew.forEach(function(c){
+    var from=tms(c.inAt),to=tms(c.outAt),span=from?(to||now.getTime())-from:0;
+    lines.push('  · '+(c.name||'-')+' ('+(c.role||'-')+') '+(c.inAt||'-').replace('T',' ')
+      +' → '+(c.outAt?c.outAt.replace('T',' '):'활동중')+(from?' / '+durHM(span):''));
+  });
+  lines.push('');
+  lines.push('6. 시간대별 활동 (타임라인)');
+  S.events.slice().sort(function(a,b){ return a.t-b.t; }).forEach(function(e){
+    var d = new Date(e.t);
+    lines.push('  '+d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+' '+p2(d.getHours())+':'+p2(d.getMinutes())
+      +'  ['+(EV_TYPE[e.type]||e.type)+'] '+(e.zone?e.zone+' ':'')+e.text
+      +(e.voided?' [취소: '+(e.voidReason||'사유 미기재')+']':''));
+  });
+  lines.push('');
+  lines.push('7. 안전 · 규제');
+  lines.push('  · 비행승인 : '+({unknown:'미확인',none:'미신청',pending:'신청중',done:'승인완료',na:'해당없음'}[S.safety.approval]||'-'));
+  lines.push('  · 야간 특별비행승인 : '+(S.safety.nightApproval?'보유':'없음'));
+  lines.push('  · 관제권/금지구역 : '+((S.safety.ctrlZone?'관제권 ':'')+(S.safety.noFly?'금지구역':'')||'해당없음'));
+  lines.push('  · 지속풍/돌풍 한계 '+num(S.safety.windLimit,12)+'/'+num(S.safety.gustLimit,12)+'m/s / 관측 '
+    +(S.weather.wind==null?'-':S.weather.wind)+'/'+(S.weather.gust==null?'-':S.weather.gust)+'m/s');
+  lines.push('  · 기상 출처 : '+({auto:'Open-Meteo 모델',manual:'수동 관측',none:'미입력'}[S.weather.src]||'-')
+    +' / 관측 '+(S.weather.observedAt?shortDateTime(S.weather.observedAt):'-')+' / 현장확인 '+(S.weather.confirmed?'완료':'미완료'));
+  if(S.safety.agencies) lines.push('  · 인접기관 : '+S.safety.agencies);
+  return lines.join('\n');
+}
+function copyReport(){
+  var txt = buildReport();
+  function ok(){ alert('활동일지를 클립보드에 복사했습니다.\n보고서에 붙여넣으세요.'); }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok, function(){ fallback(); });
+  } else fallback();
+  function fallback(){
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); ok(); }
+    catch(e){ download('stayup-활동일지-'+stampName()+'.txt', txt, 'text/plain;charset=utf-8'); }
+    ta.remove();
+  }
+}
+function loadSample(){
+  var now = new Date();
+  function lt(offsetMin){
+    var d = new Date(now.getTime() + offsetMin*60000);
+    return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+'T'+p2(d.getHours())+':'+p2(d.getMinutes());
+  }
+  var s = defaultState();
+  s.mission = { title:'완주군 소양면 실종자 수색 (동원)', location:'소양면 대흥리 일대 · CP 마을회관 앞',
+    dispatchedAt: lt(-372), lat:35.8899, lon:127.2211, trs:'소방3', callsign:'전북드론1',
+    coordsConfirmedAt:Date.now(),briefing:'18:00', orders:'계곡 하류 D~E열 우선 수색. 열원 감지 시 즉시 지상팀 좌표 통보. 일몰 30분 전 전 기체 회수.' };
+  s.subject = { name:'김○○', age:82, sex:'여', topColor:'#E879A6', topText:'분홍 자켓',
+    botColor:'#2B2B33', botText:'검정 바지', missingAt: lt(-500),
+    lastSeenPlace:'마을회관 앞 버스정류장', notes:'보행 가능, 혈압약 복용, 청력 저하',
+    level:'치매 3등급', tracker:false, walkSpeed:2.0, decay:0.35 };
+  s.drones = [
+    { id:uid(), name:'1호기', model:'M350 RTK', status:'flying', battery:68, tookOffAt: lt(-22),
+      endurance:38, zone:'C3', alt:120, pilot:'홍○○', observer:'김○○', sorties:4, sensors:['EO','IR','줌'] },
+    { id:uid(), name:'2호기', model:'M30T', status:'swap', battery:19, tookOffAt:'',
+      endurance:28, zone:'D2', alt:'', pilot:'박○○', observer:'이○○', sorties:5, sensors:['EO','IR','스피커'] },
+    { id:uid(), name:'3호기', model:'Mavic 3T', status:'ready', battery:100, tookOffAt:'',
+      endurance:35, zone:'E5', alt:'', pilot:'최○○', observer:'', sorties:2, sensors:['EO','IR'] }
+  ];
+  s.crew = [
+    { id:uid(), name:'홍○○', role:'조종', inAt: lt(-370),outAt:'' },
+    { id:uid(), name:'박○○', role:'조종', inAt: lt(-250),outAt:'' },
+    { id:uid(), name:'김○○', role:'관측', inAt: lt(-370),outAt:'' },
+    { id:uid(), name:'이○○', role:'관측', inAt: lt(-250),outAt:'' },
+    { id:uid(), name:'최○○', role:'통신', inAt: lt(-370),outAt:'' },
+    { id:uid(), name:'정○○', role:'충전지원', inAt: lt(-368),outAt:'' }
+  ];
+  s.batteries = { ready:9, charging:4, empty:10, generator:true, avgFlightMin:32, concurrent:2 };
+  s.grid = { rows:5, cols:6, cells:{}, mapVer:S.grid.mapVer, hasMap:S.grid.hasMap,
+    mapZoom:100, mapX:0, mapY:0, mapOpacity:0.85, widthMeters:2400,
+    pinLast:{x:31,y:24}, pinFound:null };
+  var done = ['A1','A2','A3','B1','B2','B3','B4','C1','C2','C4','C5','D1','D3','D4','E1','E2','E3','E6'];
+  var doing = ['C3','D2','E5'];
+  var re = ['A4','B5'];
+  done.forEach(function(k){ s.grid.cells[k] = {s:2, by:'드론'}; });
+  doing.forEach(function(k){ s.grid.cells[k] = {s:1, by:'드론'}; });
+  re.forEach(function(k){ s.grid.cells[k] = {s:3, by:'지상'}; });
+  s.grid.cells['A1'].by = '지상'; s.grid.cells['B1'].by = '수색견';
+  s.safety = { ctrlZone:false, noFly:false, approval:'done', nightApproval:true,
+    windLimit:12,gustLimit:12,manned:false, agencies:'경찰 드론(서편 능선), 산림청 헬기 대기' };
+  s.weather = { auto:true, temp:24.6, wind:4.2, gust:7.8, precip:20, rain:false,
+    stamp:localDateTime(now),observedAt:now.getTime(),lastAttemptAt:0,error:'',src:'manual',
+    confirmed:true,confirmedAt:now.getTime(),lat:35.8899,lon:127.2211 };
+  var evs = [
+    [-372,'order','현장지휘부 동원 요청 접수 · CP 마을회관 설정',''],
+    [-360,'note','비행승인 확인 완료 · 야간 특별비행승인 보유',''],
+    [-352,'takeoff','1호기 이륙 · A열 광역 정찰','A1'],
+    [-300,'zone','A1~A3 구역 수색완료','A3'],
+    [-250,'note','2조 교대 투입 (박○○·이○○)',''],
+    [-190,'heat','B5 구역 열원 감지 → 지상팀 확인 결과 야생동물(오인)','B5'],
+    [-120,'order','지휘부: 계곡 하류 D~E열 우선 수색 지시','D2'],
+    [-64,'landing','2호기 착륙 · 배터리 교체','D2'],
+    [-22,'takeoff','1호기 이륙 · C3 구역 정밀 수색','C3'],
+    [-8,'heat','C3 구역 계곡부 열원 반응 · 지상팀 접근 중','C3']
+  ];
+  s.events = evs.map(function(e){
+    return { t: now.getTime() + e[0]*60000, type:e[1], text:e[2], zone:e[3] };
+  });
+  s.ui = { scale: num(S.ui.scale,1), dim: num(S.ui.dim,0), ackFound:0,gridAction:'status' };
+  if(!applyStateTransaction(migrate(s),MAPDATA))alert('샘플을 저장하지 못해 기존 상태를 유지했습니다.');
+}
+
+/* ==========================================================================
+   S12. 드로어 (표출 화면 위에 조작 패널 겹쳐 열기 · 화면이 하나뿐일 때)
+   ========================================================================== */
+function openDrawer(){
+  $('drawer').hidden = false;
+  renderConsole($('drawerIn'));
+}
+function closeDrawer(){
+  $('drawer').hidden = true;
+  $('drawerIn').innerHTML = '';
+}
+function toggleDrawer(){ $('drawer').hidden ? openDrawer() : closeDrawer(); }
+
+$('drawer').addEventListener('click', function(ev){
+  if(ev.target === $('drawer')) closeDrawer();
+});
+
+document.addEventListener('keydown', function(ev){
+  var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((ev.target.tagName||''));
+  if((ev.ctrlKey || ev.metaKey) && (ev.key === 'e' || ev.key === 'E')){
+    ev.preventDefault();
+    if(MODE === 'display') toggleDrawer();
+    return;
+  }
+  if(ev.key === 'Escape' && !$('drawer').hidden){ closeDrawer(); return; }
+  if(typing) return;
+  if(ev.key === 'f' || ev.key === 'F'){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  }
+  if(ev.key==='+'||ev.key==='='){
+    if(ownsEditorLock()){S.ui.scale=clamp(num(S.ui.scale,1)+0.05,0.75,1.5);commit();}
+    else if(MODE==='display')sendPeer({type:'action',action:'scale',delta:0.05});
+  }
+  if(ev.key==='-'||ev.key==='_'){
+    if(ownsEditorLock()){S.ui.scale=clamp(num(S.ui.scale,1)-0.05,0.75,1.5);commit();}
+    else if(MODE==='display')sendPeer({type:'action',action:'scale',delta:-0.05});
+  }
+});
+
+/* ==========================================================================
+   S13. 부팅
+   ========================================================================== */
+function boot(){
+  loadLocal();
+
+  if(MODE === 'display'){
+    document.body.className = 'mode-display';
+    document.title = 'STAY UP 현장 상황판 — 표출';
+    $('board').hidden = false;
+    $('consoleRoot').hidden = true;
+    /* 조작 패널(부모 창)에 존재를 알리고 최신 상태를 요청 */
+    try{
+      if(window.opener && !window.opener.closed){
+        peer = window.opener;
+        window.opener.postMessage({ch:'stayup', type:'hello'}, '*');
+      }
+    }catch(e){}
+  } else {
+    document.body.className = 'mode-console';
+    document.title = 'STAY UP 현장 상황판 — 조작 패널';
+    $('board').hidden = true;
+    acquireEditorLock(false);
+    renderConsole($('consoleRoot'));
+  }
+
+  applyUi();
+  renderAll();
+  if(STARTUP_WARNINGS.length)showSystemAlert(STARTUP_WARNINGS.join(' · '));
+  var arm=$('audioArm');if(arm){arm.onclick=primeAudio;updateAudioArm();}
+
+  /* 1초: 시계·카운트다운·비행시간 / 0.5초: 창간 동기화 폴링 */
+  setInterval(function(){
+    if(!$('board').hidden){renderHeader();renderSafety();tickDrones();renderBanner();}
+  }, 1000);
+  setInterval(pollStore, 500);
+  /* 30초: 최근 5세대 자동 복구본 */
+  setInterval(function(){createSnapshot('자동');},30000);
+  /* 10분: 기상 자동 갱신 */
+  fetchWeather(false);
+  setInterval(function(){ fetchWeather(false); }, 600000);
+  setInterval(function(){sendPeer({type:'ping'});},2000);
+  setInterval(function(){
+    if(ownsEditorLock())refreshEditorLock();
+  },5000);
+  /* 연결 상태 표시 갱신 */
+  setInterval(function(){
+    var pill = document.getElementById('syncPill');
+    if(!pill) return;
+    var on = peerConnected();
+    pill.className = 'sync-pill' + (on ? '' : ' off');
+    pill.textContent = on ? '표출 화면 연결됨' : '표출 화면 미연결';
+    var save=document.getElementById('savePill');if(save){save.className='save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad');
+      save.textContent=SAVE_STATUS.ok?(SAVE_STATUS.backupOk?'저장·복구 정상':'저장 정상 · 복구본 실패'):'저장 실패';}
+  }, 2000);
+
+  /* 표출 화면을 닫을 때 마지막 상태를 확실히 남긴다 */
+  window.addEventListener('beforeunload',function(){if(ownsEditorLock())persist();releaseEditorLock();});
+}
+boot();
+</script>
+</body>
+</html>
