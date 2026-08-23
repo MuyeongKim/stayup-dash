@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/github/v/tag/MuyeongKim/stayup-dash?label=version&amp;sort=semver&amp;style=flat-square&amp;color=FF6B1A" alt="최신 앱 버전">
   <img src="https://img.shields.io/badge/runtime-single%20HTML-FF6B1A?style=flat-square" alt="단일 HTML 실행">
   <img src="https://img.shields.io/badge/build-none-263442?style=flat-square" alt="빌드 불필요">
   <img src="https://img.shields.io/badge/storage-browser%20local-0EA5E9?style=flat-square" alt="브라우저 로컬 저장">
@@ -217,8 +218,27 @@ python3 -m http.server 8899 --bind 127.0.0.1
 node -e "const fs=require('fs');const s=fs.readFileSync('stayup-dash.html','utf8');const m=s.match(/<script>([\s\S]*?)<\/script>/);if(!m)throw Error('script missing');new Function(m[1]);console.log('inline script syntax: OK')"
 ```
 
+### 자동 버전 정책
+
+- [VERSION](./VERSION)이 앱 릴리스 버전의 기준이며 [stayup-dash.html](./stayup-dash.html)의 `APP_VERSION`과 항상 같아야 합니다.
+- 사용자가 `main`에 업데이트를 푸시할 때마다 GitHub Actions가 기본적으로 패치 버전을 올립니다. 예: `v1.0.1 → v1.0.2`.
+- 커밋 메시지에 `[부버전]`을 넣으면 minor, `[주버전]`을 넣으면 major가 증가합니다.
+- 자동화는 `앱 버전 vX.Y.Z 자동 업데이트`라는 한글 커밋과 동일한 annotated Git 태그를 함께 생성합니다.
+- `STATE_VERSION`과 `stayup.dash.*` 저장 키는 JSON·브라우저 데이터 호환성용입니다. 일반 앱 업데이트에서는 변경하지 않습니다.
+
+버전 파일과 앱 상수의 동기화는 다음 명령으로 확인할 수 있습니다.
+
+```bash
+node scripts/version.mjs check
+```
+
 ```text
 stayup-dash/
+├── .github/workflows/auto-version.yml
+├── scripts/
+│   ├── auto-version.sh
+│   └── version.mjs
+├── VERSION
 ├── stayup-dash.html
 ├── README.md
 └── assets/readme/dashboard-preview.png

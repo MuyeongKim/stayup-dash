@@ -100,6 +100,11 @@ b,strong{font-weight:700}
 }
 .brand .su{color:var(--accent)}
 .brand .sep{color:var(--border2);font-weight:400}
+.brand .app-version{
+  color:var(--muted);font-size:.88rem;font-weight:700;letter-spacing:.03em;
+  background:var(--surface2);border:1px solid var(--border2);border-radius:99px;
+  padding:.08rem .4rem;
+}
 .mission{
   font-size:1.55rem;font-weight:700;margin-top:.28rem;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -439,6 +444,11 @@ b,strong{font-weight:700}
 }
 .cons-top .ct-brand{font-size:17px;font-weight:800;white-space:nowrap}
 .cons-top .ct-brand span{color:var(--accent)}
+.cons-top .ct-brand .app-version{
+  color:var(--muted);font-size:11px;font-weight:700;margin-left:5px;
+  border:1px solid var(--border2);border-radius:99px;padding:1px 5px;
+  vertical-align:2px;
+}
 .cons-top .ct-mode{font-size:12px;color:var(--muted);background:var(--surface2);
   border:1px solid var(--border);border-radius:4px;padding:2px 7px;white-space:nowrap}
 .cons-top .spacer{flex:1 1 auto}
@@ -577,7 +587,7 @@ textarea{resize:vertical;min-height:52px}
 
   <header class="hdr">
     <div class="hdr-id">
-      <div class="brand"><span class="su">STAY UP</span><span class="sep">|</span>현장 상황판</div>
+      <div class="brand"><span class="su">STAY UP</span><span class="sep">|</span>현장 상황판<span class="app-version" id="appVersion"></span></div>
       <div class="mission" id="hMission">상황명 미입력</div>
       <div class="mission-sub" id="hLoc">수색 장소 미입력</div>
     </div>
@@ -692,6 +702,7 @@ var RECOVERY_KEY = 'stayup.dash.recovery.v1';
 var LOCKKEY = 'stayup.dash.editor.v1';
 var EPOCHKEY = 'stayup.dash.epoch.v1';
 var MAP_PREFIX = 'stayup.dash.map.v2.';
+var APP_VERSION = '1.0.0';
 var STATE_VERSION = 2;
 var MAX_IMPORT_BYTES = 6 * 1024 * 1024;
 var MAX_MAP_CHARS = 3 * 1024 * 1024;
@@ -1957,7 +1968,7 @@ function consoleHtml(){
 
   /* --- 상단 바 --- */
   h += '<div class="cons-top">'
-    + '<div class="ct-brand"><span>STAY UP</span> 조작 패널</div>'
+    + '<div class="ct-brand"><span>STAY UP</span> 조작 패널 <span class="app-version">v'+esc(APP_VERSION)+'</span></div>'
     + '<div class="ct-mode">'+(editor?'편집권 보유':'읽기 전용')+'</div>'
     + '<div class="spacer"></div>'
     + '<div class="save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad')+'" id="savePill">'
@@ -2690,6 +2701,7 @@ function stampName(){
 }
 function exportJson(){
   var out = JSON.parse(JSON.stringify(S));
+  out.appVersion = APP_VERSION;
   if(MAPDATA) out.map = MAPDATA;
   download('stayup-'+stampName()+'.json', JSON.stringify(out, null, 1));
 }
@@ -2699,6 +2711,7 @@ function buildReport(){
   S.drones.forEach(function(d){ totalSorties += intv(d.sorties,0); });
   var lines = [];
   lines.push('■ STAY UP 드론팀 현장활동 기록');
+  lines.push('앱 버전: v'+APP_VERSION);
   lines.push('작성: '+now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate())
     +' '+p2(now.getHours())+':'+p2(now.getMinutes()));
   lines.push('');
@@ -2885,10 +2898,13 @@ document.addEventListener('keydown', function(ev){
    ========================================================================== */
 function boot(){
   loadLocal();
+  document.documentElement.setAttribute('data-app-version', APP_VERSION);
+  var versionEl = $('appVersion');
+  if(versionEl) versionEl.textContent = 'v'+APP_VERSION;
 
   if(MODE === 'display'){
     document.body.className = 'mode-display';
-    document.title = 'STAY UP 현장 상황판 — 표출';
+    document.title = 'STAY UP v'+APP_VERSION+' — 표출';
     $('board').hidden = false;
     $('consoleRoot').hidden = true;
     /* 조작 패널(부모 창)에 존재를 알리고 최신 상태를 요청 */
@@ -2900,7 +2916,7 @@ function boot(){
     }catch(e){}
   } else {
     document.body.className = 'mode-console';
-    document.title = 'STAY UP 현장 상황판 — 조작 패널';
+    document.title = 'STAY UP v'+APP_VERSION+' — 조작 패널';
     $('board').hidden = true;
     acquireEditorLock(false);
     renderConsole($('consoleRoot'));

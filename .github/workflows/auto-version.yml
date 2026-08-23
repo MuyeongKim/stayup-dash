@@ -1,0 +1,46 @@
+name: 버전 자동 증가
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stayup-dash-version-main
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  version-up:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 소스 받기
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 증가 종류 결정
+        id: bump-type
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          bump_type=patch
+          if [[ "$COMMIT_MESSAGE" == *"[주버전]"* ]]; then
+            bump_type=major
+          elif [[ "$COMMIT_MESSAGE" == *"[부버전]"* ]]; then
+            bump_type=minor
+          fi
+          echo "type=$bump_type" >> "$GITHUB_OUTPUT"
+
+      - name: 앱 버전 증가·검증·푸시
+        id: version
+        env:
+          BASE_SHA: ${{ github.sha }}
+          BUMP_TYPE: ${{ steps.bump-type.outputs.type }}
+        run: bash scripts/auto-version.sh
