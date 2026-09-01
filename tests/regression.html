@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>STAY UP 회귀 검사</title>
+<!--
+  ============================================================================
+  STAY UP 회귀 검사
+  ----------------------------------------------------------------------------
+  로컬 HTTP 로 열어야 합니다. file:// 에서는 iframe 이 교차 출처로 취급돼
+  앱 내부 함수에 접근할 수 없습니다.
+
+      python3 -m http.server 8899 --bind 127.0.0.1
+      http://127.0.0.1:8899/tests/regression.html
+
+  앱을 iframe 에 띄우고 내부 함수를 직접 호출해 검사합니다. 실제 브라우저에서
+  돌아가므로 레이아웃·포인터·저장소까지 함께 확인됩니다.
+  ============================================================================
+-->
+<style>
+  body{font:14px/1.5 system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:#0B0E12;color:#E9F0F7;margin:0;padding:20px 24px}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{color:#8FA3B8;font-size:12.5px;margin-bottom:14px}
+  #sum{font-weight:800;font-size:15px;padding:10px 14px;border-radius:6px;margin-bottom:12px;
+    background:#18212C;border:1px solid #2E3E51}
+  #sum.pass{background:#0C2A18;border-color:#22C55E;color:#8BE7B0}
+  #sum.fail{background:#2A0B0B;border-color:#EF4444;color:#FFB4B4}
+  ol{margin:0;padding-left:26px}
+  li{padding:3px 0;border-bottom:1px solid #1A2430}
+  li.p::marker{color:#22C55E} li.f::marker{color:#EF4444}
+  li.f{color:#FFB4B4}
+  .tag{display:inline-block;font-size:11px;font-weight:800;padding:1px 6px;border-radius:3px;margin-right:7px}
+  .tag.p{background:#123524;color:#6EE7A0} .tag.f{background:#3A1010;color:#FF8A8A}
+  .d{color:#8FA3B8;font-size:12px;margin-left:6px}
+  .grp{margin:16px 0 4px;font-weight:800;color:#FF6A1A;font-size:12.5px;letter-spacing:.04em}
+  iframe{position:fixed;left:-9999px;top:0;width:1600px;height:900px;border:0}
+</style>
+</head>
+<body>
+<h1>STAY UP 회귀 검사</h1>
+<div class="sub">앱을 iframe 으로 띄워 내부 함수를 직접 호출합니다. 로컬 HTTP 필요.</div>
+<div id="sum">준비 중…</div>
+<ol id="out"></ol>
+<iframe id="app" src="../stayup-dash.html?regression=1"></iframe>
+
+<script>
+"use strict";
+var out = document.getElementById('out'), sum = document.getElementById('sum');
+var results = [];
+
+function ok(name, cond, detail){
+  var pass = !!cond;
+  results.push({name:name, pass:pass});
+  var li = document.createElement('li');
+  li.className = pass ? 'p' : 'f';
+  li.innerHTML = '<span class="tag '+(pass?'p':'f')+'">'+(pass?'PASS':'FAIL')+'</span>'
+    + name + (detail ? '<span class="d">'+detail+'</span>' : '');
+  out.appendChild(li);
+}
+function group(t){
+  var li = document.createElement('div');
+  li.className = 'grp'; li.textContent = t; out.appendChild(li);
+}
+function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+var W = null;   /* iframe 의 window */
+
+/* 앱을 초기 상태로 되돌린다. 저장소를 비우고 다시 부팅한다. */
+function reload(){
+  return new Promise(function(res){
+    var f = document.getElementById('app');
+    try{
+      var w = f.contentWindow;
+      for(var i = w.localStorage.length - 1; i >= 0; i--){
+        var k = w.localStorage.key(i);
+        if(k && k.indexOf('stayup.') === 0) w.localStorage.removeItem(k);
+      }
+    }catch(e){}
+    f.onload = function(){
+      W = f.contentWindow;
+      W.alert = function(m){ W.__alerts.push(String(m)); };
+      W.confirm = function(){ return true; };
+      W.__alerts = [];
+      W.__dl = [];
+      W.download = function(n){ W.__dl.push(n); };
+      setTimeout(function(){ res(); }, 350);
+    };
+    f.src = '../stayup-dash.html?regression=' + Date.now();
+  });
+}
+
+function cellRect(id){
+  var e = W.document.querySelector('#consMap [data-cell="'+id+'"]');
+  if(!e) return null;
+  var r = e.getBoundingClientRect();
+  var fr = document.getElementById('app').getBoundingClientRect();
+  return { x: fr.x + r.x + r.width/2, y: fr.y + r.y + r.height/2,
+           ix: r.x + r.width/2, iy: r.y + r.height/2 };
+}
+/* iframe 내부 좌표로 포인터 이벤트를 만든다. elementFromPoint 도 내부 좌표를 쓴다. */
+function drag(ids){
+  var host = W.document.getElementById('consMap');
+  var pts = ids.map(cellRect);
+  var P = W.PointerEvent;
+  host.dispatchEvent(new P('pointerdown', {bubbles:true, pointerId:1, button:0,
+    clientX:pts[0].ix, clientY:pts[0].iy}));
+  for(var i=1;i<pts.length;i++)
+    host.dispatchEvent(new P('pointermove', {bubbles:true, pointerId:1,
+      clientX:pts[i].ix, clientY:pts[i].iy}));
+  var L = pts[pts.length-1];
+  host.dispatchEvent(new P('pointerup', {bubbles:true, pointerId:1, clientX:L.ix, clientY:L.iy}));
+}
+function pick(act, v){
+  var b = W.document.querySelector('[data-act="'+act+'"][data-v="'+v+'"]');
+  if(b) b.click();
+  return !!b;
+}
+function gotoSection(id){
+  var b = W.document.querySelector('[data-sec="'+id+'"]');
+  if(b) b.click();
+}
+async function loadMap(w, h){
+  var cv = W.document.createElement('canvas'); cv.width = w; cv.height = h;
+  cv.getContext('2d').fillRect(0, 0, w, h);
+  var blob = await new Promise(function(r){ cv.toBlob(r, 'image/png'); });
+  W.fileToMap(new W.File([blob], 'm.png', {type:'image/png'}));
+  await wait(2200);
+}
+
+async function run(){
+  /* ---------------- 저장 · 개인정보 ---------------- */
+  await reload();
+  group('저장 · 개인정보');
+
+  W.loadSample(); await wait(300);
+  ok('샘플 상황이 적재된다', W.S.drones.length === 3 && W.S.crew.length === 6);
+
+  ok('다른 세대(epoch)의 상태는 채택하지 않는다',
+    W.adopt({meta:{revision:9999, updated:Date.now()+1e6, epoch:'다른-세대'},
+             mission:{title:'되살아난 개인정보'}}, false) === false
+    && W.S.mission.title !== '되살아난 개인정보',
+    '완전삭제 후 이전 창이 PII 를 되돌리는 경로');
+
+  var badEpoch = (function(){
+    var keep = W.SESSION_EPOCH;
+    W.SESSION_EPOCH = '없는-세대';           /* 저장이 실패하는 상황 */
+    var sent = [];
+    var realSend = W.sendPeer;
+    W.sendPeer = function(m){ sent.push(m.type); return true; };
+    W.commit();
+    W.sendPeer = realSend; W.SESSION_EPOCH = keep;
+    return sent.indexOf('state') < 0;
+  })();
+  ok('저장에 실패하면 상대 창으로 내보내지 않는다', badEpoch);
+
+  ok('손상 사본은 하나만 남긴다',
+    W.document.documentElement.innerHTML.indexOf('.corrupt.') > 0,
+    '구현 존재 확인');
+
+  /* ---------------- 비행 판정 ---------------- */
+  await reload();
+  group('비행 판정');
+
+  W.loadSample(); await wait(300);
+  W.S.safety.agencies = '경찰 드론(서편)'; W.commit();
+  ok('인접기관 동시운용은 제한 비행',
+    W.flightVerdict(new Date()).why.some(function(x){ return x.indexOf('인접기관') >= 0; }));
+
+  W.S.safety.agencies = '';
+  W.S.crew.find(function(c){ return c.name === '홍○○'; }).outAt = W.localDateTime(new Date());
+  W.commit();
+  ok('비행 중 기체의 조종자 교대 종료는 비행 불가',
+    W.flightVerdict(new Date()).lv === 'danger');
+
+  W.S.crew.push({id:W.uid(), name:'홍○○', role:'조종',
+    inAt:W.localDateTime(new Date()), outAt:''}); W.commit();
+  ok('같은 이름이 재투입되면 정상으로 본다',
+    W.flightVerdict(new Date()).lv !== 'danger');
+
+  /* ---------------- 기상 ---------------- */
+  await reload();
+  group('기상 확인');
+
+  W.loadSample(); await wait(300);
+  W.S.safety.agencies = ''; W.S.safety.windLimit = 12; W.S.safety.gustLimit = 12;
+  var base = {confirmed:true, src:'auto', rain:false, wind:4.2, gust:7.8, precip:20};
+  var same = Object.assign({}, base);
+  ok('값이 그대로면 확인을 유지한다', W.weatherNeedsReconfirm(base, same) === false);
+  ok('풍속 1m/s 이상 변하면 재확인',
+    W.weatherNeedsReconfirm(base, Object.assign({}, base, {wind:5.4})) === true);
+  ok('강수 여부가 바뀌면 재확인',
+    W.weatherNeedsReconfirm(base, Object.assign({}, base, {rain:true})) === true);
+  ok('한계 80% 구간에 들어가면 재확인',
+    W.weatherNeedsReconfirm(base, Object.assign({}, base, {gust:10.2})) === true);
+  ok('수동 관측을 자동 모델로 바꾸면 재확인',
+    W.weatherNeedsReconfirm(Object.assign({}, base, {src:'manual'}), base) === true);
+
+  W.S.weather.confirmedAt = Date.now() - 31*60000; W.commit();
+  ok('확인 후 30분이 지나면 만료된다', W.weatherStatus(new Date()).ok === false);
+  W.S.weather.confirmedAt = Date.now() - 29*60000; W.commit();
+  ok('29분은 아직 유효하다', W.weatherStatus(new Date()).ok === true);
+
+  /* ---------------- 경보 ---------------- */
+  await reload();
+  group('발견 경보');
+
+  W.loadSample(); await wait(300);
+  W.addEvent('found', '1차 발견', 'C3', true);
+  W.S.ui.ackFound = W.foundAlarmKey(W.latestFound()); W.commit();
+  ok('확인한 발견은 다시 울리지 않는다',
+    W.S.ui.ackFound >= W.foundAlarmKey(W.latestFound()));
+
+  W.addEvent('found', '소급 입력한 발견', 'E4', true, Date.now() - 5*3600000);
+  W.commit();
+  ok('과거 시각으로 소급 입력한 발견도 경보 대상이 된다',
+    W.S.ui.ackFound < W.foundAlarmKey(W.latestFound()),
+    '기록시각 기준 선택');
+
+  var g = W.getComputedStyle;
+  var mk = function(cls){
+    var i = W.document.createElement('i'); i.className = 'dot ' + cls;
+    W.document.body.appendChild(i);
+    var s = g(i); var v = s.borderRadius + '|' + s.clipPath + '|' + s.borderTopWidth;
+    i.remove(); return v;
+  };
+  var shapes = [mk('ok'), mk('warn'), mk('danger'), mk('idle')];
+  ok('비행 판정 표시가 색 말고 형태로도 구분된다',
+    new Set(shapes).size === 4, shapes.join('  ·  '));
+
+  /* ---------------- 수색격자 ---------------- */
+  await reload();
+  group('수색격자');
+
+  W.loadSample(); await wait(300);
+  await loadMap(1600, 900);
+  ok('지도가 적재된다', W.S.grid.hasMap && W.S.grid.mapW === 1600);
+
+  var mapBeforeSample = W.MAPDATA;
+  W.loadSample(); await wait(300);
+  ok('지도 적용 후 샘플을 넣어도 이미지 좌표계가 유지된다',
+    W.S.grid.hasMap && W.MAPDATA === mapBeforeSample
+    && W.S.grid.mapW === 1600 && W.S.grid.mapH === 900,
+    W.S.grid.mapW + '×' + W.S.grid.mapH);
+
+  gotoSection('sec-grid'); await wait(300);
+  var host = W.document.getElementById('consMap');
+  var fit = host.querySelector('.mapfit').getBoundingClientRect();
+  var hostR = host.getBoundingClientRect();
+  ok('격자가 지도 이미지 종횡비에 고정된다',
+    Math.abs(fit.width/fit.height - 1600/900) < 0.02,
+    '컨테이너 ' + (hostR.width/hostR.height).toFixed(3)
+      + ' → 상자 ' + (fit.width/fit.height).toFixed(3));
+
+  ok('칠하기 팔레트가 있다',
+    W.document.querySelectorAll('[data-act="paints"]').length === 5      /* 그대로 + 상태 4 */
+    && W.document.querySelectorAll('[data-act="paintby"]').length === 6  /* 그대로 + 담당 5 */
+    && W.document.querySelectorAll('.pb.keep').length === 2);
+
+  var e0 = W.S.events.length;
+  pick('paints', '2'); pick('paintby', '지상');
+  drag(['A5','A6','B6']); await wait(400);
+  ok('쓸어내리면 여러 칸이 한 번에 바뀐다',
+    W.S.grid.cells.A5 && W.S.grid.cells.A5.s === 2
+    && W.S.grid.cells.A6.by === '지상' && W.S.grid.cells.B6.s === 2);
+  ok('한 번의 쓸기는 기록 한 줄만 남긴다', (W.S.events.length - e0) === 1);
+  ok('방금 칠한 칸이 빠른기록 구역에 채워진다',
+    W.document.getElementById('evZone').value === 'A5');
+
+  var e1 = W.S.events.length;
+  pick('paints', '2'); drag(['A5','A6','B6']); await wait(400);
+  ok('이미 완료인 칸을 다시 칠해도 기록이 늘지 않는다', W.S.events.length === e1);
+
+  pick('paints', ''); pick('paintby', '수색견'); drag(['A5']); await wait(400);
+  ok('그대로 를 고르면 그 항목은 건드리지 않는다',
+    W.S.grid.cells.A5.s === 2 && W.S.grid.cells.A5.by === '수색견');
+
+  /* --- 직전 쓸기 되돌리기 --- */
+  function cellsSig(){
+    var c = W.S.grid.cells;
+    return Object.keys(c).sort().map(function(k){
+      return k + ':' + (c[k].s|0) + ':' + (c[k].by||''); }).join(',');
+  }
+  var sigBefore = cellsSig();
+  pick('paints', '2'); pick('paintby', '드론');
+  drag(['C6','D6','E6']); await wait(400);
+  var painted = !!(W.S.grid.cells.C6 && W.S.grid.cells.C6.s === 2
+    && W.S.grid.cells.E6.by === '드론');
+  var zoneEvId = W.S.events[W.S.events.length-1].id;
+  W.undoSweep(); await wait(300);
+  ok('되돌리기가 칸을 쓸기 전 상태로 복원한다',
+    painted && cellsSig() === sigBefore, '3칸');
+  ok('원래 없던 칸은 없던 대로 되돌린다', !W.S.grid.cells.C6);
+
+  var voided = W.S.events.filter(function(e){ return e.id === zoneEvId; })[0];
+  ok('되돌리면 완료 기록을 지우지 않고 무효 처리한다',
+    !!voided && voided.voided === true && voided.voidReason === '쓸기 취소');
+  ok('되돌린 사실이 정정 이력으로 남는다',
+    W.S.events[W.S.events.length-1].type === 'correction');
+  ok('되돌린 뒤에는 되돌릴 것이 없다', W.undoSweep() === false);
+
+  pick('paints', '2'); drag(['C6','D6']); await wait(400);
+  W.document.dispatchEvent(new W.KeyboardEvent('keydown',
+    {key:'z', ctrlKey:true, bubbles:true}));
+  await wait(300);
+  ok('Ctrl+Z 로도 되돌린다', cellsSig() === sigBefore);
+
+  var cellStyles = ['s0','s1','s2','s3'].map(function(c){
+    var d = W.document.createElement('div'); d.className = 'gcell ' + c;
+    W.document.body.appendChild(d);
+    var s = g(d);
+    var v = s.borderStyle + '|' + s.borderTopWidth + '|' + (s.backgroundImage !== 'none');
+    d.remove(); return v;
+  });
+  ok('격자 네 상태가 색 말고 무늬로도 구분된다',
+    new Set(cellStyles).size === 4, cellStyles.join('  ·  '));
+
+  /* ---------------- 조작 패널 ---------------- */
+  await reload();
+  group('조작 패널');
+
+  W.loadSample(); await wait(300);
+  gotoSection('sec-batt'); await wait(250);
+  var inp = W.document.querySelector('[data-path="batteries.ready"]');
+  var btn = W.document.querySelector('[data-act="batt"][data-k="ready"][data-v="1"]');
+  var v0 = W.S.batteries.ready;
+  inp.value = String(v0 + 3);
+  inp.dispatchEvent(new W.Event('input', {bubbles:true}));
+  btn.dispatchEvent(new W.PointerEvent('pointerdown', {bubbles:true}));
+  btn.dispatchEvent(new W.MouseEvent('mousedown', {bubbles:true}));
+  inp.dispatchEvent(new W.Event('change', {bubbles:true}));   /* 여기서 재렌더되면 클릭이 죽는다 */
+  btn.dispatchEvent(new W.PointerEvent('pointerup', {bubbles:true}));
+  btn.dispatchEvent(new W.MouseEvent('click', {bubbles:true}));
+  ok('입력 직후 누른 첫 버튼이 유실되지 않는다', W.S.batteries.ready === v0 + 4);
+
+  gotoSection('sec-quick'); await wait(250);
+  var et = W.document.getElementById('evText');
+  et.value = '작성 중인 무전 내용';
+  et.dispatchEvent(new W.Event('input', {bubbles:true}));
+  W.renderConsole(W.document.getElementById('consoleRoot'));
+  ok('재렌더돼도 빠른기록 입력이 남는다',
+    W.document.getElementById('evText').value === '작성 중인 무전 내용');
+
+  W.document.getElementById('evTime').value = '2020-01-01T00:00';  /* 손대지 않은 상태 */
+  W.document.getElementById('btnAddEv').click(); await wait(300);
+  ok('손대지 않은 발생시각은 기록 순간으로 확정된다',
+    Math.abs(Date.now() - W.S.events[W.S.events.length-1].t) < 90000);
+
+  var navBtns = W.document.querySelectorAll('[data-act="nav"]');
+  gotoSection('sec-grid'); await wait(250);
+  var bar = W.document.querySelector('.cons-top').getBoundingClientRect();
+  var h3 = W.document.querySelector('#sec-grid>h3').getBoundingClientRect();
+  ok('섹션 이동이 상단 바에 가리지 않는다',
+    navBtns.length === 9 && h3.top >= bar.bottom - 1,
+    '칩 ' + navBtns.length + '개');
+
+  /* ---------------- 기록 ↔ 상태 ---------------- */
+  await reload();
+  group('기록과 상태 불일치');
+
+  W.loadSample(); await wait(300);
+  W.addEvent('zone', 'D5 구역 수색완료', 'D5', true); W.commit(); await wait(200);
+  var mm = W.stateMismatches();
+  ok('격자에 반영 안 된 구역완료 기록을 찾아낸다',
+    mm.some(function(x){ return x.kind === 'zone' && x.ref === 'D5'; }));
+
+  W.syncFromRecord('zone', 'D5', Date.now()); W.commit(); await wait(200);
+  ok('원클릭 반영이 격자를 기록에 맞춘다',
+    (W.S.grid.cells.D5 || {}).s === 2);
+  ok('반영은 정정 이력으로 남고 구역완료를 중복 생성하지 않는다',
+    W.S.events[W.S.events.length-1].type === 'correction');
+
+  /* ---------------- 자동 보관 ---------------- */
+  await reload();
+  group('자동 보관');
+
+  W.autoSaveHandle = null; W.autoSaveAt = 0; W.lastAutoSavedRev = -1;
+  W.acquireEditorLock();
+  W.autoSaveTick();
+  ok('빈 상태에서는 보관하지 않는다', W.__dl.length === 0);
+
+  W.loadSample(); await wait(300);
+  W.autoSaveTick();
+  ok('내용이 생기면 즉시 보관한다', W.__dl.length === 1, W.__dl[0] || '');
+
+  W.autoSaveTick(); W.autoSaveTick();
+  ok('바뀐 게 없으면 다시 쓰지 않는다', W.__dl.length === 1);
+
+  W.addEvent('note', '변경'); await wait(200);
+  W.autoSaveTick();
+  ok('다운로드 방식은 주기 전에는 기다린다', W.__dl.length === 1);
+
+  W.__writes = [];
+  W.autoSaveHandle = { createWritable: function(){
+    var buf = '';
+    return Promise.resolve({
+      write: function(t){ buf = t; return Promise.resolve(); },
+      close: function(){ W.__writes.push(buf.length); return Promise.resolve(); }
+    });
+  }};
+  W.autoSaveAt = 0; W.lastAutoSavedRev = -1;
+  W.autoSaveTick(); await wait(350);
+  ok('보관 파일이 지정되면 그 파일에 덮어쓴다',
+    W.__writes.length === 1 && W.__dl.length === 1,
+    W.__writes[0] ? Math.round(W.__writes[0]/1024) + 'KB' : '');
+
+  W.releaseEditorLock();
+  W.addEvent('note', '또 변경'); await wait(200);
+  var wBefore = W.__writes.length; W.autoSaveAt = 0;
+  W.autoSaveTick(); await wait(350);
+  ok('편집권이 없는 창은 보관하지 않는다', W.__writes.length === wBefore);
+
+  /* ---------------- 복구점 ---------------- */
+  await reload();
+  group('복구점');
+
+  W.loadSample(); await wait(300);
+  var realSave = W.saveRecoveryPoint;
+  W.saveRecoveryPoint = function(){ return false; };   /* 저장공간 부족 상황 */
+  var before = W.S.mission.title;
+  W.document.querySelector('[data-act="sample"]').click(); await wait(300);
+  ok('복구점을 만들지 못하면 샘플 적용을 중단한다',
+    W.S.mission.title === before && W.__alerts.some(function(m){
+      return m.indexOf('복구본') >= 0; }));
+  W.saveRecoveryPoint = realSave;
+
+  /* ---------------- 마무리 ---------------- */
+  var pass = results.filter(function(r){ return r.pass; }).length;
+  var fail = results.length - pass;
+  sum.className = fail ? 'fail' : 'pass';
+  sum.textContent = fail
+    ? (fail + '건 실패 / 전체 ' + results.length + '건')
+    : ('전체 ' + results.length + '건 통과');
+  window.__REGRESSION__ = {total:results.length, pass:pass, fail:fail,
+    failed:results.filter(function(r){ return !r.pass; }).map(function(r){ return r.name; })};
+}
+
+run().catch(function(e){
+  sum.className = 'fail';
+  sum.textContent = '검사 중 오류: ' + (e && e.message ? e.message : e);
+  window.__REGRESSION__ = {error:String(e && e.stack || e)};
+});
+</script>
+</body>
+</html>

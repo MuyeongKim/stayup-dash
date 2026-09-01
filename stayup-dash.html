@@ -31,9 +31,13 @@
   --text:#E9F0F7;
   --muted:#8FA3B8;
   --muted2:#63788E;
+  /* 액센트(소방 주황)와 경고(앰버)가 색상환에서 17도밖에 안 떨어져 있어,
+     대형 스크린에서 브랜드 표시와 경고 신호가 같은 것으로 읽혔다.
+     경고를 노랑 쪽으로 24도 더 밀어 둘을 분리한다. 액센트는 정체성 전용이며
+     상태 표시에는 쓰지 않는다. */
   --accent:#FF6A1A;
   --ok:#22C55E;
-  --warn:#F5A524;
+  --warn:#E8B931;
   --danger:#EF4444;
   --info:#38BDF8;
   --s:1;          /* 배율 슬라이더 */
@@ -134,11 +138,16 @@ b,strong{font-weight:700}
 .kpi.lv-idle .kpi-v{color:var(--muted2)}
 
 .kpi-flight .kpi-v{font-size:3.1rem;display:flex;align-items:center;gap:.4rem}
-.dot{width:1.5rem;height:1.5rem;border-radius:50%;flex:0 0 auto;box-shadow:0 0 .8rem currentColor}
-.dot.ok{background:var(--ok);color:var(--ok)}
-.dot.warn{background:var(--warn);color:var(--warn)}
-.dot.danger{background:var(--danger);color:var(--danger)}
-.dot.idle{background:var(--muted2);color:var(--muted2);box-shadow:none}
+/* 색만으로 구분하면 적록색약(한국 남성 5~6%)에게 '비행 가능'과 '비행 불가'가
+   같은 회색 점이 된다. 프로젝터 색 재현이 나쁠 때도 마찬가지다.
+   화면 전체에서 같은 형태 어법을 쓴다: ● 가능 / ▲ 제한 / ■ 불가 / ○ 보류.
+   drop-shadow 는 box-shadow 와 달리 clip-path 를 따라간다. */
+.dot{width:1.5rem;height:1.5rem;flex:0 0 auto;filter:drop-shadow(0 0 .35rem currentColor)}
+.dot.ok{background:var(--ok);color:var(--ok);border-radius:50%}
+.dot.warn{background:var(--warn);color:var(--warn);clip-path:polygon(50% 3%,100% 97%,0 97%)}
+.dot.danger{background:var(--danger);color:var(--danger);border-radius:.1rem}
+.dot.idle{background:transparent;color:var(--muted2);border:.28rem solid var(--muted2);
+  border-radius:50%;filter:none}
 
 .hdr-clock{
   background:var(--surface);border:1px solid var(--border);border-radius:.55rem;
@@ -179,7 +188,8 @@ b,strong{font-weight:700}
   padding-bottom:.4rem;margin-bottom:.45rem;border-bottom:1px solid var(--border);
 }
 .subj-name .nm{font-size:2.35rem;font-weight:800;line-height:1}
-.subj-name .ag{font-size:1.5rem;font-weight:700;color:var(--accent)}
+/* 나이는 상태가 아니라 정보다. 소방 주황으로 칠하면 경고로 읽힌다. */
+.subj-name .ag{font-size:1.5rem;font-weight:700;color:var(--muted)}
 .subj-name .sx{font-size:1.2rem;color:var(--muted)}
 
 /* 인상착의: 열화상/주광 판독 중 반복 확인하므로 색상칩을 크게 */
@@ -257,6 +267,16 @@ b,strong{font-weight:700}
     repeating-linear-gradient(45deg,#0E151D 0 12px,#101922 12px 24px);
   border:1px solid var(--border);
 }
+/* 격자·핀·추정반경은 컨테이너가 아니라 지도 이미지의 좌표계에 고정한다.
+   컨테이너 종횡비는 화면마다 다르고(조작 패널 1.60 고정 / 표출 1.70~2.14) 해상도와
+   안전 카드 높이에 따라 계속 변한다. 격자를 컨테이너에 붙여 두면 object-fit:cover 의
+   크롭량이 화면마다 달라져, 같은 칸이 두 화면에서 서로 다른 지형을 가리킨다.
+   상자 크기는 fitMapBox() 가 px 로 계산한다. CSS 만으로는 "비율 유지하며 최대로 맞추기"가
+   컨테이너 축에 따라 안정적으로 풀리지 않는다. */
+.mapfit{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:100%;height:100%;overflow:hidden;border-radius:.2rem;
+}
 .mapimg{
   position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   transform-origin:center center;pointer-events:none;user-select:none;
@@ -274,10 +294,14 @@ b,strong{font-weight:700}
   transition:background .15s,border-color .15s;
   padding:0;font-family:inherit;
 }
+/* 네 상태를 채움 밀도와 무늬로 구분해, 색 없이도 순서가 읽히게 한다.
+   미수색 = 비어 있음(점선) · 수색중 = 진행(사선) · 완료 = 닫힘(진한 채움) · 재수색 = 다시 열림(이중선) */
 .gcell.s0{border-style:dashed}
-.gcell.s1{background:rgba(245,165,36,.30);border-color:#F5A524;color:#FFE3AE}
-.gcell.s2{background:rgba(34,197,94,.28);border-color:#22C55E;color:#C6F6D5}
-.gcell.s3{background:rgba(239,68,68,.30);border-color:#EF4444;color:#FECACA}
+.gcell.s1{background-color:rgba(232,185,49,.28);border-color:var(--warn);color:#FBEBC0;
+  background-image:repeating-linear-gradient(45deg,rgba(0,0,0,0) 0 .26rem,rgba(255,255,255,.15) .26rem .52rem)}
+.gcell.s2{background:rgba(34,197,94,.42);border-color:var(--ok);color:#DFFBE9}
+.gcell.s3{background:rgba(239,68,68,.22);border-color:var(--danger);color:#FECACA;
+  border-style:double;border-width:.22rem}
 .gcell .by{
   position:absolute;top:.1rem;right:.2rem;font-size:.88rem;font-weight:700;
   opacity:.9;letter-spacing:0;
@@ -312,7 +336,10 @@ b,strong{font-weight:700}
 .legend span{display:flex;align-items:center;gap:.28rem;color:#B8C9D9}
 .legend i{width:.9rem;height:.9rem;border-radius:.15rem;border:1px solid rgba(143,163,184,.4)}
 .legend i.l0{background:rgba(7,10,14,.2);border-style:dashed}
-.legend i.l1{background:#F5A524} .legend i.l2{background:#22C55E} .legend i.l3{background:#EF4444}
+.legend i.l1{background-color:rgba(232,185,49,.34);border-color:var(--warn);
+  background-image:repeating-linear-gradient(45deg,rgba(0,0,0,0) 0 .16rem,rgba(255,255,255,.30) .16rem .32rem)}
+.legend i.l2{background:rgba(34,197,94,.46);border-color:var(--ok)}
+.legend i.l3{background:rgba(239,68,68,.26);border-color:var(--danger);border-style:double;border-width:.16rem}
 
 /* 안전·규제 */
 .card-safety{flex:0 0 auto}
@@ -324,6 +351,13 @@ b,strong{font-weight:700}
 .sf .sl{font-size:1rem;color:var(--muted);white-space:nowrap}
 .sf .sv{font-size:1.34rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sf.ok .sv{color:var(--ok)} .sf.warn .sv{color:var(--warn)} .sf.danger .sv{color:var(--danger)}
+/* 비행 판정 점과 같은 어법. 색을 못 읽어도 등급이 남는다. */
+.sf.ok .sv::before,.sf.warn .sv::before,.sf.danger .sv::before{
+  margin-right:.32em;font-size:.78em;display:inline-block;vertical-align:.06em
+}
+.sf.ok .sv::before{content:"\25CF"}      /* ● */
+.sf.warn .sv::before{content:"\25B2"}    /* ▲ */
+.sf.danger .sv::before{content:"\25A0"}  /* ■ */
 .sf.wide{flex:2.2 1 15rem}
 .sf.wide .sv{white-space:normal;font-size:1.15rem;line-height:1.18;max-height:2.4em;overflow:hidden}
 .sf.danger{background:#2A0B0B;border-color:#7F1D1D}
@@ -360,7 +394,10 @@ b,strong{font-weight:700}
 .d-batt{display:flex;align-items:center;gap:.45rem;margin-bottom:.22rem}
 .bar{flex:1 1 auto;height:.85rem;background:#0A1016;border:1px solid var(--border2);border-radius:.5rem;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ok);transition:width .4s}
-.bar.low i{background:var(--warn)} .bar.crit i{background:var(--danger)}
+.bar.low i{background:var(--warn)}
+/* 잔량은 막대 길이가 이미 값을 나타내므로 색은 보조다. 위험 구간만 사선으로 못박는다. */
+.bar.crit i{background-color:var(--danger);
+  background-image:repeating-linear-gradient(45deg,rgba(0,0,0,0) 0 .17rem,rgba(0,0,0,.38) .17rem .34rem)}
 .d-pct{font-size:1.45rem;font-weight:800;min-width:3.6rem;text-align:right}
 .d-pct.low{color:var(--warn)} .d-pct.crit{color:var(--danger)}
 .d-rows{display:grid;grid-template-columns:repeat(4,1fr);gap:.22rem;margin-bottom:.2rem}
@@ -417,7 +454,7 @@ b,strong{font-weight:700}
 .tk-right b{color:var(--text)}
 
 .alert-banner{
-  position:fixed;left:0;right:0;top:0;z-index:8000;
+  position:fixed;left:0;right:0;top:0;z-index:9200;
   background:#B91C1C;color:#fff;padding:.7rem 1.2rem;
   display:flex;align-items:center;gap:1rem;
   box-shadow:0 .5rem 2rem rgba(0,0,0,.6);animation:bannerin .25s ease-out;
@@ -452,6 +489,18 @@ b,strong{font-weight:700}
 .cons-top .ct-mode{font-size:12px;color:var(--muted);background:var(--surface2);
   border:1px solid var(--border);border-radius:4px;padding:2px 7px;white-space:nowrap}
 .cons-top .spacer{flex:1 1 auto}
+/* 조작 패널은 노트북 기준 8화면 가까이 되고, 수색 중 가장 자주 만지는 수색구역이
+   70% 지점에 있다. 상단 바에 섹션 점프를 붙여 스크롤 없이 오갈 수 있게 한다. */
+.cons-top .ct-nav{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:5px;
+  padding-top:8px;border-top:1px solid var(--border)}
+.ct-nav button{
+  font:700 11.5px/1 system-ui,sans-serif;color:var(--muted);cursor:pointer;
+  background:var(--surface2);border:1px solid var(--border);border-radius:99px;padding:5px 9px;
+}
+.ct-nav button:hover{color:var(--text);border-color:var(--border2);background:var(--surface3)}
+/* 키보드 포커스 이동용 폴백. 칩이 줄바꿈되면 상단 바가 더 높아지므로
+   버튼 클릭 경로에서는 실제 높이를 재서 정확히 맞춘다(bindConsole 의 nav 처리). */
+.sec{scroll-margin-top:96px}
 .sync-pill{font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;
   background:#0B3A22;color:#86EFAC;border:1px solid #166534}
 .sync-pill.off{background:#33210A;color:#FCD34D;border-color:#7C4A0A}
@@ -491,6 +540,12 @@ b,strong{font-weight:700}
 .sec>h3 .hint{font-weight:600;font-size:11.5px;color:var(--muted2);letter-spacing:0}
 .sec>h3 .spacer{flex:1 1 auto}
 .sec-b{padding:12px}
+/* 기록과 실제 상태가 어긋난 항목 목록 (빠른기록은 타임라인만 바꾼다) */
+.mismatch{border:1px solid var(--warn);background:#2A1E06;border-radius:6px;padding:9px 11px;margin:10px 0}
+.mismatch .mm-h{font-size:12.5px;font-weight:800;color:var(--warn);margin-bottom:6px}
+.mismatch .mm-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px}
+.mismatch .mm-row>span{flex:1 1 auto;min-width:0}
+.mismatch .note{margin-top:7px}
 
 label.f{display:block;margin-bottom:9px}
 label.f>span{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
@@ -524,8 +579,23 @@ textarea{resize:vertical;min-height:52px}
 .sens-pick button{font-size:11.5px;padding:3px 7px}
 
 /* 조작 패널 안의 격자 편집기 */
+/* 칠하기 팔레트 — 칠할 것을 먼저 고르고 칸을 찍거나 쓸어내린다. */
+.paint{margin-bottom:8px}
+.paint .prow{display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap}
+.paint .pl{font-size:11.5px;font-weight:800;color:var(--muted);flex:0 0 30px}
+.pb{font:700 12px/1 system-ui,sans-serif;cursor:pointer;color:var(--muted);
+  background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:6px 10px}
+.pb:hover{color:var(--text);border-color:var(--border2)}
+.pb.on{color:#0A0F14;background:var(--muted);border-color:var(--text)}
+.pb.keep.on{background:var(--surface3);color:var(--text);border-color:var(--border2)}
+.pb.undo{border-color:var(--border2)}
+.pb.undo[disabled]{opacity:.4;cursor:default}
+.pb.p1.on{background:var(--warn)}
+.pb.p2.on{background:var(--ok);color:#04140A}
+.pb.p3.on{background:var(--danger);color:#1A0505}
+/* touch-action:none 이 없으면 터치로 쓸어내릴 때 페이지가 스크롤돼 칠하기가 끊긴다. */
 .cons-map{position:relative;width:100%;aspect-ratio:16/10;border:1px solid var(--border2);
-  border-radius:6px;overflow:hidden;background:#0B1219;cursor:crosshair}
+  border-radius:6px;overflow:hidden;background:#0B1219;cursor:crosshair;touch-action:none}
 .cons-map .gcell{font-size:12px;cursor:pointer}
 .cons-map .gcell .by{font-size:9px}
 .cons-map .gcell:focus{outline:3px solid var(--accent);outline-offset:-3px}
@@ -549,14 +619,18 @@ textarea{resize:vertical;min-height:52px}
   padding:9px 11px;font-size:12.5px;line-height:1.55;margin-bottom:12px;
 }
 .warn-strip.danger{background:#3B1010;border-color:#991B1B;color:#FCA5A5}
+/* 상단에 두면 조작 패널의 상단 바(편집권·표출 화면 열기)와 표출 화면의 발견 배너를
+   동시에 덮는다. 둘 다 이 경고보다 먼저 눌러야 하는 것들이라 하단으로 내린다. */
 .system-alert{
-  position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9500;
+  position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:9500;
   width:min(860px,calc(100vw - 24px));background:#7F1D1D;color:#fff;border:1px solid #EF4444;
   border-radius:7px;padding:10px 14px;font:700 13px/1.45 system-ui,sans-serif;
   box-shadow:0 8px 30px rgba(0,0,0,.55)
 }
+/* 우상단에 두면 발견 배너의 "확인" 버튼과 정확히 겹쳐(z-index 9000 > 배너 8000)
+   경보 확인 클릭을 이 칩이 가로챈다. 배너와 절대 겹치지 않는 우하단으로 옮긴다. */
 .audio-arm{
-  position:fixed;right:1rem;top:.8rem;z-index:9000;border:1px solid #F5A524;
+  position:fixed;right:1rem;bottom:4.2rem;z-index:9000;border:1px solid #F5A524;
   background:#33210A;color:#FDE68A;border-radius:.35rem;padding:.35rem .7rem;
   font:700 1rem/1.2 system-ui,sans-serif;cursor:pointer
 }
@@ -583,7 +657,7 @@ textarea{resize:vertical;min-height:52px}
 <div class="board" id="board" hidden>
 
   <div class="alert-banner" id="alertBanner" hidden></div>
-  <button class="audio-arm" id="audioArm" type="button" hidden>🔊 경보음 준비</button>
+  <button class="audio-arm" id="audioArm" type="button" hidden>&#9654;&#65038; 경보음 준비</button>
 
   <header class="hdr">
     <div class="hdr-id">
@@ -705,9 +779,12 @@ var MAP_PREFIX = 'stayup.dash.map.v2.';
 var APP_VERSION = '1.0.1';
 var STATE_VERSION = 2;
 var MAX_IMPORT_BYTES = 6 * 1024 * 1024;
+var MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 var MAX_MAP_CHARS = 3 * 1024 * 1024;
 var MAX_EVENTS = 5000;
 var WEATHER_MAX_AGE_MIN = 30;
+var WEATHER_CONFIRM_MAX_MIN = 30;  /* 현장 확인의 유효시간. 자동 갱신 주기와 무관하게 사람이 다시 본다 */
+var WIND_STEP_MS = 1;              /* 재확인을 요구할 풍속·돌풍 변화 폭 (m/s) */
 var LOCK_LEASE_MS = 15000;
 var PEER_STALE_MS = 7000;
 var GOLDEN_HOURS = 24;      /* 치매 실종자 발견율이 급락하는 기준 */
@@ -725,6 +802,7 @@ var EV_TYPE = {
 };
 var EV_CLASS = {found:'k-found', heat:'k-heat', order:'k-order', accident:'k-accident',correction:'k-order'};
 var ROLES = ['조종','관측','통신','안전','충전지원','지휘'];
+var BY_OPTS = ['','드론','지상','수색견','소방대'];   /* 격자 담당 */
 /* macOS 와 Windows 의 캡처·붙여넣기 단축키가 다르다.
    특히 macOS 의 ⌘⇧4 는 파일로 저장되고 클립보드에 들어가지 않는다. */
 var IS_MAC   = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
@@ -760,12 +838,14 @@ function defaultState(){
     weather:{ auto:true, temp:null, wind:null, gust:null, precip:null,
               rain:null, stamp:null, observedAt:0, lastAttemptAt:0,
               error:'', src:'none', confirmed:false, confirmedAt:0, lat:null, lon:null },
-    ui:{ scale:1, dim:0, ackFound:0, gridAction:'status' }
+    /* paintS: 칠할 상태 0~3, null 이면 상태를 건드리지 않음
+       paintBy: 칠할 담당, null 이면 담당을 건드리지 않음 */
+    ui:{ scale:1, dim:0, ackFound:0, paintS:2, paintBy:null, autoSave:true }
   };
 }
 var S = defaultState();
 var STARTUP_WARNINGS = [];
-var SAVE_STATUS = { ok:true, at:0, message:'', backupOk:true, backupMessage:'' };
+var SAVE_STATUS = { ok:true, at:0, message:'', backupOk:true, backupMessage:'', backupNote:'' };
 /* 로컬 저장이 되는 환경인지 미리 확인한다.
    Safari 로 file:// 을 열면 localStorage 가 차단되어 저장·복구·창간 동기화가 되지 않는다. */
 var STORAGE_OK = (function(){
@@ -834,6 +914,30 @@ function invalidateSafetyContext(){
   S.weather.confirmed=false; S.weather.confirmedAt=0;
   S.safety.approval='unknown';
 }
+/* 자동 갱신이 들어올 때마다 확정을 풀면 10분마다 판정이 '보류'로 떨어지고,
+   운영요원이 안전 확인 버튼을 뜻 없이 누르도록 길들여진다. 그러면 정작 풍속이
+   한계에 붙었을 때도 그냥 누르게 되어, 확인 절차가 없느니만 못한 상태가 된다.
+   그래서 판정 등급을 바꿀 만한 변화가 있을 때만 재확인을 요구한다.
+   변화가 없어도 확인 자체는 WEATHER_CONFIRM_MAX_MIN 이 지나면 만료된다. */
+function windBand(v, limit){
+  var x=num(v,NaN), l=num(limit,NaN);
+  if(!isFinite(x)||!isFinite(l)||l<=0) return -1;
+  if(x>=l) return 2;                    /* 한계 초과 = 비행 불가 */
+  if(x>=l*0.8-1e-9) return 1;           /* 한계 근접 = 제한 비행 */
+  return 0;
+}
+function weatherNeedsReconfirm(prev, next){
+  if(!prev.confirmed) return true;
+  if(prev.src!=='auto') return true;    /* 수동 관측 -> 모델값 교체는 사람이 다시 봐야 한다 */
+  if(prev.rain!==next.rain) return true;
+  if(Math.abs(num(prev.wind,0)-num(next.wind,0))>=WIND_STEP_MS) return true;
+  if(Math.abs(num(prev.gust,0)-num(next.gust,0))>=WIND_STEP_MS) return true;
+  if(windBand(prev.wind,S.safety.windLimit)!==windBand(next.wind,S.safety.windLimit)) return true;
+  if(windBand(prev.gust,S.safety.gustLimit)!==windBand(next.gust,S.safety.gustLimit)) return true;
+  if((num(prev.precip,0)>=60)!==(num(next.precip,0)>=60)) return true;
+  return false;
+}
+
 function weatherStatus(now){
   var w=S.weather, cs=coordinateStatus(); now=now||new Date();
   if(!cs.ok) return {ok:false,why:'현장 좌표 미확인'};
@@ -848,7 +952,13 @@ function weatherStatus(now){
   if(!w.observedAt) return {ok:false,why:'기상 관측시각 미입력'};
   if(age < -5*60000) return {ok:false,why:'기상 관측시각이 미래임'};
   if(age >= WEATHER_MAX_AGE_MIN*60000) return {ok:false,why:'기상 관측 '+Math.floor(age/60000)+'분 경과 · 갱신 필요'};
-  return {ok:true,ageMin:Math.max(0,Math.floor(age/60000))};
+  /* 값이 계속 안정적이어서 자동 갱신이 확정을 유지하더라도, 사람이 현장과 대조한
+     시점 자체는 만료시킨다. 그러지 않으면 한 번 누르고 출동 내내 확인이 없다. */
+  var cAge=now.getTime()-num(w.confirmedAt,0);
+  if(!w.confirmedAt) return {ok:false,why:'현장 기상 확인 미완료'};
+  if(cAge >= WEATHER_CONFIRM_MAX_MIN*60000)
+    return {ok:false,why:'현장 기상 확인 '+Math.floor(cAge/60000)+'분 경과 · 재확인 필요'};
+  return {ok:true,ageMin:Math.max(0,Math.floor(age/60000)),confirmAgeMin:Math.max(0,Math.floor(cAge/60000))};
 }
 
 /* ==========================================================================
@@ -864,6 +974,8 @@ var lastPeerSeen = 0;
 var lastSeenUpdated = 0;
 var applying = false;     /* 원격 상태 반영 중 재전송 방지 */
 var lastSnapshotUpdated = -1;
+var lastPolledRaw = null; /* 폴링 시 파싱 생략용 - 저장 원문 스냅샷 */
+var heldEditorLock = false; /* 이 창이 한 번이라도 편집권을 가졌는가 (만료 자동 회수용) */
 var SESSION_EPOCH='';
 var epochInvalidNotified=false;
 function initEpoch(){
@@ -974,7 +1086,7 @@ function migrate(raw){
   d.grid.rows=sanInt(g.rows,1,12,5); d.grid.cols=sanInt(g.cols,1,12,6); d.grid.cells={};
   if(isPlainObject(g.cells)) Object.keys(g.cells).slice(0,144).forEach(function(k){
     var c=g.cells[k]; if(!/^[A-L](?:[1-9]|1[0-2])$/.test(k) || !isPlainObject(c)) return;
-    d.grid.cells[k]={s:sanInt(c.s,0,3,0),by:['','드론','지상','수색견','소방대'].indexOf(c.by)>=0?c.by:''};
+    d.grid.cells[k]={s:sanInt(c.s,0,3,0),by:BY_OPTS.indexOf(c.by)>=0?c.by:''};
   });
   d.grid.mapVer=sanInt(g.mapVer,0,2147483647,0);
   d.grid.mapId=/^[a-z0-9_-]{3,100}$/i.test(String(g.mapId||''))?String(g.mapId):null;
@@ -1016,7 +1128,17 @@ function migrate(raw){
   var u=isPlainObject(raw.ui)?raw.ui:{};
   d.ui.scale=sanNum(u.scale,0.75,1.5,1,false); d.ui.dim=sanNum(u.dim,0,1,0,false);
   d.ui.ackFound=sanNum(u.ackFound,0,Number.MAX_SAFE_INTEGER,0,false);
-  d.ui.gridAction=['status','by:','by:드론','by:지상','by:수색견','by:소방대'].indexOf(u.gridAction)>=0?u.gridAction:'status';
+  d.ui.autoSave=sanBool(u.autoSave,true);
+  /* 구버전의 '셀 탭 동작'(상태 순환 / 담당 직접지정)을 새 팔레트로 옮긴다. */
+  if(u.paintS!==undefined||u.paintBy!==undefined){
+    d.ui.paintS = u.paintS===null ? null : (function(v){var k=sanInt(v,0,3,-1);return k<0?2:k;})(u.paintS);
+    d.ui.paintBy = (u.paintBy===null||u.paintBy===undefined) ? null
+      : (BY_OPTS.indexOf(u.paintBy)>=0 ? u.paintBy : null);
+  }else{
+    var ga = String(u.gridAction||'status');
+    if(ga.indexOf('by:')===0){ d.ui.paintS=null; d.ui.paintBy=BY_OPTS.indexOf(ga.slice(3))>=0?ga.slice(3):''; }
+    else { d.ui.paintS=2; d.ui.paintBy=null; }
+  }
   var meta=isPlainObject(raw.meta)?raw.meta:{};
   d.meta.v=STATE_VERSION; d.meta.updated=sanNum(meta.updated,0,Number.MAX_SAFE_INTEGER,0,false);
   d.meta.revision=sanInt(meta.revision,0,Number.MAX_SAFE_INTEGER,0);
@@ -1031,6 +1153,7 @@ function showSystemAlert(message){
 function refreshSystemAlert(){
   if(!SAVE_STATUS.ok)showSystemAlert('저장 실패: '+(SAVE_STATUS.message||'브라우저 저장공간을 확인하고 즉시 JSON으로 내보내세요.'));
   else if(!SAVE_STATUS.backupOk)showSystemAlert('현재 입력은 저장됐지만 자동 복구본 생성 실패: '+(SAVE_STATUS.backupMessage||'저장공간을 확인하세요.'));
+  else if(SAVE_STATUS.backupNote)showSystemAlert(SAVE_STATUS.backupNote);
   else showSystemAlert('');
 }
 function setSaveStatus(ok, message){
@@ -1056,19 +1179,36 @@ function persist(){ return persistCandidate(S); }
 function commit(){
   if(applying) return true;
   touch(); var ok=persist(); lastSeenUpdated=S.meta.updated;
-  broadcast(); renderAll(); return ok;
+  /* 저장에 실패한 상태(완전삭제 후 남은 이전 세대 창 등)를 상대 창으로 내보내지 않는다.
+     내보내면 삭제된 실종자 정보가 표출 화면에 되살아난다. */
+  if(ok) broadcast();
+  renderAll(); return ok;
 }
 
 function getSnapshots(){
   try{ var a=JSON.parse(localStorage.getItem(SNAPKEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){return [];}
 }
+/* 이벤트가 한도(MAX_EVENTS)에 가까우면 상태 사본 5개가 localStorage 할당량을 넘는다.
+   전부 실패해 복구본이 0개가 되는 것보다, 세대를 줄여서라도 최근 것을 남기는 편이 낫다. */
 function createSnapshot(reason){
   if(!STORAGE_OK||!epochCurrent()||S.meta.updated===lastSnapshotUpdated)return true;
+  var a, lastErr=null, wanted=0;
   try{
-    var a=getSnapshots(); a.push({t:Date.now(),reason:reason||'자동',state:JSON.parse(JSON.stringify(S))});
-    if(a.length>5) a=a.slice(-5); localStorage.setItem(SNAPKEY,JSON.stringify(a));
-    lastSnapshotUpdated=S.meta.updated;SAVE_STATUS.backupOk=true;SAVE_STATUS.backupMessage='';refreshSystemAlert();gcMapBlobs();return true;
-  }catch(e){console.warn('복구본 저장 실패',e);SAVE_STATUS.backupOk=false;SAVE_STATUS.backupMessage=e&&e.name?e.name:String(e);refreshSystemAlert();return false;}
+    a=getSnapshots(); a.push({t:Date.now(),reason:reason||'자동',state:JSON.parse(JSON.stringify(S))});
+    if(a.length>5) a=a.slice(-5);
+    wanted=a.length;   /* 이번에 남기려던 세대 수. 이보다 줄었을 때만 경고한다. */
+  }catch(e){ a=null; lastErr=e; }
+  while(a&&a.length){
+    try{
+      localStorage.setItem(SNAPKEY,JSON.stringify(a));
+      lastSnapshotUpdated=S.meta.updated;SAVE_STATUS.backupOk=true;SAVE_STATUS.backupMessage='';
+      SAVE_STATUS.backupNote=a.length<wanted?'저장공간이 부족해 복구본을 '+a.length+'세대만 유지합니다. 지금 JSON을 내보내세요.':'';
+      refreshSystemAlert();gcMapBlobs();return true;
+    }catch(e2){ lastErr=e2; a=a.slice(1); }
+  }
+  console.warn('복구본 저장 실패',lastErr);
+  SAVE_STATUS.backupOk=false;SAVE_STATUS.backupMessage=lastErr&&lastErr.name?lastErr.name:String(lastErr);
+  SAVE_STATUS.backupNote='';refreshSystemAlert();return false;
 }
 function saveRecoveryPoint(reason){
   if(!STORAGE_OK||!epochCurrent())return false;
@@ -1102,8 +1242,8 @@ function restoreRecovery(){
     if(!map&&mid)map=localStorage.getItem(MAP_PREFIX+mid);
     if(r.state.grid&&r.state.grid.hasMap&&!validMapData(map))throw new Error('복구본의 지도 데이터가 없습니다.');
     if(!confirm(shortDateTime(r.t)+' · '+(r.reason||'직전 작업')+' 상태로 되돌릴까요?'))return;
-    createSnapshot('복구 적용 전');
-    if(!applyStateTransaction(migrate(r.state),map))throw new Error('복구 상태를 저장하지 못했습니다.');
+    if(!createSnapshot('복구 적용 전'))throw new Error('복구본을 만들 수 없어 되돌리기를 중단했습니다. 저장공간을 확인하세요.');
+    if(!applyStateTransaction(r.state,map))throw new Error('복구 상태를 저장하지 못했습니다.');
     alert('직전 작업을 복구했습니다.');
   }catch(e){alert('복구 실패: '+(e&&e.message?e.message:e));}
 }
@@ -1117,8 +1257,8 @@ function purgeIncidentData(){
     sendPeer({type:'purge',epoch:newEpoch});SESSION_EPOCH=newEpoch;
     var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('stayup.dash.')===0&&k!==EPOCHKEY)keys.push(k);}
     keys.forEach(function(k){localStorage.removeItem(k);});
-    S=defaultState();S.meta.epoch=SESSION_EPOCH;MAPDATA=null;mapVerLoaded=-1;lastSnapshotUpdated=-1;lastSeenUpdated=0;STARTUP_WARNINGS=[];
-    acquireEditorLock(false);setSaveStatus(true,'');renderAll();
+    S=defaultState();S.meta.epoch=SESSION_EPOCH;MAPDATA=null;mapVerLoaded=-1;lastSnapshotUpdated=-1;lastSeenUpdated=0;STARTUP_WARNINGS=[];lastSweep=null;
+    acquireEditorLock();setSaveStatus(true,'');renderAll();
     alert('브라우저의 상황 데이터와 복구본을 삭제했습니다. 공용 PC의 다운로드 파일도 승인된 위치로 옮기거나 삭제한 뒤 두 창을 닫으세요.');
   }catch(e){setSaveStatus(false,e&&e.message?e.message:String(e));alert('완전 삭제 중 오류가 발생했습니다. 브라우저 저장공간을 직접 확인하세요.');}
 }
@@ -1142,6 +1282,8 @@ function applyStateTransaction(nextState,nextMap){
     touchState(nextState);
     var raw=JSON.stringify(nextState); localStorage.setItem(KEY,raw);wroteRaw=raw;
     if(localStorage.getItem(KEY)!==raw) throw new Error('상태 저장 확인 실패');
+    /* 다른 상황으로 통째로 갈아탄 뒤의 되돌리기는 엉뚱한 칸을 덮어쓴다. */
+    lastSweep=null;
     S=nextState;MAPDATA=nextMap||null;mapVerLoaded=S.grid.mapVer;STARTUP_WARNINGS=[];
     if(hadLegacyMap)try{localStorage.removeItem(MAPKEY);}catch(ignore){}
     setSaveStatus(true,'');lastSeenUpdated=S.meta.updated;broadcast();renderAll();gcMapBlobs();return true;
@@ -1159,10 +1301,11 @@ function ownsEditorLock(){
   if(!STORAGE_OK||!epochCurrent())return false;
   var x=readEditorLock(); return !!(x&&x.id===TAB_ID&&x.epoch===SESSION_EPOCH&&x.expires>Date.now());
 }
-function acquireEditorLock(force){
+/* 임대가 살아 있는 다른 창의 편집권은 뺏지 않는다. 15초 임대가 만료되면 그때 가져간다. */
+function acquireEditorLock(){
   if(!STORAGE_OK||!epochCurrent())return false;
   var cur=readEditorLock(), now=Date.now();
-  if(!force&&cur&&cur.epoch===SESSION_EPOCH&&cur.id!==TAB_ID&&cur.expires>now)return false;
+  if(cur&&cur.epoch===SESSION_EPOCH&&cur.id!==TAB_ID&&cur.expires>now)return false;
   try{
     localStorage.setItem(LOCKKEY,JSON.stringify({id:TAB_ID,epoch:SESSION_EPOCH,expires:now+LOCK_LEASE_MS,mode:MODE}));
     return ownsEditorLock();
@@ -1184,20 +1327,33 @@ function ensureEditor(){
   return false;
 }
 
+/* file:// 의 출처는 'null' 이라 targetOrigin 으로 지정할 수 없어 '*' 를 쓸 수밖에 없다.
+   로컬 HTTP 로 서빙하면 실제 출처를 지정한다. 창 핸들은 그 창이 외부 사이트로 이동해도
+   유지되므로, '*' 로 두면 그 순간부터 실종자 성명·좌표·지도가 외부 출처로 넘어간다. */
+var PEER_ORIGIN = location.protocol==='file:' ? '*' : location.origin;
 function sendPeer(msg){
   msg=msg||{}; msg.ch='stayup'; msg.sender=TAB_ID;
-  try{ if(peer&&!peer.closed){peer.postMessage(msg,'*');return true;} }catch(e){}
-  try{ if(window.opener&&!window.opener.closed){window.opener.postMessage(msg,'*');return true;} }catch(e){}
+  try{ if(peer&&!peer.closed){peer.postMessage(msg,PEER_ORIGIN);return true;} }catch(e){}
+  try{ if(window.opener&&!window.opener.closed){window.opener.postMessage(msg,PEER_ORIGIN);return true;} }catch(e){}
   return false;
 }
 function broadcast(){ sendPeer({type:'state',state:S}); }
 function peerConnected(){ return !!(peer&&!peer.closed&&Date.now()-lastPeerSeen<PEER_STALE_MS); }
 function adopt(remote,force){
   if(!remote||!remote.meta) return false;
+  /* 완전삭제 이후까지 살아남은 이전 세대 창이 삭제된 상태를 되돌려놓지 못하게 막는다.
+     revision 만 비교하면 삭제 전(높은 revision)이 삭제 후(0)를 항상 이긴다.
+     로컬 저장이 차단된 환경은 창마다 epoch 가 달라 비교 기준이 없으므로 건너뛴다. */
+  if(STORAGE_OK){
+    if(!epochCurrent()) return false;
+    var re=sanText(remote.meta.epoch,100);
+    if(re&&re!==SESSION_EPOCH) return false;
+  }
   var rr=sanInt(remote.meta.revision,0,Number.MAX_SAFE_INTEGER,0);
   var sr=sanInt(S.meta.revision,0,Number.MAX_SAFE_INTEGER,0);
   if(!force&&rr<sr) return false;
   if(!force&&rr===sr&&sanNum(remote.meta.updated,0,Number.MAX_SAFE_INTEGER,0)<=S.meta.updated) return false;
+  lastSweep=null;   /* 상대 창의 상태를 받으면 내 되돌리기 기록은 더 이상 맞지 않는다 */
   applying=true; S=migrate(remote); lastSeenUpdated=S.meta.updated; applying=false;
   applyUi(); renderAll(); return true;
 }
@@ -1211,7 +1367,18 @@ function loadLocal(){
       S.meta.epoch=SESSION_EPOCH;lastSeenUpdated=S.meta.updated; }
   }catch(e){
     STARTUP_WARNINGS.push('저장된 상태가 손상되어 기본 화면으로 열었습니다. 직전 복구본 또는 JSON을 사용하세요.');
-    try{ localStorage.setItem(KEY+'.corrupt.'+Date.now(),localStorage.getItem(KEY)||''); localStorage.removeItem(KEY); }catch(ignore){}
+    /* 손상 사본은 하나만 남긴다. 손상 원인이 저장공간 부족일 때 사본이 쌓이면 상황이 악화된다.
+       사본 저장이 실패하더라도 손상된 KEY 는 반드시 치워 다음 부팅이 같은 곳에서 막히지 않게 한다. */
+    try{
+      var oldc=[];
+      for(var ci=0;ci<localStorage.length;ci++){
+        var ck=localStorage.key(ci);
+        if(ck&&ck.indexOf(KEY+'.corrupt.')===0)oldc.push(ck);
+      }
+      oldc.forEach(function(ck){ try{ localStorage.removeItem(ck); }catch(ig){} });
+      try{ localStorage.setItem(KEY+'.corrupt.'+Date.now(),localStorage.getItem(KEY)||''); }catch(ig2){}
+      localStorage.removeItem(KEY);
+    }catch(ignore){}
     S=defaultState();
   }
   readMapFromStore();
@@ -1290,12 +1457,18 @@ function pollStore(){
         SESSION_EPOCH=localStorage.getItem(EPOCHKEY)||SESSION_EPOCH;S=defaultState();S.meta.epoch=SESSION_EPOCH;MAPDATA=null;renderAll();
       }else if(!epochInvalidNotified){epochInvalidNotified=true;S=defaultState();MAPDATA=null;
         STARTUP_WARNINGS=['다른 창에서 출동 종료 삭제가 실행되었습니다. 이 창을 새로고침하세요.'];renderAll();}
+      lastPolledRaw=null;
       return;
     }
     var raw=localStorage.getItem(KEY); if(!raw)return;
-    var o=migrate(JSON.parse(raw)), rr=o.meta.revision, sr=S.meta.revision;
-    if(rr>sr||(rr===sr&&o.meta.updated>S.meta.updated))adopt(o,true);
-    else if(!ownsEditorLock()&&rr===sr&&o.meta.updated===S.meta.updated&&JSON.stringify(o)!==JSON.stringify(S))adopt(o,true);
+    /* 이벤트가 수천 건이면 파싱·정규화·직렬화가 무거워 초당 2회는 표출 화면을 끊기게 한다.
+       저장 원문이 지난번과 같으면 상태가 바뀌었을 수 없으므로 바로 빠져나간다. */
+    if(raw!==lastPolledRaw){
+      lastPolledRaw=raw;
+      var o=migrate(JSON.parse(raw)), rr=o.meta.revision, sr=S.meta.revision;
+      if(rr>sr||(rr===sr&&o.meta.updated>S.meta.updated))adopt(o,true);
+      else if(!ownsEditorLock()&&rr===sr&&o.meta.updated===S.meta.updated&&JSON.stringify(o)!==JSON.stringify(S))adopt(o,true);
+    }
     if(S.grid.mapVer!==mapVerLoaded&&readMapFromStore())renderGridAll();
   }catch(e){console.warn('동기화 상태 읽기 실패',e);}
 }
@@ -1389,6 +1562,22 @@ function flightVerdict(now){
   var sf = S.safety, w = S.weather;
   var bad = [], hold = [], warn = [], cs=coordinateStatus();
   if(sf.manned) bad.push('유인기 진입 · 전 기체 즉시 착륙');
+  /* 비행 중인 기체의 조종자가 교대 종료된 상태 = 조종자 없는 비행.
+     조종자명이 인원 명부에 아예 없으면(외부 인력 등) 판단 근거가 없으므로 건드리지 않는다.
+     같은 이름이 재투입돼 현행으로 남아 있으면 정상으로 본다. */
+  var pilotless=[];
+  S.drones.forEach(function(d){
+    if(d.status!=='flying'&&d.status!=='commloss') return;
+    if(!d.pilot) return;
+    var ended=false, present=false;
+    S.crew.forEach(function(c){
+      if(c.name!==d.pilot) return;
+      if(c.outAt) ended=true; else present=true;
+    });
+    if(ended&&!present) pilotless.push(d.name||'기체');
+  });
+  if(pilotless.length) bad.push(pilotless.join(', ')+' 조종자 교대 종료 · 조종자 부재');
+  if(String(sf.agencies||'').trim()) warn.push('인접기관 동시운용 · 공역 분리 확인');
   if(!cs.ok) hold.push(cs.why); else if(!cs.confirmed) hold.push(cs.why);
   if((sf.noFly||sf.ctrlZone)&&sf.approval!=='done')
     bad.push((sf.noFly?'비행금지구역':'관제권')+' · 승인완료 확인 필요');
@@ -1457,7 +1646,9 @@ function renderHeader(){
     var left = GOLDEN_HOURS*3600000 - passed;
     var ph = passed/3600000;
     var lv = left <= 0 ? 'crit' : (ph < 8 ? 'ok' : (ph < 16 ? 'warn' : 'danger'));
-    $('vGolden').textContent = left <= 0 ? '초과' : durHM(left);
+    /* 큰 숫자가 우측 현재시각(13:59:06)과 비슷하게 읽혀 대형 스크린에서 혼동된다.
+       durHM 은 숫자와 콜론만 만들어내므로 그대로 붙여도 안전하다. */
+    $('vGolden').innerHTML = left <= 0 ? '초과' : durHM(left)+'<small>남음</small>';
     $('sGolden').textContent = '실종 후 '+durHM(passed)+' 경과 · 기준 '+GOLDEN_HOURS+'h';
     setKpi('kGolden', lv);
   } else {
@@ -1479,7 +1670,7 @@ function renderHeader(){
       setKpi('kSunset',cs.confirmed?(S.safety.nightApproval?'warn':'danger'):'idle');
     }else{
       var sl=sp.times.sunset.getTime()-now.getTime();
-      $('vSunset').textContent=durHM(sl);
+      $('vSunset').innerHTML=durHM(sl)+'<small>남음</small>';
       $('sSunset').textContent='일몰 '+hhmm(sp.times.sunset)+(cs.confirmed?'':' · 좌표 확인 필요');
       setKpi('kSunset',cs.confirmed?(sl<=30*60000?'warn':'ok'):'idle');
     }
@@ -1498,7 +1689,7 @@ function renderHeader(){
   /* 출동 경과 */
   var dt = tms(S.mission.dispatchedAt);
   if(dt){
-    $('vElapsed').textContent = durHM(now.getTime()-dt);
+    $('vElapsed').innerHTML = durHM(now.getTime()-dt)+'<small>경과</small>';
     $('sElapsed').textContent = '출동 '+hhmm(new Date(dt));
     setKpi('kElapsed','ok');
   } else {
@@ -1511,13 +1702,12 @@ function renderHeader(){
 }
 
 function renderSubject(){
-  var s = S.subject, now = new Date();
+  var s = S.subject;
   var tags = [];
   if(s.level) tags.push('<span class="tag hot">'+esc(s.level)+'</span>');
   (s.notes||'').split(/[,·\n]+/).forEach(function(t){
     t = t.trim(); if(t) tags.push('<span class="tag">'+esc(t)+'</span>');
   });
-  var rad = moveRadiusKm(now);
   var html =
     '<div class="subj-name">'
       + '<span class="nm">'+esc(s.name || '성명 미상')+'</span>'
@@ -1582,31 +1772,147 @@ function renderCrew(){
    -------------------------------------------------------------------------- */
 var pinMode = null;      /* 'last' | 'found' | null - 조작 패널에서 핀 배치용 */
 var mapMsgHtml = '';     /* 지도 붙여넣기 결과 안내 (조작 패널 재렌더 시에도 유지) */
+/* 빠른기록 입력줄은 data-path 가 없어 재렌더 때마다 초기화됐다. 한 줄 타이핑하다
+   다른 버튼을 한 번만 눌러도 내용이 사라지고, 발생시각은 렌더 시각으로 되돌아가
+   잘못된 시각의 기록이 활동일지에 남는다. 지도 안내문과 같은 방식으로 밖에 보관한다. */
+var quickEv = { type:'', zone:'', text:'', time:'', timeAuto:true };
+function quickEvTime(){ return quickEv.timeAuto ? localDateTime(new Date()) : quickEv.time; }
 function mapMsg(txt, kind){
   mapMsgHtml = txt ? '<span class="'+(kind||'')+'">'+esc(txt)+'</span>' : '';
   var el = document.getElementById('mapMsg');
   if(el) el.innerHTML = mapMsgHtml;
 }
 
+/* 지도 이미지 종횡비에 맞춰 .mapfit 크기를 정하고 컨테이너 가운데에 둔다.
+   지도가 없거나 원본 크기를 모르면(구버전 저장분) 컨테이너를 그대로 채운다. */
+/* --------------------------------------------------------------------------
+   칠하기 (페인트)
+   상태 순환은 칸마다 몇 번 눌러야 하는지가 현재 상태에 따라 달라, 무전을 들으면서
+   여섯 칸을 고치려면 각 칸의 색을 먼저 확인해야 했다. 칠할 것을 미리 골라 두고
+   칸을 찍거나 쓸어내리는 방식으로 바꾼다. 순환이 아니므로 오조작도 다시 칠하면 끝난다.
+   -------------------------------------------------------------------------- */
+var painting = null;
+var lastSweep = null;   /* 직전 쓸기 한 번분의 원래 값 (되돌리기용) */
+function paintCell(el){
+  if(!painting) return;
+  var id = el.getAttribute('data-cell'); if(!id || painting.touched[id]) return;
+  var cur = S.grid.cells[id] || {s:0,by:''};
+  var wasDone = cur.s === 2;
+  /* 고치기 전 값을 남긴다. cur 을 그 자리에서 바꾸므로 반드시 여기서 떠야 한다. */
+  painting.before[id] = { s:intv(cur.s,0), by:cur.by||'', existed:!!S.grid.cells[id] };
+  if(S.ui.paintS !== null && S.ui.paintS !== undefined) cur.s = intv(S.ui.paintS,0);
+  if(S.ui.paintBy !== null && S.ui.paintBy !== undefined) cur.by = S.ui.paintBy;
+  S.grid.cells[id] = cur;
+  painting.touched[id] = true;
+  if(cur.s === 2 && !wasDone) painting.done.push(id);
+  /* 쓸어내리는 동안 전체를 다시 그리면 끊긴다. 만진 칸만 직접 고친다. */
+  el.className = 'gcell s'+(cur.s||0);
+  el.setAttribute('aria-label', id+' '+CELL_ST[cur.s||0]+(cur.by?' 담당 '+cur.by:' 담당 없음'));
+  var byEl = el.querySelector('.by');
+  if(cur.by){
+    if(byEl) byEl.textContent = cur.by;
+    else { var sp=document.createElement('span'); sp.className='by'; sp.textContent=cur.by; el.appendChild(sp); }
+  }else if(byEl) byEl.remove();
+}
+function finishPaint(){
+  if(!painting) return;
+  var p = painting; painting = null;
+  var ids = Object.keys(p.touched); if(!ids.length) return;
+  ids.sort();
+  var done = p.done.slice().sort();
+  /* 한 번의 쓸기는 무전 한 건이다. 칸마다 기록을 남기면 활동일지가 넘친다.
+     이미 완료였던 칸은 세지 않으므로 같은 구역을 다시 칠해도 중복 기록이 생기지 않는다. */
+  var sweepEventId = null;
+  if(done.length){
+    addEvent('zone', done.join(', ')+' 구역 수색완료', done[0], true);
+    var justAdded = S.events[S.events.length-1];
+    if(justAdded && justAdded.type === 'zone') sweepEventId = justAdded.id;
+  }
+  /* 쓸기 한 번은 여섯 칸을 한꺼번에 바꾼다. 잘못 지나가면 원래 값이 뭐였는지
+     기억해야 되돌릴 수 있는데, 무전을 들으면서 그럴 여유는 없다. 직전 한 번만 보관한다. */
+  lastSweep = { before:p.before, eventId:sweepEventId, count:ids.length, at:Date.now() };
+  /* 방금 칠한 칸을 빠른기록 구역에 물려준다. 이미 입력해 둔 값은 건드리지 않는다.
+     commit() 이 조작 패널을 다시 그리므로 그 전에 넣어야 화면에 반영된다. */
+  if(!String(quickEv.zone||'').trim()){ quickEv.zone = ids[0]; }
+  commit();
+}
+function undoSweep(){
+  if(!ensureEditor()) return false;
+  if(!lastSweep){ mapMsg('되돌릴 쓸기가 없습니다.','warn'); return false; }
+  var rec = lastSweep; lastSweep = null;
+  var ids = Object.keys(rec.before).sort();
+  ids.forEach(function(id){
+    var b = rec.before[id];
+    /* 원래 없던 칸은 없던 대로 되돌린다. 빈 칸을 만들어 두면 저장만 커진다. */
+    if(!b.existed) delete S.grid.cells[id];
+    else S.grid.cells[id] = { s:b.s, by:b.by };
+  });
+  /* 취소된 완료 기록이 활동일지에 그대로 남으면 사실과 달라진다. 지우지 않고
+     무효 처리하는 것이 이 앱의 기록 원칙이다(정정·취소와 같은 방식). */
+  if(rec.eventId){
+    S.events.forEach(function(e){
+      if(e.id === rec.eventId && !e.voided){
+        e.voided = true; e.voidedAt = Date.now(); e.voidReason = '쓸기 취소';
+      }
+    });
+  }
+  addEvent('correction', ids.join(', ')+' 쓸기 취소 · 이전 상태로 되돌림', ids[0], true);
+  commit();
+  mapMsg(ids.length+'칸을 되돌렸습니다.','ok');
+  return true;
+}
+function paintTargetsSelected(){
+  return (S.ui.paintS !== null && S.ui.paintS !== undefined)
+      || (S.ui.paintBy !== null && S.ui.paintBy !== undefined);
+}
+
+function fitMapBox(host){
+  var fit = host && host.querySelector('.mapfit'); if(!fit) return;
+  var ar = (S.grid.hasMap && S.grid.mapW>0 && S.grid.mapH>0) ? S.grid.mapW/S.grid.mapH : 0;
+  if(!ar){
+    if(fit.style.width!=='100%'){ fit.style.width='100%'; fit.style.height='100%'; }
+    return;
+  }
+  /* 숨겨진 창·최소화된 표출 화면에서 그리면 크기가 0으로 읽힌다. 그때는 건너뛰고
+     아래 1초 점검에서 다시 맞춘다. 값이 바뀔 때만 써서 레이아웃을 흔들지 않는다. */
+  var W = host.clientWidth, H = host.clientHeight;
+  if(!W || !H) return;
+  var w = W, h = W/ar;
+  if(h > H){ h = H; w = H*ar; }
+  var ws = w.toFixed(1)+'px', hs = h.toFixed(1)+'px';
+  if(fit.style.width !== ws || fit.style.height !== hs){ fit.style.width = ws; fit.style.height = hs; }
+}
+/* 컨테이너는 안전 카드 높이·창 크기·배율 슬라이더로 계속 변한다. 그때마다 다시 맞춘다. */
+function observeMapFit(host){
+  if(!host || host.__fitObserved || typeof ResizeObserver === 'undefined') return;
+  host.__fitObserved = true;
+  new ResizeObserver(function(){ fitMapBox(host); }).observe(host);
+}
+
 function buildGrid(host, interactive){
   var g = S.grid;
-  var html = '';
+  var html = '<div class="mapfit">';
   if(MAPDATA){
     var tf = 'scale('+(num(g.mapZoom,100)/100)+') translate('+num(g.mapX,0)+'%,'+num(g.mapY,0)+'%)';
     html += '<img class="mapimg" alt="" src="'+MAPDATA+'" style="opacity:'
           + num(g.mapOpacity,0.85) + ';transform:'+tf+'">';
-  } else {
+  } else if(interactive){
+    /* 표출 화면에는 운영요원용 안내문을 띄우지 않는다. 격자 뒤로 비쳐 읽히지도 않고,
+       지휘부가 보는 화면에 조작 지시문이 남는다. 지도 미적용 여부는 카드 헤더로 알린다. */
     html += '<div class="mapnote">지도 이미지 없음<br>'
-          + '조작 패널 &gt; 수색구역에서 카카오맵·네이버지도 캡처를 붙여넣으면(Ctrl+V) 배경으로 깔립니다</div>';
+          + '여기에 카카오맵·네이버지도 캡처를 붙여넣으면('+esc(K_PASTE)+') 배경으로 깔립니다</div>';
   }
   var R = gridRows(), C = gridCols();
-  html += '<div class="gridlayer" style="grid-template-columns:repeat('+C
+  html += '<div class="gridlayer" role="group" aria-label="수색구역 격자 '+R+'행 '+C+'열" '
+        + 'style="grid-template-columns:repeat('+C
         + ',1fr);grid-template-rows:repeat('+R+',1fr)">';
   for(var r=0;r<R;r++){
     for(var c=0;c<C;c++){
       var id = cellId(r,c), cel = g.cells[id] || {s:0,by:''};
       var tag=interactive?'button':'div';
-      html += '<'+tag+(interactive?' type="button"':' role="gridcell"')+' class="gcell s'+(cel.s||0)+'" data-cell="'+id+'"'
+      /* role="gridcell" 은 role="grid" 부모 안에서만 유효하다. 표출 격자는 행 요소가
+         없는 CSS grid 이므로, aria-label 이 이름으로 노출되는 role="img" 를 쓴다. */
+      html += '<'+tag+(interactive?' type="button"':' role="img"')+' class="gcell s'+(cel.s||0)+'" data-cell="'+id+'"'
             + ' aria-label="'+id+' '+CELL_ST[cel.s||0]+(cel.by?' 담당 '+esc(cel.by):' 담당 없음')+'"'
             + (interactive ? ' title="선택된 동작 실행"' : '')
             + '>'+id+(cel.by ? '<span class="by">'+esc(cel.by)+'</span>' : '')+'</'+tag+'>';
@@ -1624,32 +1930,55 @@ function buildGrid(host, interactive){
     + '%"><span class="plb">최종목격</span><span class="pdot"></span><span class="stem"></span></div>';
   if(g.pinFound) html += '<div class="pin found" style="left:'+g.pinFound.x+'%;top:'+g.pinFound.y
     + '%"><span class="plb">발견</span><span class="pdot"></span><span class="stem"></span></div>';
+  html += '</div>';
   host.innerHTML = html;
+  fitMapBox(host); observeMapFit(host);
 
   if(interactive){
-    host.onclick = function(ev){
+    function cellUnder(ev){
+      var el = document.elementFromPoint(ev.clientX, ev.clientY);
+      var c = el && el.closest ? el.closest('.gcell') : null;
+      return (c && host.contains(c)) ? c : null;
+    }
+    host.onpointerdown = function(ev){
+      if(ev.button != null && ev.button !== 0) return;
       if(!ensureEditor()) return;
-      var box = host.getBoundingClientRect();
+      /* 핀도 격자와 같은 좌표계여야 한다. 컨테이너 기준으로 찍으면 표출 화면에서
+         다른 지점에 나타난다. */
+      var fitEl = host.querySelector('.mapfit');
+      var box = (fitEl || host).getBoundingClientRect();
       if(pinMode){
         var x = clamp((ev.clientX-box.left)/box.width*100, 0, 100);
         var y = clamp((ev.clientY-box.top)/box.height*100, 0, 100);
         S.grid[pinMode === 'last' ? 'pinLast' : 'pinFound'] = {x:+x.toFixed(1), y:+y.toFixed(1)};
         pinMode = null; commit(); return;
       }
-      var cellEl = ev.target.closest('.gcell'); if(!cellEl) return;
+      var cellEl = cellUnder(ev); if(!cellEl) return;
+      if(!paintTargetsSelected()){ mapMsg('칠할 항목을 먼저 고르세요 (상태 또는 담당).','warn'); return; }
+      ev.preventDefault();
+      painting = {touched:{}, done:[], before:{}};
+      paintCell(cellEl);
+      try{ host.setPointerCapture(ev.pointerId); }catch(e){}
+    };
+    host.onpointermove = function(ev){
+      if(!painting) return;
+      var el = cellUnder(ev); if(el) paintCell(el);
+    };
+    host.onpointerup = host.onpointercancel = function(ev){
+      if(!painting) return;
+      try{ host.releasePointerCapture(ev.pointerId); }catch(e){}
+      finishPaint();
+    };
+    /* 키보드(Enter·Space)는 포인터 없이 click 만 발생한다(detail 0). 그 경로만 여기서 받는다. */
+    host.onclick = function(ev){
+      if(ev.detail !== 0) return;
+      if(!ensureEditor()) return;
+      var cellEl = ev.target.closest ? ev.target.closest('.gcell') : null; if(!cellEl) return;
+      if(!paintTargetsSelected()){ mapMsg('칠할 항목을 먼저 고르세요 (상태 또는 담당).','warn'); return; }
       var id = cellEl.getAttribute('data-cell');
-      var cur = S.grid.cells[id] || {s:0,by:''};
-      if(ev.shiftKey){
-        var opts = ['','드론','지상','수색견','소방대'];
-        cur.by = opts[(opts.indexOf(cur.by)+1) % opts.length];
-      } else if(String(S.ui.gridAction||'status').indexOf('by:')===0){
-        cur.by=String(S.ui.gridAction).slice(3);
-      } else {
-        cur.s = ((cur.s||0)+1) % 4;
-        if(cur.s === 2) addEvent('zone', id+' 구역 수색완료', id, true);
-      }
-      S.grid.cells[id]=cur;commit();
-      setTimeout(function(){var n=document.querySelector('#consMap [data-cell="'+id+'"]');if(n)n.focus();},0);
+      painting = {touched:{}, done:[], before:{}};
+      paintCell(cellEl); finishPaint();
+      setTimeout(function(){var nn=document.querySelector('#consMap [data-cell="'+id+'"]');if(nn)nn.focus();},0);
     };
   }
 }
@@ -1672,7 +2001,8 @@ function renderGridStats(){
     : '<span class="rl">이동 추정반경<br>보행 '+num(S.subject.walkSpeed,2)+'km/h · 계수 '+num(S.subject.decay,0.35)
       + '</span><span class="rv num">'+rad.toFixed(1)+'<small>km</small></span>';
   $('gridMeta').innerHTML = gridRows()+'×'+gridCols()+' = <b>'+st.total+'</b> 구역'
-    + ' · 완료 <b>'+n[2]+'</b> · 지도폭 '+num(S.grid.widthMeters,2000)+'m';
+    + ' · 완료 <b>'+n[2]+'</b> · 지도폭 '+num(S.grid.widthMeters,2000)+'m'
+    + (S.grid.hasMap?'':' · <b>지도 미적용</b>');
 }
 
 function renderSafety(){
@@ -1789,12 +2119,14 @@ function renderTicker(){
   var m = S.mission;
   var txt = (m.orders||'').trim() || '지시사항 없음';
   var mv = $('tkMove');
-  if(txt.length > 44){
+  /* 문자 수(44자)로 판단하면 트랙보다 짧은 문장도 두 벌이 동시에 보여
+     같은 지시가 연달아 두 번 적힌 것처럼 읽힌다. 실제로 넘칠 때만 흘린다. */
+  mv.classList.remove('scroll'); mv.style.animationDuration=''; mv.textContent = txt;
+  var track = mv.parentNode;
+  if(track && mv.scrollWidth > track.clientWidth + 2){
     mv.innerHTML = esc(txt)+'&nbsp;&nbsp;&nbsp;&nbsp;'+esc(txt)+'&nbsp;&nbsp;&nbsp;&nbsp;';
     mv.classList.add('scroll');
     mv.style.animationDuration = Math.max(14, txt.length*0.45)+'s';
-  } else {
-    mv.textContent = txt; mv.classList.remove('scroll'); mv.style.animationDuration='';
   }
   var bits = [];
   if(m.trs) bits.push('TRS <b>'+esc(m.trs)+'</b>');
@@ -1806,7 +2138,7 @@ function renderTicker(){
 /* ==========================================================================
    S7. 경보 (발견 / 유인기 진입) · 비프음은 외부 음원 없이 코드로 생성
    ========================================================================== */
-var audioCtx = null, lastBeepFor = 0, AUDIO_ARMED=false;
+var audioCtx = null, lastBeepFor = 0, AUDIO_ARMED=false, bannerKey='';
 function updateAudioArm(){ var b=$('audioArm'); if(b)b.hidden=MODE!=='display'||AUDIO_ARMED; }
 function primeAudio(){
   try{
@@ -1832,37 +2164,69 @@ function beep(times){
     return true;
   }catch(e){AUDIO_ARMED=false;updateAudioArm();return false;}
 }
+/* 경보 대상은 "가장 늦게 기록된" 발견이다. 사건 발생시각(t) 기준으로 고르면
+   과거 시각으로 소급 입력한 발견이 이미 확인 처리된 기록에 가려 경보가 나가지 않는다.
+   recordedAt 은 기록 시점의 Date.now() 라 새 기록일수록 항상 커진다. */
+function foundAlarmKey(e){ return num(e.recordedAt, num(e.t,0)); }
 function latestFound(){
   var best = null;
-  S.events.forEach(function(e){ if(e.type==='found'&&!e.voided&&(!best||e.t>best.t))best=e; });
+  S.events.forEach(function(e){
+    if(e.type==='found'&&!e.voided&&(!best||foundAlarmKey(e)>foundAlarmKey(best)))best=e;
+  });
   return best;
+}
+/* renderBanner 는 1초 렌더 루프에 들어 있다. 매초 innerHTML 을 갈아끼우면
+   "확인" 버튼이 누르는 순간 사라져 클릭이 유실되고 CSS 애니메이션도 매초 리셋된다.
+   내용이 실제로 바뀌었을 때만 다시 그린다. */
+/* 배너는 fixed 라 헤더(골든타임·일몰·비행 판정·시계) 위에 그대로 겹친다.
+   발견·유인기 경보가 뜬 순간 지휘부에게 가장 필요한 숫자들이므로 그만큼 판을 내린다. */
+function setBoardOffset(bn, shown){
+  var bd = $('board'); if(!bd) return;
+  bd.style.paddingTop = shown ? (bn.offsetHeight + 10) + 'px' : '';
 }
 function renderBanner(){
   var bn = $('alertBanner'); if(!bn) return;
   if(S.safety.manned){
-    bn.className = 'alert-banner manned';
-    bn.innerHTML = '<span class="ab-k">⚠ 유인기 진입</span>'
-      + '<span class="ab-x">전 기체 즉시 착륙 · 공역 분리 유지</span>';
-    bn.hidden = false;
+    if(bannerKey!=='manned'){
+      bannerKey='manned';
+      bn.className = 'alert-banner manned';
+      /* U+26A0 는 변이 선택자가 없으면 플랫폼에 따라 컬러 이모지로 렌더돼
+         지휘 화면에서 장난감처럼 보인다. U+FE0E 로 흑백 글리프를 강제한다. */
+      bn.innerHTML = '<span class="ab-k">\u26A0\uFE0E 유인기 진입</span>'
+        + '<span class="ab-x">전 기체 즉시 착륙 · 공역 분리 유지</span>';
+      bn.hidden = false;
+    }
+    setBoardOffset(bn, true);
     if(MODE==='display'&&lastBeepFor!==-1&&beep(4))lastBeepFor=-1;
     return;
   }
   var f = latestFound();
-  var alarmKey=f&&num(f.recordedAt,f.t);
+  var alarmKey=f&&foundAlarmKey(f);
   if(f && S.ui.ackFound < alarmKey){
-    bn.className = 'alert-banner';
-    bn.innerHTML = '<span class="ab-k">발견</span>'
-      + '<span class="ab-x">'+(f.zone?'['+esc(f.zone)+'] ':'')+esc(f.text)+'</span>'
-      + '<button type="button" id="ackBtn">확인</button>';
-    bn.hidden = false;
-    $('ackBtn').onclick = function(){
-      if(ownsEditorLock()){S.ui.ackFound=alarmKey;commit();}
-      else sendPeer({type:'action',action:'ackFound',t:alarmKey});
-    };
+    var key='found:'+alarmKey+':'+f.zone+':'+f.text;
+    if(bannerKey!==key){
+      bannerKey=key;
+      bn.className = 'alert-banner';
+      bn.innerHTML = '<span class="ab-k">발견</span>'
+        + '<span class="ab-x">'+(f.zone?'['+esc(f.zone)+'] ':'')+esc(f.text)+'</span>'
+        + '<button type="button" id="ackBtn">확인</button>';
+      bn.hidden = false;
+      $('ackBtn').onclick = function(){
+        if(ownsEditorLock()){S.ui.ackFound=alarmKey;commit();return;}
+        if(sendPeer({type:'action',action:'ackFound',t:alarmKey}))return;
+        /* 창 핸들이 끊기면(상단 "표출 화면 미연결") 이 버튼은 아무 일도 하지 못한다.
+           조용히 실패하면 눌렀는데 경보가 그대로인 상태가 되므로 이유를 남긴다.
+           대형 스크린 앞에서 alert 를 띄우면 화면이 막히므로 버튼 안에 적는다. */
+        var b=$('ackBtn'); if(!b)return;
+        b.textContent='조작 패널에서 확인하세요';
+        setTimeout(function(){ if($('ackBtn')===b) b.textContent='확인'; },6000);
+      };
+    }
+    setBoardOffset(bn, true);
     if(MODE==='display'&&lastBeepFor!==alarmKey&&beep(5))lastBeepFor=alarmKey;
     return;
   }
-  bn.hidden = true;
+  if(bannerKey!==''){ bannerKey=''; bn.hidden = true; bn.innerHTML=''; setBoardOffset(bn, false); }
   if(lastBeepFor === -1) lastBeepFor = 0;
 }
 
@@ -1938,8 +2302,54 @@ function sel(label, path, opts){
   return '<label class="f"><span>'+label+'</span><select data-path="'+path+'">'+o+'</select></label>';
 }
 
+/* 조작 패널은 모드에 따라 스크롤 주체가 다르다.
+   console 모드는 문서가, 드로어(Ctrl+E)는 겹쳐 열린 패널이 스크롤된다.
+   상단 바 높이는 칩 줄바꿈에 따라 달라지므로 고정값 대신 그때그때 잰다. */
+function scrollHost(el){
+  var p=el.parentNode;
+  while(p&&p.nodeType===1){
+    /* body 의 overflow-y:auto 는 뷰포트로 전파되므로 computed 값은 auto 인데
+       body.scrollTo() 는 아무 일도 하지 않는다. 여기까지 오면 문서 스크롤이다. */
+    if(p===document.body||p===document.documentElement) break;
+    var ov=getComputedStyle(p).overflowY;
+    if((ov==='auto'||ov==='scroll')&&p.scrollHeight>p.clientHeight+1) return p;
+    p=p.parentNode;
+  }
+  return null;
+}
+/* 부드러운 스크롤은 쓰지 않는다. 4,000px 이동에 1초 가까이 걸려 그동안 조작이 막히고,
+   모션 축소 설정이나 애니메이션을 지원하지 않는 환경에서는 아예 이동하지 않는다. */
+/* 조작 패널 재렌더 타이밍
+   change 는 버튼을 누르는 mousedown(blur) 시점에 발생한다. 그 자리에서 패널을 다시
+   그리면 mouseup 이 교체된 DOM 위에서 일어나 click 이 성립하지 않는다.
+   현장에서는 "입력하고 나서 누른 첫 버튼이 안 먹는다"로 나타난다.
+   그래서 change 에서는 저장·표출 갱신만 하고, 패널은 포인터가 떨어진 뒤에 그린다. */
+var pointerHeld = false;
+document.addEventListener('pointerdown',   function(){ pointerHeld = true;  }, true);
+document.addEventListener('pointerup',     function(){ pointerHeld = false; }, true);
+document.addEventListener('pointercancel', function(){ pointerHeld = false; }, true);
+var consoleIdleTimer = null;
+function scheduleConsoleRefresh(root){
+  if(consoleIdleTimer) clearTimeout(consoleIdleTimer);
+  consoleIdleTimer = setTimeout(function(){
+    consoleIdleTimer = null;
+    /* 아직 누르고 있는 중이면 그 클릭이 끝날 때까지 미룬다. */
+    if(pointerHeld){ scheduleConsoleRefresh(root); return; }
+    renderConsole(root);
+  }, 500);
+}
+
+function scrollToSection(root,target){
+  var bar=root.querySelector('.cons-top');
+  var pad=(bar?bar.getBoundingClientRect().height:80)+10;
+  var host=scrollHost(target), tTop=target.getBoundingClientRect().top;
+  if(host) host.scrollTop=Math.max(0,host.scrollTop+tTop-host.getBoundingClientRect().top-pad);
+  else window.scrollTo(0,Math.max(0,window.scrollY+tTop-pad));
+}
+
 function renderConsole(root){
   if(!root) return;
+  if(consoleIdleTimer){ clearTimeout(consoleIdleTimer); consoleIdleTimer = null; }
   var scrollTop = root.scrollTop;
   var focusPath = document.activeElement && document.activeElement.getAttribute
     ? document.activeElement.getAttribute('data-path') : null;
@@ -1961,6 +2371,129 @@ function renderConsole(root){
   }
 }
 
+/* --------------------------------------------------------------------------
+   기록 ↔ 상태 불일치
+   빠른기록으로 남긴 이륙·착륙·구역완료·인원교대는 타임라인에만 들어가고
+   기체·격자·인원 상태를 바꾸지 않는다. 자동으로 바꾸면 오기록이 곧바로 상황판에
+   퍼지므로, 어긋난 곳을 찾아 보여주고 반영은 운영요원이 직접 누르게 한다.
+   기체·인원 연결은 기록 본문에 이름이 들어 있는지로만 판단한다(그 외 단서가 없다).
+   -------------------------------------------------------------------------- */
+function stateMismatches(){
+  var out=[], byType={takeoff:[],landing:[],crew:[],correction:[]}, zoneLast={};
+  S.events.forEach(function(e){
+    if(e.voided) return;
+    if(e.type==='zone'){
+      var id=String(e.zone||'').toUpperCase();
+      if(/^[A-L](?:[1-9]|1[0-2])$/.test(id)&&(!zoneLast[id]||e.t>zoneLast[id].t)) zoneLast[id]=e;
+      return;
+    }
+    if(byType[e.type]) byType[e.type].push(e);
+  });
+  /* 이름 대조는 목록 길이에 비례하므로 최근 200건으로 잘라 비용을 묶어 둔다. */
+  Object.keys(byType).forEach(function(k){
+    byType[k].sort(function(a,b){return b.t-a.t;});
+    if(byType[k].length>200) byType[k].length=200;
+  });
+  function latestT(list,name){
+    var best=0;
+    for(var i=0;i<list.length;i++)
+      if(String(list[i].text||'').indexOf(name)>=0&&list[i].t>best) best=list[i].t;
+    return best;
+  }
+  Object.keys(zoneLast).forEach(function(id){
+    var s=(S.grid.cells[id]||{}).s||0;
+    if(s===0||s===1) out.push({kind:'zone',ref:id,t:zoneLast[id].t,
+      text:id+' 구역완료 기록이 있으나 격자는 '+CELL_ST[s]+'입니다.', btn:id+' 완료로 반영'});
+  });
+  S.drones.forEach(function(d){
+    if(!d.name) return;
+    var up=latestT(byType.takeoff,d.name), dn=latestT(byType.landing,d.name);
+    var air=(d.status==='flying'||d.status==='commloss');
+    if(up&&up>dn&&!air) out.push({kind:'takeoff',ref:d.id,t:up,
+      text:d.name+' 이륙 기록 이후 상태가 '+(DRONE_ST[d.status]||d.status)+'입니다.', btn:d.name+' 비행중으로'});
+    if(dn&&dn>up&&air) out.push({kind:'landing',ref:d.id,t:dn,
+      text:d.name+' 착륙 기록 이후에도 상태가 '+(DRONE_ST[d.status]||d.status)+'입니다.', btn:d.name+' 배터리교체로'});
+  });
+  S.crew.forEach(function(c){
+    if(!c.name||c.outAt) return;
+    var ev=latestT(byType.crew,c.name); if(!ev) return;
+    /* 교대 종료를 되돌린 정정 기록이 더 최신이면 현행 근무가 맞다. */
+    if(latestT(byType.correction,c.name)>=ev) return;
+    out.push({kind:'crew',ref:c.id,t:ev,
+      text:c.name+' 교대 종료 기록이 있으나 종료시각이 비어 있습니다.', btn:c.name+' 교대 종료'});
+  });
+  out.sort(function(a,b){return b.t-a.t;});
+  return out.slice(0,6);
+}
+/* 반영은 원래 기록을 한 번 더 남기지 않고 '정정'으로만 이력을 남긴다.
+   같은 사건이 이륙 2건으로 보이면 활동일지가 사실과 달라진다. */
+function syncFromRecord(kind, ref, evTime){
+  if(S.events.length>=MAX_EVENTS){
+    alert('이벤트 '+MAX_EVENTS+'건 한도에 도달했습니다. JSON을 내보낸 뒤 새 상황으로 시작하세요.');
+    return false;
+  }
+  var i, d=null, c=null;
+  if(kind==='zone'){
+    var cel=S.grid.cells[ref]||{s:0,by:''}; cel.s=2; S.grid.cells[ref]=cel;
+    return addEvent('correction','기록에 맞춰 '+ref+' 구역을 완료로 반영',ref,true);
+  }
+  if(kind==='takeoff'||kind==='landing'){
+    for(i=0;i<S.drones.length;i++) if(S.drones[i].id===ref) d=S.drones[i];
+    if(!d) return false;
+    if(kind==='takeoff'){
+      /* 이륙시각은 반영을 누른 시각이 아니라 기록된 사건 시각이어야 비행시간이 맞다. */
+      d.status='flying'; d.tookOffAt=localDateTime(new Date(num(evTime,Date.now())));
+      d.sorties=intv(d.sorties,0)+1;
+      return addEvent('correction',(d.name||'기체')+' 이륙 기록에 맞춰 상태를 비행중으로 반영',d.zone,true);
+    }
+    d.status='swap'; d.tookOffAt='';
+    return addEvent('correction',(d.name||'기체')+' 착륙 기록에 맞춰 상태를 배터리교체로 반영',d.zone,true);
+  }
+  if(kind==='crew'){
+    for(i=0;i<S.crew.length;i++) if(S.crew[i].id===ref) c=S.crew[i];
+    if(!c) return false;
+    var out=localDateTime(new Date(num(evTime,Date.now())));
+    if(c.inAt&&tms(out)<tms(c.inAt)){
+      alert('교대 기록 시각이 투입시각보다 빠릅니다. 투입시각을 먼저 확인하세요.'); return false;
+    }
+    c.outAt=out;
+    return addEvent('correction',(c.name||'인원')+' 교대 종료 기록에 맞춰 종료시각을 반영','',true);
+  }
+  return false;
+}
+
+function paintPalette(){
+  function btn(act, val, label, cls){
+    var cur = act==='paints' ? S.ui.paintS : S.ui.paintBy;
+    var isKeep = (val==='' && act==='paints') || val==='__keep';
+    var on = isKeep ? (cur===null || cur===undefined)
+                    : (cur!==null && cur!==undefined && String(cur)===String(val));
+    return '<button type="button" class="pb '+(cls||'')+(on?' on':'')+'" data-act="'+act
+      + '" data-v="'+esc(String(val))+'">'+esc(label)+'</button>';
+  }
+  /* '그대로'를 눈에 보이는 버튼으로 둔다. 선택된 버튼을 다시 눌러 해제하는 방식은,
+     기본값(완료)을 한 번 눌렀다가 칠하기가 조용히 꺼지는 사고를 만든다. */
+  return '<div class="paint">'
+    + '<div class="prow"><span class="pl">상태</span>'
+      + btn('paints','','그대로','keep')
+      + btn('paints',0,'미수색','p0')+btn('paints',1,'수색중','p1')
+      + btn('paints',2,'완료','p2')+btn('paints',3,'재수색','p3')
+    + '</div>'
+    + '<div class="prow"><span class="pl">담당</span>'
+      + btn('paintby','__keep','그대로','keep')
+      + BY_OPTS.map(function(v){ return btn('paintby',v,v||'없음'); }).join('')
+    + '</div>'
+    + '<div class="prow"><span class="pl"></span>'
+      + (lastSweep
+          ? '<button type="button" class="pb undo" data-act="undosweep">직전 쓸기 취소 ('+intv(lastSweep.count,0)+'칸)</button>'
+          : '<button type="button" class="pb undo" disabled>직전 쓸기 취소</button>')
+      + '<span class="hint">Ctrl+Z</span>'
+    + '</div>'
+    + '<div class="note">고른 것만 칠합니다. <b>그대로</b>를 고르면 그 항목은 건드리지 않습니다. '
+      + '여러 칸은 <b>쓸어내려서</b> 한 번에 바꾸며, 한 번의 쓸기는 타임라인에 한 줄로 기록됩니다.</div>'
+    + '</div>';
+}
+
 function consoleHtml(){
   var st = gridStats();
   var editor=ownsEditorLock();
@@ -1973,11 +2506,20 @@ function consoleHtml(){
     + '<div class="spacer"></div>'
     + '<div class="save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad')+'" id="savePill">'
       +(SAVE_STATUS.ok?(SAVE_STATUS.backupOk?'저장·복구 정상':'저장 정상 · 복구본 실패'):'저장 실패')+'</div>'
+    + '<div class="save-pill'+((!S.ui.autoSave||autoSaveErr)?' bad':'')+'" id="autoSavePill">'
+      + esc(autoSaveLabel())+'</div>'
     + '<div class="sync-pill'+(peerConnected()?'':' off')+'" id="syncPill">'
       + (peerConnected() ? '표출 화면 연결됨' : '표출 화면 미연결')+'</div>'
     + (!editor?'<button class="btn danger" data-act="takecontrol">편집권 가져오기</button>':'')
     + '<button class="btn primary" id="btnOpenDisplay">표출 화면 열기</button>'
     + (MODE==='display' ? '<button class="btn" id="btnCloseDrawer">닫기 (Esc)</button>' : '')
+    + '<nav class="ct-nav" aria-label="섹션 이동">'
+      + [['quick','즉시조작'],['mission','상황'],['subject','실종자'],['drone','드론'],
+         ['batt','배터리'],['crew','인원'],['grid','수색구역'],['safety','안전·기상'],['data','데이터']]
+        .map(function(p){
+          return '<button type="button" data-act="nav" data-sec="sec-'+p[0]+'">'+p[1]+'</button>';
+        }).join('')
+    + '</nav>'
     + '</div>';
 
   if(!STORAGE_OK){
@@ -1989,23 +2531,33 @@ function consoleHtml(){
   if(STARTUP_WARNINGS.length)h+='<div class="warn-strip danger">'+esc(STARTUP_WARNINGS.join(' · '))+'</div>';
 
   /* --- 즉시 조작(가장 많이 쓰는 것 위로) --- */
-  h += '<div class="sec"><h3>즉시 조작 <span class="hint">현장에서 가장 자주 누르는 버튼</span></h3><div class="sec-b">'
+  h += '<div class="sec" id="sec-quick"><h3>즉시 조작 <span class="hint">현장에서 가장 자주 누르는 버튼</span></h3><div class="sec-b">'
     + '<div class="quick-grid">'
       + '<button class="btn alarm big'+(S.safety.manned?' on':'')+'" id="btnManned">'
-        + (S.safety.manned ? '유인기 경보 해제' : '⚠ 유인기 진입 (전 기체 즉시 착륙)') + '</button>'
+        + (S.safety.manned ? '유인기 경보 해제' : '\u26A0\uFE0E 유인기 진입 (전 기체 즉시 착륙)') + '</button>'
       + '<div class="inline">'
         + '<select id="evType" style="flex:0 0 120px">'
           + Object.keys(EV_TYPE).map(function(k){
-              return '<option value="'+k+'">'+EV_TYPE[k]+'</option>'; }).join('')
+              return '<option value="'+k+'"'+(quickEv.type===k?' selected':'')+'>'+EV_TYPE[k]+'</option>'; }).join('')
         + '</select>'
-        + '<input id="evTime" type="datetime-local" value="'+localDateTime(new Date())+'" style="flex:0 0 190px" aria-label="사건 발생시각">'
-        + '<input id="evZone" placeholder="구역" style="flex:0 0 72px">'
-        + '<input id="evText" placeholder="내용 입력 후 Enter" style="flex:1 1 140px">'
+        + '<input id="evTime" type="datetime-local" value="'+esc(quickEvTime())+'" style="flex:0 0 190px" aria-label="사건 발생시각">'
+        + '<input id="evZone" placeholder="구역" value="'+esc(quickEv.zone)+'" style="flex:0 0 72px">'
+        + '<input id="evText" placeholder="내용 입력 후 Enter" value="'+esc(quickEv.text)+'" style="flex:1 1 140px">'
         + '<button class="btn primary" id="btnAddEv">기록</button>'
       + '</div>'
     + '</div>'
     + '<div class="note">기록한 이벤트는 표출 화면 타임라인에 즉시 올라가고, 그대로 활동일지가 됩니다. '
       + '<b>발견</b>을 기록하면 표출 화면 전체에 적색 배너와 경보음이 나갑니다. 발생시각은 사후 입력할 수 있습니다.</div>'
+    + (function(){
+        var mm=stateMismatches(); if(!mm.length) return '';
+        return '<div class="mismatch"><div class="mm-h">기록과 상태가 어긋난 항목 '+mm.length+'건</div>'
+          + mm.map(function(x){
+              return '<div class="mm-row"><span>'+esc(x.text)+'</span>'
+                + '<button class="btn sm primary" data-act="syncstate" data-kind="'+esc(x.kind)
+                + '" data-ref="'+esc(x.ref)+'" data-t="'+intv(x.t,0)+'">'+esc(x.btn)+'</button></div>';
+            }).join('')
+          + '<div class="note">빠른기록은 타임라인에만 남습니다. 위 버튼을 누르면 해당 상태를 기록에 맞추고 정정 이력을 남깁니다.</div></div>';
+      })()
     + '<div class="item"><div class="item-h"><span class="ih-t">최근 기록 정정 · 취소</span></div>'
       + S.events.slice().sort(function(a,b){return b.t-a.t;}).slice(0,8).map(function(e){
           return '<div class="inline" style="margin:5px 0;opacity:'+(e.voided?'.55':'1')+'">'
@@ -2017,7 +2569,7 @@ function consoleHtml(){
     + '</div></div>';
 
   /* --- 상황 개요 --- */
-  h += '<div class="sec"><h3>상황 개요</h3><div class="sec-b">'
+  h += '<div class="sec" id="sec-mission"><h3>상황 개요</h3><div class="sec-b">'
     + '<div class="f2">'+fld('상황명','mission.title','text','placeholder="예: 완주군 소양면 실종자 수색"')
     + fld('수색 장소','mission.location','text','placeholder="예: 소양면 대흥리 일대 (CP: 마을회관)"')+'</div>'
     + '<div class="f4">'+fld('출동시각','mission.dispatchedAt','datetime-local')
@@ -2034,7 +2586,7 @@ function consoleHtml(){
     + '</div></div>';
 
   /* --- 실종자 --- */
-  h += '<div class="sec"><h3>실종자 정보</h3><div class="sec-b">'
+  h += '<div class="sec" id="sec-subject"><h3>실종자 정보</h3><div class="sec-b">'
     + '<div class="f4">'+fld('성명','subject.name')+fld('연령','subject.age','number','min="0" max="130"')
     + sel('성별','subject.sex',[['',''],['남','남'],['여','여']])
     + fld('치매등급·구분','subject.level','text','placeholder="치매 3등급"')+'</div>'
@@ -2058,7 +2610,7 @@ function consoleHtml2(){
   var h = '';
 
   /* --- 드론 기체 --- */
-  h += '<div class="sec"><h3>드론 운용 <span class="hint">기체별 카드가 표출 화면 우측에 표시됩니다</span>'
+  h += '<div class="sec" id="sec-drone"><h3>드론 운용 <span class="hint">기체별 카드가 표출 화면 우측에 표시됩니다</span>'
     + '<span class="spacer"></span><button class="btn sm primary" id="btnAddDrone">＋ 기체 추가</button></h3><div class="sec-b">';
   if(!S.drones.length) h += '<div class="note">등록된 기체가 없습니다. 우측 상단 “기체 추가”를 누르세요.</div>';
   S.drones.forEach(function(d,i){
@@ -2099,7 +2651,7 @@ function consoleHtml2(){
     + '</div></div>';
 
   /* --- 배터리 자원 --- */
-  h += '<div class="sec"><h3>배터리 자원 <span class="hint">언제 철수해야 하는가를 숫자로</span></h3><div class="sec-b">'
+  h += '<div class="sec" id="sec-batt"><h3>배터리 자원 <span class="hint">언제 철수해야 하는가를 숫자로</span></h3><div class="sec-b">'
     + '<div class="f3">'+fld('충전완료','batteries.ready','number','min="0" max="999"')
     + fld('충전중','batteries.charging','number','min="0" max="999"')
     + fld('소진','batteries.empty','number','min="0" max="999"')+'</div>'
@@ -2116,7 +2668,7 @@ function consoleHtml2(){
     + '</div></div>';
 
   /* --- 인원 --- */
-  h += '<div class="sec"><h3>출동 인원'
+  h += '<div class="sec" id="sec-crew"><h3>출동 인원'
     + '<span class="spacer"></span><button class="btn sm primary" id="btnAddCrew">＋ 인원 추가</button></h3><div class="sec-b">';
   if(!S.crew.length) h += '<div class="note">등록된 인원이 없습니다.</div>';
   S.crew.forEach(function(c,i){
@@ -2134,12 +2686,10 @@ function consoleHtml2(){
     + '</div></div>';
 
   /* --- 수색구역 --- */
-  h += '<div class="sec"><h3>수색구역 · 지도 <span class="hint">셀 클릭: 상태 순환 / Shift+클릭: 담당 변경</span></h3><div class="sec-b">'
-    + '<div class="f2">'+sel('셀 탭 동작','ui.gridAction',[
-      ['status','수색 상태 순환'],['by:','담당 없음'],['by:드론','담당: 드론'],['by:지상','담당: 지상'],['by:수색견','담당: 수색견'],['by:소방대','담당: 소방대']])
-      +'<div class="note">터치·키보드는 위 동작을 사용합니다. 마우스 Shift+클릭은 담당을 빠르게 순환합니다.</div></div>'
+  h += '<div class="sec" id="sec-grid"><h3>수색구역 · 지도 <span class="hint">칠할 것을 고르고 칸을 찍거나 쓸어내리세요</span></h3><div class="sec-b">'
     + '<div class="grid2">'
       + '<div>'
+        + paintPalette()
         + '<div class="cons-map" id="consMap"></div>'
         + '<div class="row-tools">'
           + '<button class="btn sm" data-act="pin" data-p="last">최종목격 핀 배치</button>'
@@ -2187,7 +2737,7 @@ function consoleHtml2(){
     + '</div></div></div>';
 
   /* --- 안전·규제·기상 --- */
-  h += '<div class="sec"><h3>안전 · 규제 · 기상</h3><div class="sec-b">'
+  h += '<div class="sec" id="sec-safety"><h3>안전 · 규제 · 기상</h3><div class="sec-b">'
     + '<div class="f4">'
       + sel('비행승인(원스톱)','safety.approval',
           [['unknown','미확인'],['none','미신청'],['pending','신청중'],['done','승인완료'],['na','해당없음']])
@@ -2210,17 +2760,28 @@ function consoleHtml2(){
       + fld('강수확률 %','weather.precip','number','min="0" max="100"')
     + '</div><div class="f2">'+sel('현재 강수','weather.rain',[[null,'미확인'],[false,'없음'],[true,'있음']])
       +'<div class="row-tools"><button class="btn primary" data-act="confirmweather">현장 기상 확인 완료</button></div></div>'
-    + '<div class="note">자동값은 Open-Meteo의 모델·보간값이며 현장 계측을 대체하지 않습니다. 수동값을 입력하면 자동 덮어쓰기를 중지하고, 관측시각·풍속·돌풍·강수를 확인한 뒤 확정하세요. 30분이 지나면 판정을 자동 보류합니다.</div>'
+    + '<div class="note">자동값은 Open-Meteo의 모델·보간값이며 현장 계측을 대체하지 않습니다. 수동값을 입력하면 자동 덮어쓰기를 중지하고, 관측시각·풍속·돌풍·강수를 확인한 뒤 확정하세요. '
+      + '자동 갱신이 들어와도 <b>판정이 바뀔 만한 변화가 없으면 확인 상태를 유지</b>합니다(강수 여부 변경, 풍속·돌풍 '+WIND_STEP_MS+'m/s 이상 변동, 한계 80%·100% 구간 진입, 강수확률 60% 경계). '
+      + '관측 후 '+WEATHER_MAX_AGE_MIN+'분 또는 확인 후 '+WEATHER_CONFIRM_MAX_MIN+'분이 지나면 판정을 보류합니다.</div>'
     + '</div></div>';
 
   /* --- 화면 · 데이터 --- */
-  h += '<div class="sec"><h3>화면 설정 · 데이터</h3><div class="sec-b">'
+  h += '<div class="sec" id="sec-data"><h3>화면 설정 · 데이터</h3><div class="sec-b">'
     + '<div class="f2">'
       + '<label class="f"><span>표출 화면 배율 ('+num(S.ui.scale,1).toFixed(2)+')</span>'
         + '<input type="range" min="0.75" max="1.5" step="0.05" data-path="ui.scale" value="'+num(S.ui.scale,1)+'"></label>'
       + '<label class="f"><span>야간 밝기 저감 ('+Math.round(num(S.ui.dim,0)*100)+'%)</span>'
         + '<input type="range" min="0" max="1" step="0.05" data-path="ui.dim" value="'+num(S.ui.dim,0)+'"></label>'
     + '</div>'
+    + '<div class="row-tools">'
+      + fld('자동 보관','ui.autoSave','checkbox')
+      + (typeof window.showSaveFilePicker==='function'
+          ? '<button class="btn primary" data-act="autofile">보관 파일 지정…</button>' : '')
+      + '<span class="hint">'+esc(autoSaveLabel())+'</span>'
+    + '</div>'
+    + '<div class="note">활동 타임라인은 그대로 보고서가 됩니다. 자동 보관을 켜두면 '
+      + '지정한 파일에 변경분을 덮어쓰고, 파일 지정이 불가능한 환경에서는 '+AUTOSAVE_MIN+'분마다 JSON을 내려받습니다. '
+      + '브라우저 저장소만 믿으면 프로필 초기화 한 번에 출동 기록이 사라집니다.</div>'
     + '<div class="row-tools">'
       + '<button class="btn" data-act="export">JSON 내보내기</button>'
       + '<button class="btn" data-act="import">JSON 불러오기</button>'
@@ -2256,6 +2817,12 @@ function commitLight(){
 function setDroneStatus(d,next){
   if(!d||!Object.prototype.hasOwnProperty.call(DRONE_ST,next)||d.status===next)return false;
   var prev=d.status, wasAir=!!d.tookOffAt&&(prev==='flying'||prev==='commloss');
+  /* 상태 변경은 반드시 타임라인에 남아야 한다. 이벤트 한도에 걸려 기록할 수 없다면
+     상태만 조용히 바뀌는 일이 없도록 변경 자체를 거부한다. */
+  if(!(next==='flying'&&wasAir)&&S.events.length>=MAX_EVENTS){
+    alert('이벤트 '+MAX_EVENTS+'건 한도에 도달해 기체 상태를 바꿀 수 없습니다. JSON을 내보낸 뒤 새 상황으로 시작하세요.');
+    return false;
+  }
   if(next==='flying'){
     if(!wasAir){d.tookOffAt=localDateTime(new Date());d.sorties=intv(d.sorties,0)+1;
       addEvent('takeoff',(d.name||'기체')+' 이륙'+(d.zone?' · '+d.zone+' 구역':''),d.zone,true);}
@@ -2300,7 +2867,12 @@ function bindConsole(root){
       el.classList.add('invalid');return;
     }
     var sm=path.match(/^drones\.(\d+)\.status$/);
-    if(sm){if(setDroneStatus(S.drones[+sm[1]],val))commit();return;}
+    if(sm){
+      if(setDroneStatus(S.drones[+sm[1]],val)) commitLight();
+      /* 변경이 거부됐으면(이벤트 한도 등) select 를 실제 상태로 되돌려야 한다. */
+      scheduleConsoleRefresh(root);
+      return;
+    }
     setPath(path,val);
     if(path==='mission.lat'||path==='mission.lon'){invalidateSafetyContext();wxRequestSeq++;}
     if(/^weather\.(wind|gust|rain|temp|precip|observedAt)$/.test(path)){
@@ -2320,7 +2892,10 @@ function bindConsole(root){
       var ci=+path.split('.')[1],c=S.crew[ci];
       if(c&&c.outAt&&c.inAt&&tms(c.outAt)<tms(c.inAt)){alert('종료시각은 투입시각보다 빠를 수 없습니다.');c.outAt='';renderConsole(root);return;}
     }
-    commit();               /* 포커스를 떠날 때 전체 갱신 */
+    /* commit() 은 renderAll -> renderConsole 로 DOM 을 교체해 지금 누르는 중인
+       버튼의 click 을 없앤다. 저장·표출 갱신만 하고 패널은 뒤늦게 그린다. */
+    commitLight();
+    scheduleConsoleRefresh(root);
   });
 
   /* 표출 화면 열기 / 드로어 닫기 */
@@ -2331,7 +2906,7 @@ function bindConsole(root){
     if(!peer){ alert('팝업이 차단되었습니다. 주소창의 팝업 차단을 허용해 주세요.'); return; }
     setTimeout(function(){
       broadcast();
-      if(MAPDATA){ try{ peer.postMessage({ch:'stayup',type:'map',data:MAPDATA},'*'); }catch(e){} }
+      if(MAPDATA){ try{ peer.postMessage({ch:'stayup',type:'map',data:MAPDATA},PEER_ORIGIN); }catch(e){} }
       renderConsole(MODE==='console' ? $('consoleRoot') : $('drawerIn'));
     }, 700);
   };
@@ -2349,18 +2924,34 @@ function bindConsole(root){
   };
 
   /* 이벤트 기록 */
+  /* 입력하는 즉시 밖에 보관해야 재렌더로 지워지지 않는다.
+     발생시각은 손대기 전까지 "자동"이며, 자동인 동안에는 제출 순간의 현재 시각을 쓴다.
+     그래야 입력줄을 오래 열어둔 뒤 기록해도 렌더 시각이 아닌 실제 시각이 남는다. */
+  function bindQuick(id, key, upper){
+    var el = root.querySelector('#'+id); if(!el) return;
+    el.oninput = el.onchange = function(){
+      quickEv[key] = upper ? el.value.toUpperCase() : el.value;
+      if(key === 'time') quickEv.timeAuto = false;
+    };
+  }
+  bindQuick('evType','type'); bindQuick('evZone','zone',true); bindQuick('evText','text');
+  bindQuick('evTime','time');
+  if(!quickEv.type){ var ty=root.querySelector('#evType'); if(ty) quickEv.type=ty.value; }
+
   function pushEv(){
     if(!ensureEditor())return;
-    var t = root.querySelector('#evType').value;
-    var when=tms(root.querySelector('#evTime').value);
-    var z = root.querySelector('#evZone').value.trim().toUpperCase();
-    var x = root.querySelector('#evText').value.trim();
+    var t = quickEv.type || 'note';
+    var when = quickEv.timeAuto ? Date.now() : tms(quickEv.time);
+    var z = (quickEv.zone||'').trim().toUpperCase();
+    var x = (quickEv.text||'').trim();
     if(!x && !z){ return; }
     if(!when){alert('사건 발생시각을 확인하세요.');return;}
     if(when>Date.now()+5*60000){alert('사건 발생시각이 현재보다 5분 이상 미래입니다.');return;}
     if(!addEvent(t,x||EV_TYPE[t],z,false,when))return;
-    root.querySelector('#evText').value = '';
-    root.querySelector('#evZone').value = '';
+    quickEv.zone=''; quickEv.text=''; quickEv.time=''; quickEv.timeAuto=true;
+    var zEl=root.querySelector('#evZone'), xEl=root.querySelector('#evText');
+    if(zEl) zEl.value=''; if(xEl) xEl.value='';
+    var tEl=root.querySelector('#evTime'); if(tEl) tEl.value=quickEvTime();
   }
   var ab = root.querySelector('#btnAddEv'); if(ab) ab.onclick = pushEv;
   var et = root.querySelector('#evText');
@@ -2378,9 +2969,7 @@ function bindConsole(root){
   var acr = root.querySelector('#btnAddCrew');
   if(acr) acr.onclick = function(){
     if(!ensureEditor())return;
-    var d = new Date(), local = d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())
-      +'T'+p2(d.getHours())+':'+p2(d.getMinutes());
-    S.crew.push({ id:uid(), name:'', role:'조종', inAt: local, outAt:'' });
+    S.crew.push({ id:uid(), name:'', role:'조종', inAt: localDateTime(new Date()), outAt:'' });
     commit();
   };
 
@@ -2389,8 +2978,13 @@ function bindConsole(root){
     var b = ev.target.closest('[data-act]'); if(!b) return;
     var act = b.getAttribute('data-act');
     if(act==='takecontrol'){
-      if(acquireEditorLock(false)){renderAll();}
+      if(acquireEditorLock()){renderAll();}
       else alert('다른 조작 창의 편집권이 아직 유효합니다. 그 창을 닫고 최대 15초 후 다시 시도하세요.');
+      return;
+    }
+    if(act==='nav'){
+      var target=root.querySelector('#'+b.getAttribute('data-sec'));
+      if(target)scrollToSection(root,target);
       return;
     }
     if(['export','report'].indexOf(act)<0&&!ensureEditor())return;
@@ -2477,11 +3071,38 @@ function bindConsole(root){
       }
       commit();
     }
+    else if(act==='undosweep'){ undoSweep(); }
+    else if(act==='paints'||act==='paintby'){
+      /* 같은 버튼을 다시 누르면 해제 = 그 항목은 칠하지 않음 */
+      var pv = b.getAttribute('data-v');
+      if(act==='paints') S.ui.paintS  = (pv==='') ? null : intv(pv,0);
+      else               S.ui.paintBy = (pv==='__keep') ? null : pv;
+      /* 바뀐 건 팔레트 하이라이트뿐이다. commit() 으로 패널 전체를 다시 그리면
+         지도까지 새로 그려져 칠할 색을 바꿀 때마다 화면이 깜빡이고,
+         쓸어내리려던 격자 DOM 이 통째로 교체된다. 버튼 상태만 직접 고친다. */
+      var curSel = act==='paints' ? S.ui.paintS : S.ui.paintBy;
+      root.querySelectorAll('[data-act="'+act+'"]').forEach(function(el){
+        var v = el.getAttribute('data-v');
+        var keep = (v==='' && act==='paints') || v==='__keep';
+        el.classList.toggle('on', keep ? (curSel===null||curSel===undefined)
+                                       : (curSel!==null&&curSel!==undefined&&String(curSel)===v));
+      });
+      commitLight();
+    }
+    else if(act==='syncstate'){
+      if(syncFromRecord(b.getAttribute('data-kind'),b.getAttribute('data-ref'),intv(b.getAttribute('data-t'),0)))commit();
+    }
+    else if(act === 'autofile'){ pickAutoSaveFile(); }
     else if(act === 'export'){ exportJson(); }
     else if(act === 'import'){ root.querySelector('#importFile').click(); }
     else if(act === 'report'){ copyReport(); }
     else if(act === 'recover'){ restoreRecovery(); }
-    else if(act === 'sample'){ if(confirm('현재 내용을 샘플 상황으로 덮어씁니다. 계속할까요?')){saveRecoveryPoint('샘플 적용 전');loadSample();} }
+    else if(act === 'sample'){
+      if(confirm('현재 내용을 샘플 상황으로 덮어씁니다. 계속할까요?')){
+        if(!saveRecoveryPoint('샘플 적용 전')){alert('복구본을 만들 수 없어 샘플 적용을 중단했습니다. 저장공간을 확인하세요.');return;}
+        loadSample();
+      }
+    }
     else if(act === 'reset'){
       if(confirm('모든 데이터를 지웁니다. 계속할까요?')){
         if(!saveRecoveryPoint('전체 초기화 전')){alert('복구본을 만들 수 없어 초기화를 중단했습니다.');return;}
@@ -2517,7 +3138,7 @@ function bindConsole(root){
         validateImportPackage(o);
         if(!confirm('현재 상황을 이 파일로 교체할까요? 작업 전 복구본을 먼저 만듭니다.'))return;
         if(!saveRecoveryPoint('JSON 가져오기 전'))throw new Error('복구본을 만들 수 없어 가져오기를 중단했습니다.');
-        if(!applyStateTransaction(migrate(o),o.map||null))throw new Error('저장공간 부족 또는 저장 충돌로 적용하지 못했습니다.');
+        if(!applyStateTransaction(o,o.map||null))throw new Error('저장공간 부족 또는 저장 충돌로 적용하지 못했습니다.');
         alert('검증 후 안전하게 불러왔습니다.');
       }catch(e){ alert('가져오기 실패: '+(e&&e.message?e.message:'JSON 형식 또는 구조를 확인하세요.')+'\n기존 데이터는 유지됩니다.'); }
     };
@@ -2526,7 +3147,8 @@ function bindConsole(root){
   if(!ownsEditorLock()){
     root.querySelectorAll('input,textarea,select,button').forEach(function(el){
       var act=el.getAttribute('data-act');
-      var safe=act==='takecontrol'||act==='export'||act==='report'||el.id==='btnOpenDisplay'||el.id==='btnCloseDrawer';
+      var safe=act==='takecontrol'||act==='export'||act==='report'||act==='nav'
+        ||el.id==='btnOpenDisplay'||el.id==='btnCloseDrawer';
       if(!safe)el.disabled=true;
     });
   }
@@ -2604,6 +3226,11 @@ function fileToMap(file){
   if(file.type && file.type.indexOf('image') !== 0){
     mapMsg('이미지 파일이 아닙니다 ('+file.type+').', 'err'); return;
   }
+  /* 축소는 읽기가 끝난 뒤에 일어난다. 원본을 통째로 base64 로 올리는 단계에서
+     수십 MB 사진이면 탭이 메모리 압박을 받는다. 읽기 전에 막는다. */
+  if(file.size > MAX_IMAGE_BYTES){
+    mapMsg('이미지가 너무 큽니다 ('+Math.round(file.size/1048576)+'MB). 25MB 이하로 줄여 다시 시도하세요.', 'err'); return;
+  }
   mapMsg('지도 이미지를 처리하는 중…', 'warn');
   var fr = new FileReader();
   fr.onerror = function(){ mapMsg('파일을 읽지 못했습니다.', 'err'); };
@@ -2673,16 +3300,25 @@ function fetchWeather(manualTrigger){
         }
       }
       var w=S.weather;
-      w.temp=Math.round(temp*10)/10;w.wind=Math.round(wind*10)/10;w.gust=Math.round(gust*10)/10;
-      w.rain=rainAmt>0.05;w.precip=precip;w.observedAt=observed;w.stamp=localDateTime(new Date(observed));
-      w.src='auto';w.lat=lat;w.lon=lon;w.confirmed=false;w.confirmedAt=0;w.error='';commit();
+      var next={rain:rainAmt>0.05,wind:Math.round(wind*10)/10,
+                gust:Math.round(gust*10)/10,precip:precip};
+      var reconfirm=weatherNeedsReconfirm(
+        {confirmed:w.confirmed,src:w.src,rain:w.rain,wind:w.wind,gust:w.gust,precip:w.precip}, next);
+      w.temp=Math.round(temp*10)/10;w.wind=next.wind;w.gust=next.gust;
+      w.rain=next.rain;w.precip=next.precip;
+      w.observedAt=observed;w.stamp=localDateTime(new Date(observed));
+      w.src='auto';w.lat=lat;w.lon=lon;
+      if(reconfirm){ w.confirmed=false; w.confirmedAt=0; }
+      w.error='';commit();
     })
     .catch(function(e){
       if(seq!==wxRequestSeq)return;
       S.weather.lastAttemptAt=Date.now();S.weather.error='자동 갱신 실패: '+(e&&e.name==='AbortError'?'시간 초과':(e&&e.message||'통신 오류'));
       commit();if(manualTrigger)alert('기상 자동 갱신 실패 — 기존 관측값은 유지했습니다.\n'+S.weather.error);
     })
-    .then(function(){clearTimeout(timer);wxBusy=false;});
+    /* .then 으로 두면 앞선 .catch 핸들러가 던졌을 때 실행되지 않아
+       wxBusy 가 true 로 굳고 이후 모든 기상 갱신이 조용히 막힌다. */
+    .finally(function(){clearTimeout(timer);wxBusy=false;});
 }
 
 /* ==========================================================================
@@ -2699,15 +3335,91 @@ function stampName(){
   var n = new Date();
   return n.getFullYear()+p2(n.getMonth()+1)+p2(n.getDate())+'-'+p2(n.getHours())+p2(n.getMinutes());
 }
-function exportJson(){
+function exportPayload(){
   var out = JSON.parse(JSON.stringify(S));
   out.appVersion = APP_VERSION;
   if(MAPDATA) out.map = MAPDATA;
-  download('stayup-'+stampName()+'.json', JSON.stringify(out, null, 1));
+  return JSON.stringify(out, null, 1);
+}
+function exportJson(){ download('stayup-'+stampName()+'.json', exportPayload()); }
+
+/* ==========================================================================
+   S11b. 자동 보관
+   활동 타임라인은 그대로 보고서가 되는데, 지금까지는 운영요원이 'JSON 내보내기'를
+   누르기 전까지 브라우저 저장소에만 존재했다. 프로필 초기화·브라우저 변경·파일 경로
+   이동 한 번이면 출동 기록이 통째로 사라지고, 자동 복구본도 같은 저장소라 함께 없어진다.
+     1순위 - 파일 하나를 지정받아 조용히 덮어쓴다 (File System Access).
+     2순위 - 그게 막힌 환경(file:// 등)에서는 주기적으로 다운로드한다.
+   ========================================================================== */
+var AUTOSAVE_MIN = 10;        /* 다운로드 폴백 주기(분) */
+var AUTOSAVE_FILE_MS = 20000; /* 파일 덮어쓰기 최소 간격 */
+var autoSaveHandle = null;    /* 세션 한정. 새로고침하면 다시 지정해야 한다 */
+var autoSaveAt = 0, autoSaveErr = '', autoSaveBusy = false, lastAutoSavedRev = -1;
+
+function autoSaveWorth(){
+  return !!(S.events.length || String(S.mission.title||'').trim()
+    || S.drones.length || S.crew.length || S.subject.name);
+}
+function autoSaveLabel(){
+  if(!S.ui.autoSave) return '자동 보관 꺼짐';
+  if(autoSaveErr) return '자동 보관 실패 · '+autoSaveErr;
+  var how = autoSaveHandle ? '파일' : '다운로드';
+  if(!autoSaveAt) return '자동 보관 대기 · '+how;
+  var m = Math.floor((Date.now()-autoSaveAt)/60000);
+  return '보관 '+(m<1?'방금':m+'분 전')+' · '+how;
+}
+function refreshAutoSavePill(){
+  var el = document.getElementById('autoSavePill'); if(!el) return;
+  el.textContent = autoSaveLabel();
+  el.className = 'save-pill' + ((!S.ui.autoSave || autoSaveErr) ? ' bad' : '');
+}
+function pickAutoSaveFile(){
+  if(typeof window.showSaveFilePicker !== 'function'){
+    alert('이 환경에서는 보관 파일을 지정할 수 없습니다. 자동 보관은 다운로드로 진행됩니다.');
+    return;
+  }
+  window.showSaveFilePicker({
+    suggestedName:'stayup-'+stampName()+'.json',
+    types:[{description:'STAY UP 상황 데이터',accept:{'application/json':['.json']}}]
+  }).then(function(h){
+    autoSaveHandle=h; autoSaveErr=''; lastAutoSavedRev=-1; autoSaveAt=0;
+    autoSaveTick(); refreshAutoSavePill();
+    alert('보관 파일을 지정했습니다. 이후 변경은 이 파일에 자동으로 덮어씁니다.\n창을 새로고침하면 다시 지정해야 합니다.');
+  }, function(e){
+    if(e && e.name==='AbortError') return;   /* 사용자가 취소 */
+    autoSaveErr=(e&&e.name)?e.name:String(e); refreshAutoSavePill();
+    alert('보관 파일을 지정하지 못했습니다. 자동 보관은 다운로드로 진행됩니다.');
+  });
+}
+function autoSaveTick(){
+  /* 편집권을 가진 창만 보관한다. 두 창이 동시에 쓰면 파일이 서로를 덮는다. */
+  if(!S.ui.autoSave || autoSaveBusy || !ownsEditorLock() || !autoSaveWorth()) return;
+  var rev = S.meta.revision, now = Date.now();
+  if(rev === lastAutoSavedRev) return;      /* 바뀐 게 없으면 쓰지 않는다 */
+  if(autoSaveHandle){
+    if(now - autoSaveAt < AUTOSAVE_FILE_MS) return;
+    autoSaveBusy = true;
+    var body = exportPayload();
+    autoSaveHandle.createWritable().then(function(w){
+      return w.write(body).then(function(){ return w.close(); });
+    }).then(function(){
+      autoSaveAt = Date.now(); lastAutoSavedRev = rev; autoSaveErr = '';
+    }, function(e){
+      /* 권한이 끊기거나 파일이 사라지면 다운로드 방식으로 되돌아간다. */
+      autoSaveErr = (e&&e.name)?e.name:String(e); autoSaveHandle = null;
+    }).then(function(){ autoSaveBusy = false; refreshAutoSavePill(); });
+    return;
+  }
+  if(autoSaveAt && now - autoSaveAt < AUTOSAVE_MIN*60000) return;
+  try{
+    download('stayup-자동보관-'+stampName()+'.json', exportPayload());
+    autoSaveAt = now; lastAutoSavedRev = rev; autoSaveErr = '';
+  }catch(e){ autoSaveErr = (e&&e.name)?e.name:String(e); }
+  refreshAutoSavePill();
 }
 function buildReport(){
   var st = gridStats(), now = new Date();
-  var totalSorties = 0, totalMin = 0;
+  var totalSorties = 0;
   S.drones.forEach(function(d){ totalSorties += intv(d.sorties,0); });
   var lines = [];
   lines.push('■ STAY UP 드론팀 현장활동 기록');
@@ -2790,10 +3502,7 @@ function copyReport(){
 }
 function loadSample(){
   var now = new Date();
-  function lt(offsetMin){
-    var d = new Date(now.getTime() + offsetMin*60000);
-    return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+'T'+p2(d.getHours())+':'+p2(d.getMinutes());
-  }
+  function lt(offsetMin){ return localDateTime(new Date(now.getTime() + offsetMin*60000)); }
   var s = defaultState();
   s.mission = { title:'완주군 소양면 실종자 수색 (동원)', location:'소양면 대흥리 일대 · CP 마을회관 앞',
     dispatchedAt: lt(-372), lat:35.8899, lon:127.2211, trs:'소방3', callsign:'전북드론1',
@@ -2819,7 +3528,11 @@ function loadSample(){
     { id:uid(), name:'정○○', role:'충전지원', inAt: lt(-368),outAt:'' }
   ];
   s.batteries = { ready:9, charging:4, empty:10, generator:true, avgFlightMin:32, concurrent:2 };
-  s.grid = { rows:5, cols:6, cells:{}, mapVer:S.grid.mapVer, hasMap:S.grid.hasMap,
+  /* 샘플은 수색 내용만 바꾸고 사용자가 적용한 지도는 유지한다.
+     이미지 데이터만 넘기고 좌표 크기를 빠뜨리면 applyStateTransaction()의 migrate 과정에서
+     mapW/mapH가 0으로 초기화되어 격자와 핀이 다른 지형을 가리키게 된다. */
+  s.grid = { rows:5, cols:6, cells:{}, mapVer:S.grid.mapVer, mapId:S.grid.mapId,
+    hasMap:S.grid.hasMap, mapW:S.grid.mapW, mapH:S.grid.mapH, mapKB:S.grid.mapKB,
     mapZoom:100, mapX:0, mapY:0, mapOpacity:0.85, widthMeters:2400,
     pinLast:{x:31,y:24}, pinFound:null };
   var done = ['A1','A2','A3','B1','B2','B3','B4','C1','C2','C4','C5','D1','D3','D4','E1','E2','E3','E6'];
@@ -2849,8 +3562,8 @@ function loadSample(){
   s.events = evs.map(function(e){
     return { t: now.getTime() + e[0]*60000, type:e[1], text:e[2], zone:e[3] };
   });
-  s.ui = { scale: num(S.ui.scale,1), dim: num(S.ui.dim,0), ackFound:0,gridAction:'status' };
-  if(!applyStateTransaction(migrate(s),MAPDATA))alert('샘플을 저장하지 못해 기존 상태를 유지했습니다.');
+  s.ui = { scale: num(S.ui.scale,1), dim: num(S.ui.dim,0), ackFound:0, paintS:2, paintBy:null };
+  if(!applyStateTransaction(s,MAPDATA))alert('샘플을 저장하지 못해 기존 상태를 유지했습니다.');
 }
 
 /* ==========================================================================
@@ -2879,6 +3592,11 @@ document.addEventListener('keydown', function(ev){
   }
   if(ev.key === 'Escape' && !$('drawer').hidden){ closeDrawer(); return; }
   if(typing) return;
+  /* 쓸다가 잘못 지나가는 경우가 가장 흔하다. 입력칸에 있을 때는 동작하지 않는다. */
+  if((ev.ctrlKey || ev.metaKey) && (ev.key === 'z' || ev.key === 'Z')){
+    if(lastSweep){ ev.preventDefault(); undoSweep(); }
+    return;
+  }
   if(ev.key === 'f' || ev.key === 'F'){
     if(document.fullscreenElement) document.exitFullscreen();
     else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
@@ -2911,14 +3629,14 @@ function boot(){
     try{
       if(window.opener && !window.opener.closed){
         peer = window.opener;
-        window.opener.postMessage({ch:'stayup', type:'hello'}, '*');
+        window.opener.postMessage({ch:'stayup', type:'hello'}, PEER_ORIGIN);
       }
     }catch(e){}
   } else {
     document.body.className = 'mode-console';
     document.title = 'STAY UP v'+APP_VERSION+' — 조작 패널';
     $('board').hidden = true;
-    acquireEditorLock(false);
+    acquireEditorLock();
     renderConsole($('consoleRoot'));
   }
 
@@ -2929,17 +3647,34 @@ function boot(){
 
   /* 1초: 시계·카운트다운·비행시간 / 0.5초: 창간 동기화 폴링 */
   setInterval(function(){
+    /* ResizeObserver 가 놓치는 경우(숨겨진 창에서 그려진 뒤 표시됨, 배율 슬라이더 등)를
+       대비한 보정. 값이 같으면 아무것도 쓰지 않는다. */
+    fitMapBox($('mapWrap')); fitMapBox($('consMap'));
     if(!$('board').hidden){renderHeader();renderSafety();tickDrones();renderBanner();}
+    /* 손대지 않은 발생시각은 계속 현재 시각을 가리켜야 한다.
+       고정돼 있으면 오래 열어둔 입력줄에서 과거 시각으로 기록된다. */
+    if(quickEv.timeAuto){
+      var te=document.getElementById('evTime');
+      if(te&&document.activeElement!==te) te.value=quickEvTime();
+    }
   }, 1000);
   setInterval(pollStore, 500);
   /* 30초: 최근 5세대 자동 복구본 */
   setInterval(function(){createSnapshot('자동');},30000);
+  setInterval(autoSaveTick,30000);
   /* 10분: 기상 자동 갱신 */
   fetchWeather(false);
   setInterval(function(){ fetchWeather(false); }, 600000);
   setInterval(function(){sendPeer({type:'ping'});},2000);
   setInterval(function(){
-    if(ownsEditorLock())refreshEditorLock();
+    /* 절전·모달로 5초 갱신이 멈춰 임대가 만료되면, 다른 창이 가져가지 않은 한
+       같은 창이 스스로 편집권을 회수한다. 그러지 않으면 노트북을 덮었다 열 때마다
+       조작 패널이 읽기 전용으로 잠겨 버튼을 한 번 더 눌러야 한다. */
+    if(ownsEditorLock()){ refreshEditorLock(); heldEditorLock=true; return; }
+    if(heldEditorLock){
+      if(acquireEditorLock()) renderAll();      /* 만료된 자기 임대 회수 */
+      else { heldEditorLock=false; renderAll(); }    /* 다른 창이 정당하게 가져감 */
+    }
   },5000);
   /* 연결 상태 표시 갱신 */
   setInterval(function(){
@@ -2950,6 +3685,7 @@ function boot(){
     pill.textContent = on ? '표출 화면 연결됨' : '표출 화면 미연결';
     var save=document.getElementById('savePill');if(save){save.className='save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad');
       save.textContent=SAVE_STATUS.ok?(SAVE_STATUS.backupOk?'저장·복구 정상':'저장 정상 · 복구본 실패'):'저장 실패';}
+    refreshAutoSavePill();
   }, 2000);
 
   /* 표출 화면을 닫을 때 마지막 상태를 확실히 남긴다 */
