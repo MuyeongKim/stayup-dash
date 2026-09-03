@@ -9,6 +9,10 @@
   STAY UP 현장 상황판 (전북소방 드론팀 실종자 수색 현장 대시보드)
   단일 HTML 파일 · 외부 의존성 없음 · file:// 로 직접 열어 사용
   ----------------------------------------------------------------------------
+  Copyright 2026 MuyeongKim
+  Licensed under the Apache License, Version 2.0 — 자세한 조건은 LICENSE 파일 참조
+  http://www.apache.org/licenses/LICENSE-2.0
+  ----------------------------------------------------------------------------
   사용법
     - 이 파일을 더블클릭하면 [조작 패널]이 열립니다 (운영요원 노트북)
     - 상단 "표출 화면 열기" 버튼 -> 대형 스크린용 [표출 화면]이 새 창으로 열림
@@ -491,6 +495,20 @@ b,strong{font-weight:700}
 .cons-top .spacer{flex:1 1 auto}
 /* 조작 패널은 노트북 기준 8화면 가까이 되고, 수색 중 가장 자주 만지는 수색구역이
    70% 지점에 있다. 상단 바에 섹션 점프를 붙여 스크롤 없이 오갈 수 있게 한다. */
+/* 노트북 1대 + 대형 모니터 구성에서 기록자는 조작 패널만 본다. 골든타임·일몰·
+   비행 판정·출동 경과를 보려고 고개를 돌리지 않게 상단 바에 축소판을 둔다. */
+.cons-top .ct-kpi{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;
+  padding-top:8px;border-top:1px solid var(--border)}
+.ct-kpi .ck{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.ct-kpi .ck em{font-style:normal;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.ct-kpi .ck b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.ct-kpi .ck small{font-size:10.5px;font-weight:700;color:var(--muted)}
+.ct-kpi .ck .dot{width:11px;height:11px;align-self:center;margin-right:1px}
+.ct-kpi .ck-ok b{color:var(--ok)}
+.ct-kpi .ck-warn b{color:var(--warn)}
+.ct-kpi .ck-danger b{color:var(--danger)}
+.ct-kpi .ck-crit b{color:#FF6B6B}
+.ct-kpi .ck-idle b{color:var(--muted2)}
 .cons-top .ct-nav{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:5px;
   padding-top:8px;border-top:1px solid var(--border)}
 .ct-nav button{
@@ -588,6 +606,22 @@ textarea{resize:vertical;min-height:52px}
 .pb:hover{color:var(--text);border-color:var(--border2)}
 .pb.on{color:#0A0F14;background:var(--muted);border-color:var(--text)}
 .pb.keep.on{background:var(--surface3);color:var(--text);border-color:var(--border2)}
+/* 좌표 보정 기준점 마커 (조작 패널에만 표시. 표출 화면에는 세팅 흔적을 남기지 않는다) */
+.refpt{
+  position:absolute;transform:translate(-50%,-50%);z-index:6;pointer-events:none;
+  width:18px;height:18px;border-radius:50%;background:var(--info);color:#04121C;
+  border:2px solid #fff;display:flex;align-items:center;justify-content:center;
+  font:800 11px/1 system-ui,sans-serif;
+}
+.geo{margin-top:10px;border-top:1px solid var(--border);padding-top:9px}
+.geo-h{font-size:12.5px;font-weight:800;margin-bottom:6px}
+.geo-h .hint{margin-left:6px}
+.geo-row{display:flex;align-items:flex-end;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+.geo-xy{font-size:11.5px;color:var(--muted);flex:0 0 118px}
+.geo-f{flex:1 1 96px;min-width:0;margin:0}
+.geo-f>span{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.geo-f>input{width:100%}
+.geo-read{color:var(--info);font-weight:700}
 .pb.undo{border-color:var(--border2)}
 .pb.undo[disabled]{opacity:.4;cursor:default}
 .pb.p1.on{background:var(--warn)}
@@ -778,9 +812,15 @@ var EPOCHKEY = 'stayup.dash.epoch.v1';
 var MAP_PREFIX = 'stayup.dash.map.v2.';
 var APP_VERSION = '1.1.0';
 var STATE_VERSION = 2;
-var MAX_IMPORT_BYTES = 6 * 1024 * 1024;
-var MAX_IMAGE_BYTES = 25 * 1024 * 1024;
-var MAX_MAP_CHARS = 3 * 1024 * 1024;
+/* 지도 이미지는 IndexedDB 에, 그 밖의 상태는 localStorage 에 둔다.
+   localStorage 는 약 5MB 라 지도를 1,600px 로 줄여야 했고, 그러면 정사영상을 쓸
+   이유가 사라진다. IndexedDB 가 막힌 환경에서는 종전 값으로 그대로 되돌아간다. */
+var IDB_NAME = 'stayup.dash', IDB_STORE = 'maps', IDB_VER = 1;
+var MAX_IMPORT_BYTES = 24 * 1024 * 1024;   /* 커진 지도가 JSON 왕복이 되도록 */
+var MAX_IMAGE_BYTES = 60 * 1024 * 1024;    /* 읽기 전 원본 상한 */
+var MAX_MAP_CHARS = 12 * 1024 * 1024;      /* IndexedDB 사용 시 */
+var MAX_MAP_CHARS_LS = 3 * 1024 * 1024;    /* localStorage 폴백 (종전 값) */
+var MAP_MAX_PX = 3072, MAP_MAX_PX_LS = 1600;
 var MAX_EVENTS = 5000;
 var WEATHER_MAX_AGE_MIN = 30;
 var WEATHER_CONFIRM_MAX_MIN = 30;  /* 현장 확인의 유효시간. 자동 갱신 주기와 무관하게 사람이 다시 본다 */
@@ -828,6 +868,10 @@ function defaultState(){
     grid:{
       rows:5, cols:6, cells:{}, mapVer:0, mapId:null, hasMap:false, mapW:0, mapH:0, mapKB:0,
       mapZoom:100, mapX:0, mapY:0, mapOpacity:0.85, widthMeters:2000,
+      /* geo: 지도 네 변의 위경도. 있으면 격자·핀에 실제 좌표가 생기고
+         가로 실거리도 손입력이 아니라 계산값을 쓴다. 없으면 종전과 같이 픽셀 좌표계. */
+      geo:null, ref1:null, ref2:null,
+      mapNatW:0, mapNatH:0,   /* 축소 전 원본 픽셀 크기 (world file 해석에 필요) */
       pinLast:null, pinFound:null
     },
     events:[],
@@ -852,7 +896,86 @@ var STORAGE_OK = (function(){
   try{ localStorage.setItem('stayup.probe','1'); localStorage.removeItem('stayup.probe'); return true; }
   catch(e){ return false; }
 })();
-var MAPDATA = null;      /* 지도 이미지 dataURL (용량이 커서 별도 키에 저장) */
+var MAPDATA = null;      /* 지도 이미지 dataURL (용량이 커서 본문 상태와 분리 저장) */
+
+/* --------------------------------------------------------------------------
+   지도 이미지 저장소
+   상태(mapId·크기·좌표)는 localStorage 에 그대로 두고 이미지 본체만 IndexedDB 에 둔다.
+   IndexedDB 를 열 수 없는 환경(차단·시크릿·file:// 정책)에서는 idbBroken 이 서고,
+   그때부터는 종전과 똑같이 localStorage 를 쓰며 한도와 축소 크기도 종전 값으로 돌아간다.
+   구버전이 localStorage 에 남겨둔 지도는 읽는 순간 IndexedDB 로 옮긴다.
+   -------------------------------------------------------------------------- */
+var idbDB = null, idbBroken = false;
+function idbOpen(){
+  if(idbBroken) return Promise.reject(new Error('IndexedDB 사용 불가'));
+  if(idbDB) return Promise.resolve(idbDB);
+  return new Promise(function(res, rej){
+    var rq;
+    try{
+      if(typeof indexedDB === 'undefined') throw new Error('indexedDB 없음');
+      rq = indexedDB.open(IDB_NAME, IDB_VER);
+    }catch(e){ idbBroken = true; rej(e); return; }
+    rq.onupgradeneeded = function(){
+      var db = rq.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    rq.onsuccess = function(){ idbDB = rq.result; res(idbDB); };
+    rq.onerror   = function(){ idbBroken = true; rej(rq.error || new Error('IndexedDB 열기 실패')); };
+    rq.onblocked = function(){ idbBroken = true; rej(new Error('IndexedDB 차단')); };
+  });
+}
+function idbReq(mode, make){
+  return idbOpen().then(function(db){
+    return new Promise(function(res, rej){
+      var tx, req;
+      try{ tx = db.transaction(IDB_STORE, mode); req = make(tx.objectStore(IDB_STORE)); }
+      catch(e){ rej(e); return; }
+      tx.oncomplete = function(){ res(req ? req.result : undefined); };
+      tx.onerror    = function(){ rej(tx.error || new Error('IndexedDB 트랜잭션 실패')); };
+      tx.onabort    = function(){ rej(tx.error || new Error('IndexedDB 트랜잭션 중단')); };
+    });
+  });
+}
+/* 아래 네 개가 저장소를 감춘 유일한 창구다. 실패하면 localStorage 로 내려간다. */
+function mapBlobPut(id, dataUrl){
+  return idbReq('readwrite', function(st){ return st.put(dataUrl, id); })
+    .catch(function(e){
+      idbBroken = true;
+      if(dataUrl.length > MAX_MAP_CHARS_LS)
+        throw new Error('이 브라우저는 큰 지도를 저장할 수 없습니다(IndexedDB 사용 불가). 이미지를 줄여 다시 시도하세요.');
+      localStorage.setItem(MAP_PREFIX+id, dataUrl);
+      if(localStorage.getItem(MAP_PREFIX+id) !== dataUrl) throw new Error('지도 저장 확인 실패');
+    });
+}
+/* '지도가 정말 없다'와 '저장소를 못 읽었다'를 반드시 구분해야 한다.
+   둘을 같은 null 로 돌려주면, 일시적인 저장소 실패에도 호출자가 지도가 없어진 줄 알고
+   상태에서 지도 참조를 지워 버린다. 못 읽었을 때는 reject 한다. */
+function mapBlobGet(id){
+  function fromLS(){ try{ return localStorage.getItem(MAP_PREFIX+id); }catch(e){ return null; } }
+  return idbReq('readonly', function(st){ return st.get(id); }).then(function(v){
+    if(typeof v === 'string' && v) return v;
+    var ls = fromLS();
+    /* 구버전 잔재를 옮겨 둔다. 실패해도 읽기 자체는 성공이므로 조용히 넘긴다. */
+    if(ls) mapBlobPut(id, ls).then(function(){
+      try{ localStorage.removeItem(MAP_PREFIX+id); }catch(e){}
+    }, function(){});
+    return ls;   /* 저장소는 읽혔다. null 이면 정말 없다. */
+  }, function(e){
+    idbBroken = true;
+    var ls = fromLS();
+    if(ls) return ls;             /* 폴백 저장소에 있었다 */
+    throw e;                      /* 어디에서도 읽지 못했다 */
+  });
+}
+function mapBlobDel(id){
+  return idbReq('readwrite', function(st){ return st.delete(id); })
+    .catch(function(){})
+    .then(function(){ try{ localStorage.removeItem(MAP_PREFIX+id); }catch(e){} });
+}
+function mapBlobKeys(){
+  return idbReq('readonly', function(st){ return st.getAllKeys(); })
+    .then(function(k){ return k || []; }, function(){ idbBroken = true; return []; });
+}
 
 /* ==========================================================================
    S2. 유틸
@@ -1017,8 +1140,11 @@ function sanColor(v, fallback){
   var s = sanText(v, 16);
   return /^#[0-9a-f]{6}$/i.test(s) ? s.toUpperCase() : fallback;
 }
+function mapCharCap(){ return idbBroken ? MAX_MAP_CHARS_LS : MAX_MAP_CHARS; }
+function mapPxCap(){ return idbBroken ? MAP_MAX_PX_LS : MAP_MAX_PX; }
+function mapStoreLabel(){ return idbBroken ? 'localStorage (한도 '+Math.round(MAX_MAP_CHARS_LS/1048576)+'MB)' : 'IndexedDB'; }
 function validMapData(v){
-  return typeof v === 'string' && v.length <= MAX_MAP_CHARS
+  return typeof v === 'string' && v.length <= mapCharCap()
     && /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=\r\n]+$/i.test(v);
 }
 function validateImportPackage(raw){
@@ -1097,6 +1223,22 @@ function migrate(raw){
   d.grid.widthMeters=sanNum(g.widthMeters,50,100000,2000,false);
   function pin(v){ return isPlainObject(v) ? {x:sanNum(v.x,0,100,50,false),y:sanNum(v.y,0,100,50,false)} : null; }
   d.grid.pinLast=pin(g.pinLast); d.grid.pinFound=pin(g.pinFound);
+  d.grid.mapNatW=sanInt(g.mapNatW,0,200000,0); d.grid.mapNatH=sanInt(g.mapNatH,0,200000,0);
+  d.grid.geo=(function(v){
+    if(!isPlainObject(v)) return null;
+    var o={west:sanNum(v.west,-180,180,NaN,false),east:sanNum(v.east,-180,180,NaN,false),
+           north:sanNum(v.north,-90,90,NaN,false),south:sanNum(v.south,-90,90,NaN,false),
+           src:['manual','world','kml'].indexOf(v.src)>=0?v.src:'manual',
+           at:sanNum(v.at,0,Number.MAX_SAFE_INTEGER,0,false)};
+    if(!isFinite(o.west)||!isFinite(o.east)||!isFinite(o.north)||!isFinite(o.south)) return null;
+    if(o.west===o.east||o.north===o.south) return null;
+    return o;
+  })(g.geo);
+  function refpt(v){
+    return isPlainObject(v) ? {x:sanNum(v.x,0,100,50,false),y:sanNum(v.y,0,100,50,false),
+      lat:sanNum(v.lat,-90,90,null,true),lon:sanNum(v.lon,-180,180,null,true)} : null;
+  }
+  d.grid.ref1=refpt(g.ref1); d.grid.ref2=refpt(g.ref2);
 
   var events = Array.isArray(raw.events) ? raw.events : [];
   d.events = events.filter(isPlainObject).map(function(e){
@@ -1223,15 +1365,22 @@ function saveRecoveryPoint(reason){
   }
 }
 function gcMapBlobs(){
-  if(!STORAGE_OK)return;
+  var keep={};
   try{
-    var keep={};if(S.grid.mapId)keep[S.grid.mapId]=true;
+    if(S.grid.mapId)keep[S.grid.mapId]=true;
     getSnapshots().forEach(function(x){var id=x&&x.state&&x.state.grid&&x.state.grid.mapId;if(id)keep[id]=true;});
     var rr=JSON.parse(localStorage.getItem(RECOVERY_KEY)||'null');
     var rid=rr&&rr.state&&rr.state.grid&&rr.state.grid.mapId;if(rid)keep[rid]=true;
+  }catch(e){}
+  /* localStorage 잔재 (구버전·폴백 환경) */
+  if(STORAGE_OK)try{
     var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf(MAP_PREFIX)===0)keys.push(k);}
     keys.forEach(function(k){var id=k.slice(MAP_PREFIX.length);if(!keep[id])localStorage.removeItem(k);});
   }catch(e){}
+  /* IndexedDB. 참조가 끊긴 지도는 수백 MB 를 잡고 있을 수 있다. */
+  mapBlobKeys().then(function(ks){
+    ks.forEach(function(id){ if(!keep[id]) mapBlobDel(id); });
+  }, function(){});
 }
 function restoreRecovery(){
   try{
@@ -1243,8 +1392,9 @@ function restoreRecovery(){
     if(r.state.grid&&r.state.grid.hasMap&&!validMapData(map))throw new Error('복구본의 지도 데이터가 없습니다.');
     if(!confirm(shortDateTime(r.t)+' · '+(r.reason||'직전 작업')+' 상태로 되돌릴까요?'))return;
     if(!createSnapshot('복구 적용 전'))throw new Error('복구본을 만들 수 없어 되돌리기를 중단했습니다. 저장공간을 확인하세요.');
-    if(!applyStateTransaction(r.state,map))throw new Error('복구 상태를 저장하지 못했습니다.');
-    alert('직전 작업을 복구했습니다.');
+    applyStateWithMap(r.state,map).then(function(ok){
+      alert(ok ? '직전 작업을 복구했습니다.' : '복구 실패: 복구 상태를 저장하지 못했습니다.');
+    });
   }catch(e){alert('복구 실패: '+(e&&e.message?e.message:e));}
 }
 function purgeIncidentData(){
@@ -1262,17 +1412,30 @@ function purgeIncidentData(){
     alert('브라우저의 상황 데이터와 복구본을 삭제했습니다. 공용 PC의 다운로드 파일도 승인된 위치로 옮기거나 삭제한 뒤 두 창을 닫으세요.');
   }catch(e){setSaveStatus(false,e&&e.message?e.message:String(e));alert('완전 삭제 중 오류가 발생했습니다. 브라우저 저장공간을 직접 확인하세요.');}
 }
-function applyStateTransaction(nextState,nextMap){
-  var oldState=localStorage.getItem(KEY),newMapKey=null,wroteRaw=null,hadLegacyMap=!!(S.grid.hasMap&&!S.grid.mapId);
+/* 지도 블롭을 먼저 저장소에 쓰고, 그 id 로 상태 전환을 실행한다.
+   상태 저장이 실패하면 방금 쓴 블롭을 지운다. */
+function applyStateWithMap(nextState,nextMap){
+  if(!nextMap) return Promise.resolve(applyStateTransaction(nextState,null,null));
+  if(!validMapData(nextMap)){ setSaveStatus(false,'지도 형식 오류'); return Promise.resolve(false); }
+  var id = uid();
+  return mapBlobPut(id, nextMap).then(function(){
+    var ok = applyStateTransaction(nextState, nextMap, id);
+    if(!ok) mapBlobDel(id);
+    return ok;
+  }, function(e){
+    setSaveStatus(false, e&&e.message?e.message:String(e));
+    return false;
+  });
+}
+function applyStateTransaction(nextState,nextMap,mapId){
+  var oldState=localStorage.getItem(KEY),wroteRaw=null,hadLegacyMap=!!(S.grid.hasMap&&!S.grid.mapId);
   try{
     if(!epochCurrent())throw new Error('출동 종료 후 열린 이전 창입니다. 새로고침하세요.');
     nextState=migrate(nextState);
     nextState.meta.revision=S.meta.revision; nextState.meta.updated=S.meta.updated;
     if(nextMap){
-      if(!validMapData(nextMap)) throw new Error('지도 형식 오류');
-      nextState.grid.mapId=uid(); newMapKey=MAP_PREFIX+nextState.grid.mapId;
-      localStorage.setItem(newMapKey,nextMap);
-      if(localStorage.getItem(newMapKey)!==nextMap) throw new Error('지도 저장 확인 실패');
+      if(!mapId) throw new Error('지도 식별자 없음');
+      nextState.grid.mapId=mapId;   /* 블롭은 applyStateWithMap 이 이미 저장했다 */
       nextState.grid.hasMap=true; nextState.grid.mapKB=Math.round(nextMap.length/1024);
     }else{
       nextState.grid.mapId=null; nextState.grid.hasMap=false;
@@ -1288,8 +1451,7 @@ function applyStateTransaction(nextState,nextMap){
     if(hadLegacyMap)try{localStorage.removeItem(MAPKEY);}catch(ignore){}
     setSaveStatus(true,'');lastSeenUpdated=S.meta.updated;broadcast();renderAll();gcMapBlobs();return true;
   }catch(e){
-    try{ if(wroteRaw&&localStorage.getItem(KEY)===wroteRaw){if(oldState==null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,oldState);}
-      if(newMapKey)localStorage.removeItem(newMapKey); }catch(ignore){}
+    try{ if(wroteRaw&&localStorage.getItem(KEY)===wroteRaw){if(oldState==null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,oldState);} }catch(ignore){}
     setSaveStatus(false,e&&e.message?e.message:String(e)); return false;
   }
 }
@@ -1384,43 +1546,98 @@ function loadLocal(){
   readMapFromStore();
 }
 var mapVerLoaded=-1;
+/* IndexedDB 읽기는 비동기다. 부팅을 막지 않고 먼저 그린 뒤, 이미지가 도착하면
+   격자만 다시 그린다. mapVerLoaded 를 먼저 올려 중복 요청을 막는다. */
 function readMapFromStore(){
-  try{
-    if(!S.grid.hasMap){ MAPDATA=null; mapVerLoaded=S.grid.mapVer; return true; }
-    var m=S.grid.mapId?localStorage.getItem(MAP_PREFIX+S.grid.mapId):localStorage.getItem(MAPKEY);
-    if(!validMapData(m)){
-      MAPDATA=null; S.grid.hasMap=false; S.grid.mapW=0; S.grid.mapH=0; S.grid.mapKB=0;
-      mapVerLoaded=S.grid.mapVer; STARTUP_WARNINGS.push('저장된 지도 형식이 올바르지 않아 제외했습니다.'); return true;
-    }
-    MAPDATA=m; mapVerLoaded=S.grid.mapVer; return true;
-  }catch(e){return false;}
-}
-function saveMap(dataUrl,meta){
-  if(!ensureEditor()) return false;
-  if(dataUrl&&!validMapData(dataUrl)){mapMsg('지원하지 않거나 너무 큰 지도 이미지입니다.','err');return false;}
-  if(S.grid.hasMap&&!saveRecoveryPoint(dataUrl?'지도 교체 전':'지도 삭제 전')){
-    mapMsg('복구본을 만들 수 없어 지도 변경을 중단했습니다. 저장공간을 확인하세요.','err');return false;
+  if(!S.grid.hasMap){ MAPDATA=null; mapVerLoaded=S.grid.mapVer; return true; }
+  var want = S.grid.mapVer, id = S.grid.mapId;
+  mapVerLoaded = want;
+  var get = id ? mapBlobGet(id) : Promise.resolve((function(){
+    try{ return localStorage.getItem(MAPKEY); }catch(e){ return null; }   /* 구버전 단일 키 */
+  })());
+  function warn(msg){
+    STARTUP_WARNINGS.push(msg);
+    showSystemAlert(STARTUP_WARNINGS.join(' · '));
   }
-  var candidate=migrate(S),newMapKey=null,hadLegacyMap=!!(S.grid.hasMap&&!S.grid.mapId);
+  get.then(function(m){
+    if(S.grid.mapVer !== want) return;      /* 그 사이 지도가 또 바뀌었다 */
+    if(!validMapData(m)){ dropMissingMap(); return; }
+    MAPDATA=m; renderGridAll();
+  }, function(){
+    if(S.grid.mapVer !== want) return;
+    /* 읽기 자체가 실패한 경우는 일시적일 수 있다. 화면만 비우고 상태는 건드리지 않는다.
+       블롭이 실제로 없어진 것과 저장소를 못 읽은 것은 다르게 다뤄야 한다. */
+    MAPDATA=null; warn('지도 저장소를 읽지 못했습니다. 상태는 그대로 두었습니다.');
+    renderGridAll();
+  });
+  return true;
+
+  /* 블롭이 실제로 없어진 경우. 상태를 메모리에서만 고치면 표출 화면은 아직 지도가
+     있다고 알고 있게 된다. 편집권을 가진 창이 저장하고 상대 창에도 알린다.
+     지리 범위(geo)와 원본 크기는 이미지와 별개로 유효하므로 남긴다 —
+     같은 지도를 다시 넣으면 좌표 보정이 그대로 이어진다. */
+  function dropMissingMap(){
+    MAPDATA=null;
+    warn('저장된 지도를 읽지 못해 제외했습니다. 지도를 다시 넣으면 좌표 보정은 그대로 이어집니다.');
+    if(!ownsEditorLock()){ renderGridAll(); return; }   /* 정정은 편집 창의 몫 */
+    S.grid.hasMap=false; S.grid.mapId=null;
+    S.grid.mapW=0; S.grid.mapH=0; S.grid.mapKB=0;
+    /* 판 번호를 올려야 폴링으로만 따라오는 창도 다시 읽고 지도를 지운다. */
+    S.grid.mapVer = sanInt(S.grid.mapVer,0,2147483646,0)+1;
+    mapVerLoaded = S.grid.mapVer;
+    commit();
+    sendPeer({type:'map', ver:S.grid.mapVer, data:null});
+    renderGridAll();
+  }
+}
+/* 이미지 본체를 저장소에 먼저 쓰고, 성공하면 상태를 동기로 커밋한다.
+   상태 커밋이 실패하면 방금 쓴 블롭을 지워 고아를 남기지 않는다. */
+function saveMap(dataUrl,meta){
+  if(!ensureEditor()) return Promise.resolve(false);
+  if(dataUrl&&!validMapData(dataUrl)){
+    mapMsg('지원하지 않거나 너무 큰 지도 이미지입니다 · 한도 '
+      + Math.round(mapCharCap()/1048576)+'MB · 저장소 '+mapStoreLabel(),'err');
+    return Promise.resolve(false);
+  }
+  if(S.grid.hasMap&&!saveRecoveryPoint(dataUrl?'지도 교체 전':'지도 삭제 전')){
+    mapMsg('복구본을 만들 수 없어 지도 변경을 중단했습니다. 저장공간을 확인하세요.','err');
+    return Promise.resolve(false);
+  }
+  var newId = dataUrl ? uid() : null;
+  return (dataUrl ? mapBlobPut(newId, dataUrl) : Promise.resolve()).then(function(){
+    var ok = commitMap(dataUrl, meta, newId);
+    if(!ok && newId) mapBlobDel(newId);
+    return ok;
+  }, function(e){
+    mapMsg('지도 저장에 실패했습니다 · '+(e&&e.message?e.message:e),'err');
+    return false;
+  });
+}
+function commitMap(dataUrl,meta,newId){
+  var candidate=migrate(S),hadLegacyMap=!!(S.grid.hasMap&&!S.grid.mapId);
   try{
-    if(dataUrl){
-      candidate.grid.mapId=uid(); newMapKey=MAP_PREFIX+candidate.grid.mapId;
-      localStorage.setItem(newMapKey,dataUrl);
-      if(localStorage.getItem(newMapKey)!==dataUrl) throw new Error('지도 저장 확인 실패');
-    }else candidate.grid.mapId=null;
+    candidate.grid.mapId = dataUrl ? newId : null;
     candidate.grid.hasMap=!!dataUrl; candidate.grid.mapVer=(candidate.grid.mapVer||0)+1;
     candidate.grid.mapW=meta?sanInt(meta.w,0,20000,0):0; candidate.grid.mapH=meta?sanInt(meta.h,0,20000,0):0;
+    candidate.grid.mapNatW=meta?sanInt(meta.natW,0,200000,0):0;
+    candidate.grid.mapNatH=meta?sanInt(meta.natH,0,200000,0):0;
+    /* 지도를 바꾸면 이전 지도의 좌표 보정은 맞지 않는다. 같은 원본을 다시 넣은
+       경우에만 보정을 유지한다. */
+    if(!dataUrl||candidate.grid.mapNatW!==S.grid.mapNatW||candidate.grid.mapNatH!==S.grid.mapNatH){
+      candidate.grid.geo=null; candidate.grid.ref1=null; candidate.grid.ref2=null;
+    }
     candidate.grid.mapKB=dataUrl?Math.round(dataUrl.length/1024):0; touchState(candidate);
     if(!persistCandidate(candidate)) throw new Error('상태 저장 실패');
     S=candidate;MAPDATA=dataUrl||null;mapVerLoaded=S.grid.mapVer;lastSeenUpdated=S.meta.updated;
     if(hadLegacyMap)try{localStorage.removeItem(MAPKEY);}catch(ignore){}
     broadcast();renderAll();gcMapBlobs();
     sendPeer({type:'map',ver:S.grid.mapVer,data:dataUrl||null});
-    mapMsg(dataUrl?'지도 적용·저장 완료 · '+S.grid.mapW+'×'+S.grid.mapH+' · 약 '+S.grid.mapKB+'KB':'지도 이미지를 삭제했습니다.',dataUrl?'ok':'warn');
+    mapMsg(dataUrl?'지도 적용·저장 완료 · '+S.grid.mapW+'×'+S.grid.mapH+' · 약 '+S.grid.mapKB+'KB · '+mapStoreLabel()
+      :'지도 이미지를 삭제했습니다.',dataUrl?'ok':'warn');
     return true;
   }catch(e){
-    try{if(newMapKey)localStorage.removeItem(newMapKey);}catch(ignore){}
-    mapMsg('지도 저장에 실패해 이전 지도로 되돌렸습니다. 저장공간을 확인하세요.','err'); renderAll(); return false;
+    mapMsg('지도 저장에 실패해 이전 지도로 되돌렸습니다. 저장공간을 확인하세요.','err');
+    renderAll(); return false;
   }
 }
 
@@ -1615,6 +1832,80 @@ function flightVerdict(now){
   if(warn.length) return { lv:'warn',   txt:'제한 비행', why:warn };
   return { lv:'ok', txt:'비행 가능', why:['제한사항 없음'] };
 }
+/* ==========================================================================
+   S5b. 지도 좌표계 (지오레퍼런스)
+   격자는 지금까지 픽셀 좌표계였고, 실제 거리와의 연결은 '지도 가로 실거리' 손입력
+   하나뿐이었다. 그래서 무전으로 "C3"는 말할 수 있어도 지상팀 GPS에 찍을 좌표는
+   줄 수 없었다. 지도 네 변의 위경도를 알면 모든 칸과 핀에 실제 좌표가 생긴다.
+   지도 캡처와 정사영상은 정북 정렬이라 회전은 다루지 않는다.
+   ========================================================================== */
+var MPD_LAT = 111132;   /* 위도 1도당 미터 (평균) */
+function geoOK(){
+  var g = S.grid.geo;
+  return !!(g && isFinite(g.west) && isFinite(g.east) && isFinite(g.north) && isFinite(g.south)
+    && g.west !== g.east && g.north !== g.south);
+}
+/* 이미지 정규좌표(u,v: 0~1) -> 위경도. v 는 위에서 아래로 증가한다. */
+function geoAt(u, v){
+  if(!geoOK()) return null;
+  var g = S.grid.geo;
+  return { lat: g.north + clamp(v,0,1)*(g.south - g.north),
+           lon: g.west  + clamp(u,0,1)*(g.east  - g.west) };
+}
+function cellCenterAt(r, c){ return geoAt((c+0.5)/gridCols(), (r+0.5)/gridRows()); }
+function cellCenterById(id){
+  var m = /^([A-L])(\d{1,2})$/.exec(String(id||'').toUpperCase());
+  if(!m) return null;
+  var r = m[1].charCodeAt(0)-65, c = parseInt(m[2],10)-1;
+  if(r<0||r>=gridRows()||c<0||c>=gridCols()) return null;
+  return cellCenterAt(r, c);
+}
+function fmtLatLon(p){ return p ? p.lat.toFixed(5)+', '+p.lon.toFixed(5) : ''; }
+/* 보정이 있으면 가로 실거리를 계산해서 쓴다. 눈대중 축척 입력보다 정확하다. */
+function mapWidthMeters(){
+  if(geoOK()){
+    var g = S.grid.geo, midLat = (g.north + g.south)/2;
+    return Math.abs(g.east - g.west) * MPD_LAT * Math.cos(midLat*RAD);
+  }
+  return num(S.grid.widthMeters, 2000);
+}
+/* 네 변 값이 실제로 쓸 만한지 본다. 잘못된 좌표를 지상팀에 넘기면 안 된다. */
+function validateGeo(geo){
+  if(!geo) return {err:'좌표 계산에 실패했습니다.'};
+  var w = Math.abs(geo.east-geo.west), h = Math.abs(geo.north-geo.south);
+  if(!isFinite(w)||!isFinite(h)||w<=0||h<=0) return {err:'좌표 계산에 실패했습니다.'};
+  if(Math.abs(geo.north)>90||Math.abs(geo.south)>90
+     ||Math.abs(geo.west)>180||Math.abs(geo.east)>180)
+    return {err:'좌표가 위경도 범위를 벗어났습니다.'};
+  if(w > 2 || h > 2)
+    return {err:'지도 범위가 비정상적으로 넓습니다(가로 약 '+Math.round(w*100)+'km). 입력값을 확인하세요.'};
+  if(w < 0.00002 || h < 0.00002)
+    return {err:'지도 범위가 비정상적으로 좁습니다. 입력값을 확인하세요.'};
+  if(geo.north <= geo.south)
+    return {err:'위쪽 기준점이 아래쪽보다 남쪽입니다. 두 점의 위도를 확인하세요.'};
+  return {geo:geo};
+}
+/* 두 기준점에서 네 변을 유도한다. 두 점은 가로·세로가 모두 충분히 달라야 한다. */
+function geoFromRefs(r1, r2){
+  if(!r1 || !r2) return {err:'기준점 두 개를 모두 지도에 찍으세요.'};
+  var u1=r1.x/100, v1=r1.y/100, u2=r2.x/100, v2=r2.y/100;
+  if(Math.abs(u2-u1) < 0.05)
+    return {err:'두 기준점의 좌우 간격이 너무 좁습니다. 대각선으로 떨어진 두 점을 쓰세요.'};
+  if(Math.abs(v2-v1) < 0.05)
+    return {err:'두 기준점의 상하 간격이 너무 좁습니다. 대각선으로 떨어진 두 점을 쓰세요.'};
+  var lat1=num(r1.lat,NaN), lon1=num(r1.lon,NaN), lat2=num(r2.lat,NaN), lon2=num(r2.lon,NaN);
+  if(!isFinite(lat1)||!isFinite(lon1)||!isFinite(lat2)||!isFinite(lon2))
+    return {err:'기준점의 위도·경도를 모두 입력하세요.'};
+  var dLon = (lon2-lon1)/(u2-u1), dLat = (lat2-lat1)/(v2-v1);
+  var west = lon1 - u1*dLon, north = lat1 - v1*dLat;
+  return validateGeo({west:west, north:north, east:west+dLon, south:north+dLat,
+    src:'manual', at:Date.now()});
+}
+function geoSrcLabel(){
+  if(!geoOK()) return '미보정';
+  return {manual:'수동 2점', world:'좌표 파일(world)', kml:'좌표 파일(KML)'}[S.grid.geo.src] || '보정됨';
+}
+
 /* 실종 경과시간 기반 이동 추정반경(km) */
 function moveRadiusKm(now){
   var t = tms(S.subject.missingAt);
@@ -1631,6 +1922,52 @@ function setKpi(id, lv){
   var el = $(id); if(!el) return;
   el.className = 'kpi' + (id==='kFlight' ? ' kpi-flight' : '') + ' lv-' + lv;
 }
+/* --------------------------------------------------------------------------
+   상단 KPI 네 개
+   표출 화면(대형 모니터)과 조작 패널(기록자 노트북)이 같은 계산을 써야 한다.
+   노트북 1대 + 대형 모니터 구성에서 기록자는 조작 패널만 보므로, 이 넷을 보려고
+   고개를 돌리게 하면 안 된다. 계산을 여기 한 곳에 두고 양쪽이 나눠 쓴다.
+     v = 큰 숫자 · u = 단위 접미사 · s = 부제 · lv = 등급 · dot = 형태 표식 사용
+   -------------------------------------------------------------------------- */
+function kpiGolden(now){
+  var mt = tms(S.subject.missingAt);
+  if(!mt) return {v:'--:--', u:'', s:'실종시각 미입력', lv:'idle'};
+  var passed = now.getTime() - mt;
+  var left = GOLDEN_HOURS*3600000 - passed;
+  var ph = passed/3600000;
+  return {
+    /* 큰 숫자가 현재시각과 비슷하게 읽혀 혼동되므로 단위를 붙인다.
+       durHM 은 숫자와 콜론만 만들어내므로 그대로 붙여도 안전하다. */
+    v: left <= 0 ? '초과' : durHM(left),
+    u: left <= 0 ? '' : '남음',
+    s: '실종 후 '+durHM(passed)+' 경과 · 기준 '+GOLDEN_HOURS+'h',
+    lv: left <= 0 ? 'crit' : (ph < 8 ? 'ok' : (ph < 16 ? 'warn' : 'danger'))
+  };
+}
+function kpiSunset(now){
+  var cs = coordinateStatus(), sp = sunPhase(now);
+  if(!(cs.ok && sp.times && sp.times.sunset && sp.times.sunrise))
+    return {v:'--:--', u:'', s: cs.why || '일출·일몰 계산 불가', lv:'idle'};
+  var nightLv = cs.confirmed ? (S.safety.nightApproval?'warn':'danger') : 'idle';
+  if(sp.kind === 'beforeSunrise') return {v:'일출 전', u:'', lv:nightLv,
+    s:'일출 '+hhmm(sp.times.sunrise)+' · 일몰 '+hhmm(sp.times.sunset)};
+  if(sp.kind === 'afterSunset') return {v:'일몰 후', u:'', lv:nightLv,
+    s:'일몰 '+hhmm(sp.times.sunset)+(sp.times.dusk?' · 박명종료 '+hhmm(sp.times.dusk):'')};
+  var sl = sp.times.sunset.getTime() - now.getTime();
+  return { v:durHM(sl), u:'남음',
+    s:'일몰 '+hhmm(sp.times.sunset)+(cs.confirmed?'':' · 좌표 확인 필요'),
+    lv: cs.confirmed ? (sl<=30*60000?'warn':'ok') : 'idle' };
+}
+function kpiFlight(now){
+  var v = flightVerdict(now);
+  return {v:v.txt, u:'', s:v.why.join(' · '), lv:v.lv, dot:true};
+}
+function kpiElapsed(now){
+  var dt = tms(S.mission.dispatchedAt);
+  if(!dt) return {v:'--:--', u:'', s:'출동시각 미입력', lv:'idle'};
+  return {v:durHM(now.getTime()-dt), u:'경과', s:'출동 '+hhmm(new Date(dt)), lv:'ok'};
+}
+
 function renderHeader(){
   var now = new Date();
   $('hClock').textContent = p2(now.getHours())+':'+p2(now.getMinutes())+':'+p2(now.getSeconds());
@@ -1639,64 +1976,16 @@ function renderHeader(){
   $('hMission').textContent = S.mission.title || '상황명 미입력';
   $('hLoc').textContent = S.mission.location || '수색 장소 미입력';
 
-  /* 골든타임 */
-  var mt = tms(S.subject.missingAt);
-  if(mt){
-    var passed = now.getTime() - mt;
-    var left = GOLDEN_HOURS*3600000 - passed;
-    var ph = passed/3600000;
-    var lv = left <= 0 ? 'crit' : (ph < 8 ? 'ok' : (ph < 16 ? 'warn' : 'danger'));
-    /* 큰 숫자가 우측 현재시각(13:59:06)과 비슷하게 읽혀 대형 스크린에서 혼동된다.
-       durHM 은 숫자와 콜론만 만들어내므로 그대로 붙여도 안전하다. */
-    $('vGolden').innerHTML = left <= 0 ? '초과' : durHM(left)+'<small>남음</small>';
-    $('sGolden').textContent = '실종 후 '+durHM(passed)+' 경과 · 기준 '+GOLDEN_HOURS+'h';
-    setKpi('kGolden', lv);
-  } else {
-    $('vGolden').textContent = '--:--';
-    $('sGolden').textContent = '실종시각 미입력';
-    setKpi('kGolden','idle');
+  function put(vId, sId, kId, k){
+    $(vId).innerHTML = (k.dot ? '<i class="dot '+k.lv+'"></i>' : '')
+      + esc(k.v) + (k.u ? '<small>'+esc(k.u)+'</small>' : '');
+    $(sId).textContent = k.s;
+    setKpi(kId, k.lv);
   }
-
-  /* 일몰 */
-  var cs=coordinateStatus(), sp=sunPhase(now);
-  if(cs.ok&&sp.times&&sp.times.sunset&&sp.times.sunrise){
-    if(sp.kind==='beforeSunrise'){
-      $('vSunset').textContent='일출 전';
-      $('sSunset').textContent='일출 '+hhmm(sp.times.sunrise)+' · 일몰 '+hhmm(sp.times.sunset);
-      setKpi('kSunset',cs.confirmed?(S.safety.nightApproval?'warn':'danger'):'idle');
-    }else if(sp.kind==='afterSunset'){
-      $('vSunset').textContent='일몰 후';
-      $('sSunset').textContent='일몰 '+hhmm(sp.times.sunset)+(sp.times.dusk?' · 박명종료 '+hhmm(sp.times.dusk):'');
-      setKpi('kSunset',cs.confirmed?(S.safety.nightApproval?'warn':'danger'):'idle');
-    }else{
-      var sl=sp.times.sunset.getTime()-now.getTime();
-      $('vSunset').innerHTML=durHM(sl)+'<small>남음</small>';
-      $('sSunset').textContent='일몰 '+hhmm(sp.times.sunset)+(cs.confirmed?'':' · 좌표 확인 필요');
-      setKpi('kSunset',cs.confirmed?(sl<=30*60000?'warn':'ok'):'idle');
-    }
-  } else {
-    $('vSunset').textContent = '--:--';
-    $('sSunset').textContent = cs.why || '일출·일몰 계산 불가';
-    setKpi('kSunset','idle');
-  }
-
-  /* 비행 판정 */
-  var v = flightVerdict(now);
-  $('vFlight').innerHTML = '<i class="dot '+v.lv+'"></i>'+esc(v.txt);
-  $('sFlight').textContent = v.why.join(' · ');
-  setKpi('kFlight', v.lv);
-
-  /* 출동 경과 */
-  var dt = tms(S.mission.dispatchedAt);
-  if(dt){
-    $('vElapsed').innerHTML = durHM(now.getTime()-dt)+'<small>경과</small>';
-    $('sElapsed').textContent = '출동 '+hhmm(new Date(dt));
-    setKpi('kElapsed','ok');
-  } else {
-    $('vElapsed').textContent = '--:--';
-    $('sElapsed').textContent = '출동시각 미입력';
-    setKpi('kElapsed','idle');
-  }
+  put('vGolden','sGolden','kGolden', kpiGolden(now));
+  put('vSunset','sSunset','kSunset', kpiSunset(now));
+  put('vFlight','sFlight','kFlight', kpiFlight(now));
+  put('vElapsed','sElapsed','kElapsed', kpiElapsed(now));
 
   $('board').classList.toggle('manned-alert', !!S.safety.manned);
 }
@@ -1921,15 +2210,30 @@ function buildGrid(host, interactive){
   html += '</div>';
   /* 이동 추정반경 + 핀 */
   var rad = moveRadiusKm(new Date());
-  if(g.pinLast && rad != null && rad > 0 && num(g.widthMeters,2000) > 0){
-    var pct = Math.min(400, (rad*1000) / num(g.widthMeters,2000) * 100 * 2);  /* 지름 % (상한 400) */
+  var mw = mapWidthMeters();
+  if(g.pinLast && rad != null && rad > 0 && mw > 0){
+    var pct = Math.min(400, (rad*1000) / mw * 100 * 2);  /* 지름 % (상한 400) */
     html += '<div class="rcircle" style="left:'+g.pinLast.x+'%;top:'+g.pinLast.y
           + '%;width:'+pct+'%;aspect-ratio:1"></div>';
   }
+  /* 좌표가 보정돼 있으면 핀 라벨에 실제 위경도를 붙인다. 지휘부가 무전으로
+     바로 읽어 지상팀 GPS 에 넘길 수 있어야 한다. */
+  function pinLabel(txt, p){
+    var c = geoOK() ? geoAt(p.x/100, p.y/100) : null;
+    return txt + (c ? ' ' + fmtLatLon(c) : '');
+  }
   if(g.pinLast) html += '<div class="pin last" style="left:'+g.pinLast.x+'%;top:'+g.pinLast.y
-    + '%"><span class="plb">최종목격</span><span class="pdot"></span><span class="stem"></span></div>';
+    + '%"><span class="plb">'+esc(pinLabel('최종목격', g.pinLast))
+    + '</span><span class="pdot"></span><span class="stem"></span></div>';
   if(g.pinFound) html += '<div class="pin found" style="left:'+g.pinFound.x+'%;top:'+g.pinFound.y
-    + '%"><span class="plb">발견</span><span class="pdot"></span><span class="stem"></span></div>';
+    + '%"><span class="plb">'+esc(pinLabel('발견', g.pinFound))
+    + '</span><span class="pdot"></span><span class="stem"></span></div>';
+  if(interactive){
+    ['ref1','ref2'].forEach(function(k,i){
+      var rp = g[k]; if(!rp) return;
+      html += '<div class="refpt" style="left:'+rp.x+'%;top:'+rp.y+'%">'+(i+1)+'</div>';
+    });
+  }
   html += '</div>';
   host.innerHTML = html;
   fitMapBox(host); observeMapFit(host);
@@ -1950,7 +2254,14 @@ function buildGrid(host, interactive){
       if(pinMode){
         var x = clamp((ev.clientX-box.left)/box.width*100, 0, 100);
         var y = clamp((ev.clientY-box.top)/box.height*100, 0, 100);
-        S.grid[pinMode === 'last' ? 'pinLast' : 'pinFound'] = {x:+x.toFixed(1), y:+y.toFixed(1)};
+        if(pinMode === 'ref1' || pinMode === 'ref2'){
+          /* 이미 입력해 둔 위경도는 살린다. 위치만 다시 찍는 경우가 많다. */
+          var prev = S.grid[pinMode] || {};
+          S.grid[pinMode] = {x:+x.toFixed(2), y:+y.toFixed(2),
+            lat: prev.lat==null?null:prev.lat, lon: prev.lon==null?null:prev.lon};
+        }else{
+          S.grid[pinMode === 'last' ? 'pinLast' : 'pinFound'] = {x:+x.toFixed(1), y:+y.toFixed(1)};
+        }
         pinMode = null; commit(); return;
       }
       var cellEl = cellUnder(ev); if(!cellEl) return;
@@ -2001,7 +2312,8 @@ function renderGridStats(){
     : '<span class="rl">이동 추정반경<br>보행 '+num(S.subject.walkSpeed,2)+'km/h · 계수 '+num(S.subject.decay,0.35)
       + '</span><span class="rv num">'+rad.toFixed(1)+'<small>km</small></span>';
   $('gridMeta').innerHTML = gridRows()+'×'+gridCols()+' = <b>'+st.total+'</b> 구역'
-    + ' · 완료 <b>'+n[2]+'</b> · 지도폭 '+num(S.grid.widthMeters,2000)+'m'
+    + ' · 완료 <b>'+n[2]+'</b> · 지도폭 '+Math.round(mapWidthMeters())+'m'
+    + (geoOK()?' · 좌표 <b>보정됨</b>':' · 좌표 미보정')
     + (S.grid.hasMap?'':' · <b>지도 미적용</b>');
 }
 
@@ -2462,6 +2774,76 @@ function syncFromRecord(kind, ref, evTime){
   return false;
 }
 
+/* 좌표 보정 블록. 두 기준점을 지도에 찍고 각 위경도를 넣으면 축척과 원점이 나온다.
+   카카오맵·네이버지도는 지도에서 우클릭하면 해당 지점의 위경도를 보여준다. */
+/* 빠른기록 구역칸에 들어 있는 칸의 실제 좌표. 무전으로 바로 읽는 값이다. */
+function cellGeoLabel(){
+  if(!geoOK()) return '';
+  var id = String(quickEv.zone||'').trim().toUpperCase();
+  var p = cellCenterById(id);
+  return p ? id + ' 중심 ' + fmtLatLon(p) : '';
+}
+
+function geoPanel(){
+  function refRow(i){
+    var k = 'ref'+i, r = S.grid[k];
+    var h = '<div class="geo-row">'
+      + '<button type="button" class="btn sm'+(pinMode===k?' primary':'')
+        +'" data-act="refpick" data-r="'+k+'">'+(pinMode===k?'지도를 클릭…':'기준점 '+i+' 찍기')+'</button>'
+      + '<span class="geo-xy">'+(r?('지도 '+num(r.x,0).toFixed(1)+'%, '+num(r.y,0).toFixed(1)+'%'):'위치 미지정')+'</span>';
+    if(r){
+      h += '<label class="geo-f"><span>위도</span><input type="number" step="0.00001" min="-90" max="90"'
+        + ' data-path="grid.'+k+'.lat" value="'+(r.lat==null?'':esc(r.lat))+'" placeholder="35.88990"></label>'
+        + '<label class="geo-f"><span>경도</span><input type="number" step="0.00001" min="-180" max="180"'
+        + ' data-path="grid.'+k+'.lon" value="'+(r.lon==null?'':esc(r.lon))+'" placeholder="127.22110"></label>';
+    }
+    return h + '</div>';
+  }
+  var h = '<div class="geo"><div class="geo-h">좌표 보정 <span class="hint">'+esc(geoSrcLabel())+'</span></div>';
+  if(geoOK()){
+    var gg = S.grid.geo;
+    h += '<div class="note"><b>적용됨</b> · 지도 가로 '+Math.round(mapWidthMeters())+'m · '
+      + '북 '+gg.north.toFixed(5)+' / 남 '+gg.south.toFixed(5)
+      + ' / 서 '+gg.west.toFixed(5)+' / 동 '+gg.east.toFixed(5)+'</div>';
+  }else{
+    h += '<div class="note">보정 전에는 격자가 픽셀 좌표계입니다. 무전으로 구역 이름은 부를 수 있지만 '
+      + '지상팀에 넘길 위경도는 나오지 않습니다.</div>';
+  }
+  h += refRow(1) + refRow(2)
+    + '<div class="row-tools">'
+      + '<button class="btn sm primary" data-act="geoapply">2점 보정 적용</button>'
+      + '<button class="btn sm" data-act="geofile">좌표 파일 불러오기</button>'
+      + (geoOK()?'<button class="btn sm danger" data-act="geoclear">보정 해제</button>':'')
+      + '<input type="file" id="geoFileInput" accept=".jgw,.tfw,.pgw,.wld,.kml" hidden>'
+    + '</div>'
+    + '<div class="note">두 기준점은 <b>대각선으로 떨어진 두 곳</b>을 쓰세요. 같은 행이나 같은 열에 있으면 축척이 나오지 않습니다. '
+      + '카카오맵·네이버지도는 지도에서 우클릭하면 위경도가 나옵니다.<br>'
+      + '정사영상은 <b>이미지와 좌표 파일(.jgw/.tfw)을 같이 끌어다 놓으면</b> 자동으로 적용됩니다. '
+      + 'KML은 GroundOverlay의 LatLonBox를 읽습니다. GeoTIFF와 미터 좌표계(UTM·TM)는 지원하지 않습니다.</div>'
+    + '</div>';
+  return h;
+}
+
+/* 표출 화면과 같은 kpi* 함수를 쓰므로 두 화면의 숫자가 어긋날 수 없다. */
+function consoleKpiCells(){
+  var now = new Date();
+  function cell(label, k){
+    return '<span class="ck ck-'+k.lv+'" title="'+esc(k.s)+'">'
+      + '<em>'+label+'</em>'
+      + (k.dot ? '<i class="dot '+k.lv+'"></i>' : '')
+      + '<b>'+esc(k.v)+'</b>'
+      + (k.u ? '<small>'+esc(k.u)+'</small>' : '')
+      + '</span>';
+  }
+  /* '경과 6:12 경과' 처럼 라벨과 단위가 겹치지 않게 라벨을 고른다. */
+  return cell('골든', kpiGolden(now)) + cell('일몰', kpiSunset(now))
+       + cell('판정', kpiFlight(now)) + cell('출동', kpiElapsed(now));
+}
+function refreshConsoleKpi(){
+  var host = document.getElementById('ctKpi');
+  if(host) host.innerHTML = consoleKpiCells();
+}
+
 function paintPalette(){
   function btn(act, val, label, cls){
     var cur = act==='paints' ? S.ui.paintS : S.ui.paintBy;
@@ -2488,6 +2870,7 @@ function paintPalette(){
           ? '<button type="button" class="pb undo" data-act="undosweep">직전 쓸기 취소 ('+intv(lastSweep.count,0)+'칸)</button>'
           : '<button type="button" class="pb undo" disabled>직전 쓸기 취소</button>')
       + '<span class="hint">Ctrl+Z</span>'
+      + '<span class="hint geo-read" id="cellGeo">'+esc(cellGeoLabel())+'</span>'
     + '</div>'
     + '<div class="note">고른 것만 칠합니다. <b>그대로</b>를 고르면 그 항목은 건드리지 않습니다. '
       + '여러 칸은 <b>쓸어내려서</b> 한 번에 바꾸며, 한 번의 쓸기는 타임라인에 한 줄로 기록됩니다.</div>'
@@ -2513,6 +2896,7 @@ function consoleHtml(){
     + (!editor?'<button class="btn danger" data-act="takecontrol">편집권 가져오기</button>':'')
     + '<button class="btn primary" id="btnOpenDisplay">표출 화면 열기</button>'
     + (MODE==='display' ? '<button class="btn" id="btnCloseDrawer">닫기 (Esc)</button>' : '')
+    + '<div class="ct-kpi" id="ctKpi">'+consoleKpiCells()+'</div>'
     + '<nav class="ct-nav" aria-label="섹션 이동">'
       + [['quick','즉시조작'],['mission','상황'],['subject','실종자'],['drone','드론'],
          ['batt','배터리'],['crew','인원'],['grid','수색구역'],['safety','안전·기상'],['data','데이터']]
@@ -2731,8 +3115,14 @@ function consoleHtml2(){
           + fld('상하 이동 %','grid.mapY','number','step="1" min="-200" max="200"')
           + fld('지도 밝기','grid.mapOpacity','number','step="0.05" min="0.1" max="1"')
         + '</div>'
+        + '<div class="note">저장소 <b>'+esc(mapStoreLabel())+'</b> · 최대 가로 '+mapPxCap()+'px'
+          + (idbBroken?' · IndexedDB를 쓸 수 없어 종전 한도로 동작합니다.'
+                      :' · 정사영상을 넣을 수 있습니다.')+'</div>'
         + '<div class="row-tools"><button class="btn sm danger" data-act="delmap">지도 이미지 삭제</button></div>'
-        + '<div class="note">지도 가로 실거리는 이동 추정반경 원의 크기 기준입니다. 캡처한 지도의 축척 바를 보고 대략 입력하세요.</div>'
+        + '<div class="note">지도 가로 실거리는 이동 추정반경 원의 크기 기준입니다. '
+          + (geoOK()?'<b>좌표가 보정돼 있어 계산값을 씁니다 — 이 입력은 무시됩니다.</b>'
+                    :'캡처한 지도의 축척 바를 보고 대략 입력하세요. 아래에서 좌표를 보정하면 계산값으로 대체됩니다.')+'</div>'
+        + geoPanel()
       + '</div>'
     + '</div></div></div>';
 
@@ -2932,6 +3322,10 @@ function bindConsole(root){
     el.oninput = el.onchange = function(){
       quickEv[key] = upper ? el.value.toUpperCase() : el.value;
       if(key === 'time') quickEv.timeAuto = false;
+      if(key === 'zone'){
+        var g = root.querySelector('#cellGeo');
+        if(g) g.textContent = cellGeoLabel();
+      }
     };
   }
   bindQuick('evType','type'); bindQuick('evZone','zone',true); bindQuick('evText','text');
@@ -3071,6 +3465,19 @@ function bindConsole(root){
       }
       commit();
     }
+    else if(act==='refpick'){ pinMode = b.getAttribute('data-r'); renderConsole(root); }
+    else if(act==='geoapply'){
+      var gr = geoFromRefs(S.grid.ref1, S.grid.ref2);
+      if(gr.err){ alert(gr.err); return; }
+      S.grid.geo = gr.geo; commit();
+      mapMsg('2점 보정을 적용했습니다 · 지도 가로 '+Math.round(mapWidthMeters())+'m','ok');
+    }
+    else if(act==='geoclear'){
+      if(!confirm('좌표 보정을 해제할까요? 격자와 핀의 위경도 표시가 사라집니다.')) return;
+      S.grid.geo = null; commit();
+      mapMsg('좌표 보정을 해제했습니다.','warn');
+    }
+    else if(act==='geofile'){ var gfi = root.querySelector('#geoFileInput'); if(gfi) gfi.click(); }
     else if(act==='undosweep'){ undoSweep(); }
     else if(act==='paints'||act==='paintby'){
       /* 같은 버튼을 다시 누르면 해제 = 그 항목은 칠하지 않음 */
@@ -3106,7 +3513,9 @@ function bindConsole(root){
     else if(act === 'reset'){
       if(confirm('모든 데이터를 지웁니다. 계속할까요?')){
         if(!saveRecoveryPoint('전체 초기화 전')){alert('복구본을 만들 수 없어 초기화를 중단했습니다.');return;}
-        if(applyStateTransaction(defaultState(),null))alert('초기화했습니다. 직전 작업은 복구 버튼으로 되돌릴 수 있습니다.');
+        applyStateWithMap(defaultState(),null).then(function(ok){
+          if(ok) alert('초기화했습니다. 직전 작업은 복구 버튼으로 되돌릴 수 있습니다.');
+        });
       }
     }
     else if(act==='purge'){purgeIncidentData();}
@@ -3124,6 +3533,12 @@ function bindConsole(root){
     mfi.value = '';                       /* 같은 파일을 다시 골라도 동작하도록 */
     if(f) fileToMap(f);
   };
+  var gfi2 = root.querySelector('#geoFileInput');
+  if(gfi2) gfi2.onchange = function(){
+    var f = gfi2.files && gfi2.files[0];
+    gfi2.value = '';
+    if(f) applyGeoFile(f);
+  };
   var imp = root.querySelector('#importFile');
   if(imp) imp.onchange = function(){
     var f = imp.files && imp.files[0]; if(!f) return;
@@ -3138,8 +3553,10 @@ function bindConsole(root){
         validateImportPackage(o);
         if(!confirm('현재 상황을 이 파일로 교체할까요? 작업 전 복구본을 먼저 만듭니다.'))return;
         if(!saveRecoveryPoint('JSON 가져오기 전'))throw new Error('복구본을 만들 수 없어 가져오기를 중단했습니다.');
-        if(!applyStateTransaction(o,o.map||null))throw new Error('저장공간 부족 또는 저장 충돌로 적용하지 못했습니다.');
-        alert('검증 후 안전하게 불러왔습니다.');
+        applyStateWithMap(o,o.map||null).then(function(ok){
+          alert(ok ? '검증 후 안전하게 불러왔습니다.'
+            : '가져오기 실패: 저장공간 부족 또는 저장 충돌로 적용하지 못했습니다.\n기존 데이터는 유지됩니다.');
+        });
       }catch(e){ alert('가져오기 실패: '+(e&&e.message?e.message:'JSON 형식 또는 구조를 확인하세요.')+'\n기존 데이터는 유지됩니다.'); }
     };
     fr.readAsText(f);
@@ -3211,16 +3628,82 @@ document.addEventListener('drop', function(ev){
   if(pz) pz.classList.remove('hot');
   var files = ev.dataTransfer && ev.dataTransfer.files;
   if(!files || !files.length){ mapMsg('끌어다 놓은 항목에서 파일을 찾지 못했습니다.', 'warn'); return; }
-  var f = null;
-  for(var i=0;i<files.length;i++) if(/^image\//.test(files[i].type)){ f = files[i]; break; }
-  if(f) fileToMap(f);
-  else mapMsg('이미지 파일이 아닙니다 (' + (files[0].type || files[0].name) + ').', 'warn');
+  var f = null, gf = null;
+  for(var i=0;i<files.length;i++){
+    if(!f && /^image\//.test(files[i].type)) f = files[i];
+    else if(!gf && isGeoFileName(files[i].name)) gf = files[i];
+  }
+  /* 정사영상은 보통 이미지와 좌표 파일이 한 쌍이다. 같이 놓으면 같이 적용한다. */
+  if(f) fileToMap(f, gf);
+  else if(gf) applyGeoFile(gf);
+  else mapMsg('이미지 또는 좌표 파일(.jgw/.tfw/.kml)이 아닙니다 ('
+    + (files[0].type || files[0].name) + ').', 'warn');
 });
+
+/* --------------------------------------------------------------------------
+   좌표 파일 읽기
+   world file(.jgw/.tfw/.pgw/.wld) 은 숫자 6줄 텍스트다. KML GroundOverlay 는
+   <LatLonBox> 에 사방 좌표를 담는다. 둘 다 외부 라이브러리가 필요 없다.
+   GeoTIFF 는 브라우저가 디코딩하지 못해 지원하지 않는다.
+   -------------------------------------------------------------------------- */
+function parseWorldFile(text, imgW, imgH){
+  var v = String(text).trim().split(/[\r\n]+/).map(function(s){ return parseFloat(String(s).trim()); });
+  if(v.length < 6 || v.slice(0,6).some(function(x){ return !isFinite(x); }))
+    return {err:'world file 형식이 아닙니다. 숫자 6줄이어야 합니다.'};
+  var A=v[0], D=v[1], B=v[2], E=v[3], C=v[4], F=v[5];
+  if(Math.abs(D) > 1e-9 || Math.abs(B) > 1e-9)
+    return {err:'회전이 포함된 좌표 파일은 지원하지 않습니다. 정북 정렬로 다시 내보내세요.'};
+  if(!imgW || !imgH)
+    return {err:'지도 원본 크기를 알 수 없습니다. 지도를 다시 불러온 뒤 적용하세요.'};
+  /* 미터 좌표계(UTM·TM 등)는 투영 역변환이 필요하다. 잘못 변환한 좌표를 지상팀에
+     넘기는 것보다 거부하는 편이 안전하다. */
+  if(Math.abs(C) > 180 || Math.abs(F) > 90)
+    return {err:'미터 좌표계(UTM·TM 등)로 보입니다. 매핑 소프트웨어에서 WGS84 경위도로 내보내거나 수동 2점 보정을 쓰세요.'};
+  var west = C - A/2, north = F - E/2;
+  return validateGeo({west:west, north:north,
+    east:west + A*imgW, south:north + E*imgH, src:'world', at:Date.now()});
+}
+function parseKmlOverlay(text){
+  var doc = null;
+  try{ doc = new DOMParser().parseFromString(String(text), 'application/xml'); }
+  catch(e){ return {err:'KML 을 읽지 못했습니다.'}; }
+  if(!doc || doc.getElementsByTagName('parsererror').length)
+    return {err:'KML 형식이 올바르지 않습니다.'};
+  var box = doc.getElementsByTagName('LatLonBox')[0];
+  if(!box) return {err:'KML 에 GroundOverlay 의 LatLonBox 가 없습니다. 정사영상 오버레이 KML 인지 확인하세요.'};
+  function val(tag){
+    var e = box.getElementsByTagName(tag)[0];
+    return e ? parseFloat(String(e.textContent).trim()) : NaN;
+  }
+  var rot = val('rotation');
+  if(isFinite(rot) && Math.abs(rot) > 0.5)
+    return {err:'회전('+rot.toFixed(1)+'도)이 있는 오버레이는 지원하지 않습니다.'};
+  return validateGeo({west:val('west'), east:val('east'),
+    north:val('north'), south:val('south'), src:'kml', at:Date.now()});
+}
+function isGeoFileName(name){ return /\.(jgw|tfw|pgw|wld|kml)$/i.test(String(name||'')); }
+function applyGeoFile(file){
+  if(!ensureEditor() || !file) return;
+  if(file.size > 2*1024*1024){ mapMsg('좌표 파일이 너무 큽니다.','err'); return; }
+  if(!S.grid.hasMap){ mapMsg('먼저 지도 이미지를 넣은 뒤 좌표 파일을 적용하세요.','err'); return; }
+  var fr = new FileReader();
+  fr.onerror = function(){ mapMsg('좌표 파일을 읽지 못했습니다.','err'); };
+  fr.onload = function(){
+    var res = /\.kml$/i.test(String(file.name||''))
+      ? parseKmlOverlay(fr.result)
+      : parseWorldFile(fr.result, S.grid.mapNatW, S.grid.mapNatH);
+    if(res.err){ mapMsg(res.err,'err'); return; }
+    S.grid.geo = res.geo; S.grid.ref1 = null; S.grid.ref2 = null; commit();
+    mapMsg('좌표를 적용했습니다 · '+geoSrcLabel()+' · 지도 가로 '
+      + Math.round(mapWidthMeters()) + 'm', 'ok');
+  };
+  fr.readAsText(file);
+}
 
 /* --------------------------------------------------------------------------
    이미지 -> 최대폭 1600px JPEG 로 축소 (localStorage 용량 확보)
    -------------------------------------------------------------------------- */
-function fileToMap(file){
+function fileToMap(file, geoFile){
   if(!ensureEditor())return;
   if(!file){ mapMsg('이미지를 찾지 못했습니다.', 'err'); return; }
   if(file.type && file.type.indexOf('image') !== 0){
@@ -3229,7 +3712,8 @@ function fileToMap(file){
   /* 축소는 읽기가 끝난 뒤에 일어난다. 원본을 통째로 base64 로 올리는 단계에서
      수십 MB 사진이면 탭이 메모리 압박을 받는다. 읽기 전에 막는다. */
   if(file.size > MAX_IMAGE_BYTES){
-    mapMsg('이미지가 너무 큽니다 ('+Math.round(file.size/1048576)+'MB). 25MB 이하로 줄여 다시 시도하세요.', 'err'); return;
+    mapMsg('이미지가 너무 큽니다 ('+Math.round(file.size/1048576)+'MB). '
+      + Math.round(MAX_IMAGE_BYTES/1048576)+'MB 이하로 줄여 다시 시도하세요.', 'err'); return;
   }
   mapMsg('지도 이미지를 처리하는 중…', 'warn');
   var fr = new FileReader();
@@ -3239,7 +3723,8 @@ function fileToMap(file){
     img.onload = function(){
       if(!img.width || !img.height){ mapMsg('이미지 크기를 읽지 못했습니다.', 'err'); return; }
       try{
-        var maxW = 1600;
+        /* IndexedDB 가 살아 있으면 정사영상을 쓸 만한 해상도까지 남긴다. */
+        var maxW = mapPxCap();
         var sc = Math.min(1, maxW / img.width);
         var cv = document.createElement('canvas');
         cv.width  = Math.round(img.width * sc);
@@ -3247,7 +3732,11 @@ function fileToMap(file){
         var cx = cv.getContext('2d');
         cx.fillStyle = '#0B1219'; cx.fillRect(0,0,cv.width,cv.height);
         cx.drawImage(img, 0, 0, cv.width, cv.height);
-        saveMap(cv.toDataURL('image/jpeg', 0.82), {w:cv.width, h:cv.height});
+        /* world file 은 원본 픽셀 크기를 기준으로 해석해야 한다. 축소 전 값을 남긴다. */
+        saveMap(cv.toDataURL('image/jpeg', 0.82),
+          {w:cv.width, h:cv.height, natW:img.width, natH:img.height})
+          /* 이미지와 좌표 파일을 함께 끌어다 놓은 경우, 지도가 들어간 뒤에 적용한다. */
+          .then(function(okSave){ if(okSave && geoFile) applyGeoFile(geoFile); });
       }catch(e){
         mapMsg('이미지 변환에 실패했습니다: '+(e && e.name ? e.name : e), 'err');
       }
@@ -3335,13 +3824,16 @@ function stampName(){
   var n = new Date();
   return n.getFullYear()+p2(n.getMonth()+1)+p2(n.getDate())+'-'+p2(n.getHours())+p2(n.getMinutes());
 }
-function exportPayload(){
+/* 지도는 수 MB 라 자동 보관에 매번 넣으면 같은 이미지를 반복해서 쓰게 된다.
+   지도가 바뀐 직후 한 번만 포함하고, 그 뒤로는 상태만 쓴다.
+   수동 내보내기는 항상 포함한다. */
+function exportPayload(includeMap){
   var out = JSON.parse(JSON.stringify(S));
   out.appVersion = APP_VERSION;
-  if(MAPDATA) out.map = MAPDATA;
+  if(includeMap !== false && MAPDATA) out.map = MAPDATA;
   return JSON.stringify(out, null, 1);
 }
-function exportJson(){ download('stayup-'+stampName()+'.json', exportPayload()); }
+function exportJson(){ download('stayup-'+stampName()+'.json', exportPayload(true)); }
 
 /* ==========================================================================
    S11b. 자동 보관
@@ -3355,6 +3847,7 @@ var AUTOSAVE_MIN = 10;        /* 다운로드 폴백 주기(분) */
 var AUTOSAVE_FILE_MS = 20000; /* 파일 덮어쓰기 최소 간격 */
 var autoSaveHandle = null;    /* 세션 한정. 새로고침하면 다시 지정해야 한다 */
 var autoSaveAt = 0, autoSaveErr = '', autoSaveBusy = false, lastAutoSavedRev = -1;
+var autoSavedMapVer = -1;     /* 지도를 마지막으로 보관에 포함한 판 번호 */
 
 function autoSaveWorth(){
   return !!(S.events.length || String(S.mission.title||'').trim()
@@ -3399,11 +3892,13 @@ function autoSaveTick(){
   if(autoSaveHandle){
     if(now - autoSaveAt < AUTOSAVE_FILE_MS) return;
     autoSaveBusy = true;
-    var body = exportPayload();
+    var withMap = S.grid.mapVer !== autoSavedMapVer;
+    var body = exportPayload(withMap);
     autoSaveHandle.createWritable().then(function(w){
       return w.write(body).then(function(){ return w.close(); });
     }).then(function(){
       autoSaveAt = Date.now(); lastAutoSavedRev = rev; autoSaveErr = '';
+      if(withMap) autoSavedMapVer = S.grid.mapVer;
     }, function(e){
       /* 권한이 끊기거나 파일이 사라지면 다운로드 방식으로 되돌아간다. */
       autoSaveErr = (e&&e.name)?e.name:String(e); autoSaveHandle = null;
@@ -3412,8 +3907,10 @@ function autoSaveTick(){
   }
   if(autoSaveAt && now - autoSaveAt < AUTOSAVE_MIN*60000) return;
   try{
-    download('stayup-자동보관-'+stampName()+'.json', exportPayload());
+    var wm = S.grid.mapVer !== autoSavedMapVer;
+    download('stayup-자동보관-'+stampName()+'.json', exportPayload(wm));
     autoSaveAt = now; lastAutoSavedRev = rev; autoSaveErr = '';
+    if(wm) autoSavedMapVer = S.grid.mapVer;
   }catch(e){ autoSaveErr = (e&&e.name)?e.name:String(e); }
   refreshAutoSavePill();
 }
@@ -3452,7 +3949,13 @@ function buildReport(){
   lines.push('  · 총 소티 : '+totalSorties+'회');
   lines.push('');
   lines.push('4. 수색 결과');
-  lines.push('  · 구역 구성 : '+gridRows()+'×'+gridCols()+' = '+st.total+'구역 (지도 가로 '+num(S.grid.widthMeters,0)+'m)');
+  lines.push('  · 구역 구성 : '+gridRows()+'×'+gridCols()+' = '+st.total+'구역 (지도 가로 '
+    +Math.round(mapWidthMeters())+'m'+(geoOK()?' · 좌표 '+geoSrcLabel():' · 좌표 미보정')+')');
+  if(geoOK()){
+    var gg=S.grid.geo;
+    lines.push('  · 지도 범위 : 북 '+gg.north.toFixed(5)+' / 남 '+gg.south.toFixed(5)
+      +' / 서 '+gg.west.toFixed(5)+' / 동 '+gg.east.toFixed(5));
+  }
   lines.push('  · 커버리지  : '+st.pct+'%  (완료 '+st.n[2]+' / 수색중 '+st.n[1]
     +' / 재수색 '+st.n[3]+' / 미수색 '+st.n[0]+')');
   var f = latestFound();
@@ -3563,7 +4066,9 @@ function loadSample(){
     return { t: now.getTime() + e[0]*60000, type:e[1], text:e[2], zone:e[3] };
   });
   s.ui = { scale: num(S.ui.scale,1), dim: num(S.ui.dim,0), ackFound:0, paintS:2, paintBy:null };
-  if(!applyStateTransaction(s,MAPDATA))alert('샘플을 저장하지 못해 기존 상태를 유지했습니다.');
+  applyStateWithMap(s,MAPDATA).then(function(ok){
+    if(!ok) alert('샘플을 저장하지 못해 기존 상태를 유지했습니다.');
+  });
 }
 
 /* ==========================================================================
@@ -3615,6 +4120,8 @@ document.addEventListener('keydown', function(ev){
    S13. 부팅
    ========================================================================== */
 function boot(){
+  /* 지도 축소 상한이 저장소에 따라 달라진다. 첫 지도를 넣기 전에 알아 둔다. */
+  idbOpen().then(function(){}, function(){});
   loadLocal();
   document.documentElement.setAttribute('data-app-version', APP_VERSION);
   var versionEl = $('appVersion');
@@ -3650,6 +4157,7 @@ function boot(){
     /* ResizeObserver 가 놓치는 경우(숨겨진 창에서 그려진 뒤 표시됨, 배율 슬라이더 등)를
        대비한 보정. 값이 같으면 아무것도 쓰지 않는다. */
     fitMapBox($('mapWrap')); fitMapBox($('consMap'));
+    refreshConsoleKpi();
     if(!$('board').hidden){renderHeader();renderSafety();tickDrones();renderBanner();}
     /* 손대지 않은 발생시각은 계속 현재 시각을 가리켜야 한다.
        고정돼 있으면 오래 열어둔 입력줄에서 과거 시각으로 기록된다. */

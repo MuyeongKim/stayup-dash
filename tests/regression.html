@@ -82,8 +82,8 @@ function reload(){
       W.alert = function(m){ W.__alerts.push(String(m)); };
       W.confirm = function(){ return true; };
       W.__alerts = [];
-      W.__dl = [];
-      W.download = function(n){ W.__dl.push(n); };
+      W.__dl = []; W.__dlBytes = [];
+      W.download = function(n, t){ W.__dl.push(n); W.__dlBytes.push(t ? t.length : 0); };
       setTimeout(function(){ res(); }, 350);
     };
     f.src = '../stayup-dash.html?regression=' + Date.now();
@@ -315,6 +315,82 @@ async function run(){
   ok('격자 네 상태가 색 말고 무늬로도 구분된다',
     new Set(cellStyles).size === 4, cellStyles.join('  ·  '));
 
+  /* ---------------- 지도 좌표계 ---------------- */
+  await reload();
+  group('지도 좌표계');
+
+  W.loadSample(); await wait(300);
+  await loadMap(1600, 900);
+  gotoSection('sec-grid'); await wait(250);
+
+  ok('보정 전에는 칸 좌표가 없다', W.geoOK() === false && W.cellCenterById('C3') === null);
+
+  /* 대각선 두 점. 손으로 검산 가능한 값을 쓴다.
+     dLon = .04/.8 = .05  → west 127.1950 / east 127.2450
+     dLat = -.02/.8 = -.025 → north 35.9025 / south 35.8775
+     5x6 격자의 C3 중심 = u .41667, v .5 → 127.21583, 35.89000 */
+  W.S.grid.ref1 = {x:10, y:10, lat:35.9000, lon:127.2000};
+  W.S.grid.ref2 = {x:90, y:90, lat:35.8800, lon:127.2400};
+  var gr = W.geoFromRefs(W.S.grid.ref1, W.S.grid.ref2);
+  ok('2점 보정이 네 변을 유도한다',
+    !gr.err && Math.abs(gr.geo.west-127.1950) < 1e-6 && Math.abs(gr.geo.east-127.2450) < 1e-6
+    && Math.abs(gr.geo.north-35.9025) < 1e-6 && Math.abs(gr.geo.south-35.8775) < 1e-6,
+    gr.err || '');
+
+  W.S.grid.geo = gr.geo; W.commit(); await wait(200);
+  var c3 = W.cellCenterById('C3');
+  ok('칸 중심 좌표가 손계산과 일치한다',
+    !!c3 && Math.abs(c3.lat-35.89000) < 1e-5 && Math.abs(c3.lon-127.21583) < 1e-5,
+    c3 ? W.fmtLatLon(c3) : '');
+
+  var mw = W.mapWidthMeters();
+  ok('가로 실거리가 손입력이 아니라 계산값이 된다',
+    Math.abs(mw - 4501) < 25, Math.round(mw)+'m');
+
+  ok('같은 열에 있는 두 점은 거부한다',
+    !!W.geoFromRefs({x:20,y:10,lat:35.90,lon:127.20},{x:22,y:90,lat:35.88,lon:127.24}).err);
+  ok('같은 행에 있는 두 점은 거부한다',
+    !!W.geoFromRefs({x:10,y:40,lat:35.90,lon:127.20},{x:90,y:42,lat:35.88,lon:127.24}).err);
+  ok('남북이 뒤집힌 입력은 거부한다',
+    !!W.geoFromRefs({x:10,y:10,lat:35.8800,lon:127.20},{x:90,y:90,lat:35.9000,lon:127.24}).err);
+  ok('비정상적으로 넓은 범위는 거부한다',
+    !!W.geoFromRefs({x:10,y:10,lat:38.0,lon:120.0},{x:90,y:90,lat:33.0,lon:132.0}).err);
+
+  /* world file: 위 네 변과 같은 결과가 나와야 한다 (1600x900) */
+  var jgw = ['0.00003125','0','0','-0.0000277778','127.195015625','35.9024861111'].join('\n');
+  var wf = W.parseWorldFile(jgw, 1600, 900);
+  ok('world file 을 읽어 네 변을 만든다',
+    !wf.err && Math.abs(wf.geo.west-127.1950) < 1e-5 && Math.abs(wf.geo.south-35.8775) < 1e-5,
+    wf.err || '');
+  ok('미터 좌표계(UTM·TM) world file 은 거부한다',
+    !!W.parseWorldFile(['0.05','0','0','-0.05','320000','4000000'].join('\n'), 1600, 900).err);
+  ok('회전이 있는 world file 은 거부한다',
+    !!W.parseWorldFile(['0.00003','0.001','0.001','-0.00003','127.195','35.902'].join('\n'), 1600, 900).err);
+  ok('숫자 6줄이 아니면 거부한다', !!W.parseWorldFile('가나다\n123', 1600, 900).err);
+
+  var kml = '<kml><Document><GroundOverlay><Icon><href>o.jpg</href></Icon>'
+    + '<LatLonBox><north>35.9025</north><south>35.8775</south>'
+    + '<east>127.2450</east><west>127.1950</west><rotation>0</rotation></LatLonBox>'
+    + '</GroundOverlay></Document></kml>';
+  var kr = W.parseKmlOverlay(kml);
+  ok('KML GroundOverlay 의 LatLonBox 를 읽는다',
+    !kr.err && Math.abs(kr.geo.north-35.9025) < 1e-6 && Math.abs(kr.geo.west-127.1950) < 1e-6,
+    kr.err || '');
+  ok('회전이 있는 KML 오버레이는 거부한다',
+    !!W.parseKmlOverlay(kml.replace('<rotation>0<', '<rotation>12<')).err);
+  ok('LatLonBox 가 없는 KML 은 거부한다',
+    !!W.parseKmlOverlay('<kml><Document><Placemark/></Document></kml>').err);
+
+  ok('핀에도 좌표가 붙는다', (function(){
+    W.S.grid.pinFound = {x:50, y:50}; W.commit();
+    var p = W.geoAt(0.5, 0.5);
+    return !!p && Math.abs(p.lat-35.89) < 1e-6 && Math.abs(p.lon-127.22) < 1e-6;
+  })());
+
+  /* 다른 크기의 지도로 바꾸면 이전 보정은 맞지 않는다 */
+  await loadMap(1200, 800);
+  ok('지도를 바꾸면 좌표 보정이 해제된다', W.geoOK() === false);
+
   /* ---------------- 조작 패널 ---------------- */
   await reload();
   group('조작 패널');
@@ -345,6 +421,42 @@ async function run(){
   W.document.getElementById('btnAddEv').click(); await wait(300);
   ok('손대지 않은 발생시각은 기록 순간으로 확정된다',
     Math.abs(Date.now() - W.S.events[W.S.events.length-1].t) < 90000);
+
+  /* --- 상단 KPI 줄 (표출 화면과 계산을 공유하는지) --- */
+  W.S.mission.dispatchedAt = W.localDateTime(new Date(Date.now() - 6*3600000));
+  W.S.subject.missingAt = W.localDateTime(new Date(Date.now() - 8*3600000));
+  W.commit(); await wait(200);
+  W.renderHeader();            /* 표출 화면은 숨어 있어도 값은 쓰인다 */
+  W.refreshConsoleKpi();
+  var cells = [...W.document.querySelectorAll('#ctKpi .ck')];
+  ok('조작 패널 상단에 KPI 네 칸이 있다', cells.length === 4);
+
+  var boardVals = ['vGolden','vSunset','vFlight','vElapsed'].map(function(id){
+    return W.document.getElementById(id).textContent.trim();
+  });
+  var consVals = cells.map(function(el){
+    var b = el.querySelector('b'), sm = el.querySelector('small');
+    return (b ? b.textContent : '') + (sm ? sm.textContent : '');
+  });
+  ok('표출 화면과 조작 패널의 KPI 값이 일치한다',
+    boardVals.length === 4 && consVals.length === 4
+    && boardVals.every(function(v,i){ return v === consVals[i]; }),
+    boardVals.join(' / ') + '  ⟷  ' + consVals.join(' / '));
+
+  ok('골든타임·출동경과에 단위가 붙는다',
+    /(남음|초과)$/.test(boardVals[0]) && /경과$/.test(boardVals[3]),
+    boardVals[0] + ' · ' + boardVals[3]);
+
+  var fLv = W.kpiFlight(new Date()).lv;
+  ok('판정 등급이 양쪽에서 같다',
+    W.document.getElementById('kFlight').className.indexOf('lv-' + fLv) >= 0
+    && cells[2].className.indexOf('ck-' + fLv) >= 0, fLv);
+
+  /* 값이 바뀌면 갱신되는지 (1초 주기가 호출하는 함수) */
+  W.S.subject.missingAt = ''; W.commit();
+  W.refreshConsoleKpi();
+  ok('상태가 바뀌면 KPI 줄이 따라간다',
+    W.document.querySelector('#ctKpi .ck b').textContent === '--:--');
 
   var navBtns = W.document.querySelectorAll('[data-act="nav"]');
   gotoSection('sec-grid'); await wait(250);
@@ -409,6 +521,108 @@ async function run(){
   var wBefore = W.__writes.length; W.autoSaveAt = 0;
   W.autoSaveTick(); await wait(350);
   ok('편집권이 없는 창은 보관하지 않는다', W.__writes.length === wBefore);
+
+  /* ---------------- 지도 저장소 (IndexedDB) ---------------- */
+  await reload();
+  group('지도 저장소');
+
+  W.loadSample(); await wait(300);
+  await loadMap(2400, 1350);
+  ok('IndexedDB 를 사용한다', W.idbBroken === false);
+  ok('1,600px 를 넘는 지도를 저장한다', W.S.grid.mapW > 1600, W.S.grid.mapW + 'px');
+  ok('지도 블롭이 localStorage 에 남지 않는다', (function(){
+    for(var i=0;i<W.localStorage.length;i++){
+      var k = W.localStorage.key(i);
+      if(k && k.indexOf(W.MAP_PREFIX) === 0) return false;
+    }
+    return true;
+  })());
+  var blob = await W.mapBlobGet(W.S.grid.mapId);
+  ok('IndexedDB 에서 지도를 읽어온다',
+    typeof blob === 'string' && blob.indexOf('data:image/jpeg') === 0,
+    blob ? Math.round(blob.length/1024) + 'KB' : '');
+
+  await W.mapBlobPut('orphan-test', 'data:image/jpeg;base64,AAAA');
+  W.gcMapBlobs(); await wait(600);
+  ok('참조 없는 블롭은 정리된다', !(await W.mapBlobGet('orphan-test')));
+
+  var keptId = W.S.grid.mapId;
+  W.saveRecoveryPoint('저장소 검사');
+  W.gcMapBlobs(); await wait(600);
+  ok('복구본이 참조하는 지도는 남긴다', !!(await W.mapBlobGet(keptId)));
+
+  /* 폴백 — IndexedDB 가 막힌 환경에서 종전 동작으로 되돌아가야 한다 */
+  W.idbBroken = true; W.idbDB = null;
+  ok('폴백 시 한도가 종전 값으로 돌아간다',
+    W.mapCharCap() === W.MAX_MAP_CHARS_LS && W.mapPxCap() === W.MAP_MAX_PX_LS,
+    Math.round(W.MAX_MAP_CHARS_LS/1048576) + 'MB / ' + W.MAP_MAX_PX_LS + 'px');
+  ok('폴백 시 저장소 표시가 바뀐다', W.mapStoreLabel().indexOf('localStorage') === 0);
+  await W.mapBlobPut('fallback-test', 'data:image/jpeg;base64,BBBB');
+  ok('폴백 경로는 localStorage 에 쓴다',
+    W.localStorage.getItem(W.MAP_PREFIX + 'fallback-test') === 'data:image/jpeg;base64,BBBB');
+  W.localStorage.removeItem(W.MAP_PREFIX + 'fallback-test');
+
+  /* 구버전이 localStorage 에 남긴 지도는 읽으면서 옮긴다 */
+  W.idbBroken = false; W.idbDB = null;
+  var legacy = 'data:image/jpeg;base64,CCCC';
+  W.localStorage.setItem(W.MAP_PREFIX + 'legacy-test', legacy);
+  ok('구버전 localStorage 지도를 읽는다', (await W.mapBlobGet('legacy-test')) === legacy);
+  await wait(500);
+  ok('읽으면서 IndexedDB 로 옮긴다',
+    W.localStorage.getItem(W.MAP_PREFIX + 'legacy-test') === null
+    && (await W.mapBlobGet('legacy-test')) === legacy);
+  await W.mapBlobDel('legacy-test');
+
+  /* 블롭이 사라진 경우 — 상태를 바로잡고 상대 창에도 알려야 한다 */
+  W.idbBroken = false; W.idbDB = null;
+  await loadMap(1600, 900);
+  W.acquireEditorLock();
+  W.S.grid.geo = {west:127.1950, east:127.2450, north:35.9025, south:35.8775,
+                  src:'manual', at:Date.now()};
+  W.commit(); await wait(200);
+  var lostId = W.S.grid.mapId, verBefore = W.S.grid.mapVer, natBefore = W.S.grid.mapNatW;
+  await W.mapBlobDel(lostId);          /* 블롭만 지운다. 상태는 아직 지도가 있다고 본다 */
+  var sent = [];
+  var realSend = W.sendPeer;
+  W.sendPeer = function(m){ sent.push(m.type + (m.type==='map' ? (m.data===null?':null':':data') : '')); return true; };
+  W.mapVerLoaded = -1;                  /* 다시 읽게 만든다 */
+  W.readMapFromStore();
+  await wait(800);
+  W.sendPeer = realSend;
+  ok('블롭이 사라지면 상태를 바로잡는다',
+    W.S.grid.hasMap === false && W.S.grid.mapId === null && W.MAPDATA === null);
+  ok('판 번호를 올려 폴링 창도 따라오게 한다', W.S.grid.mapVer > verBefore,
+    verBefore + ' → ' + W.S.grid.mapVer);
+  ok('상대 창에 지도 제거를 알린다', sent.indexOf('map:null') >= 0, sent.join(' '));
+  ok('좌표 보정과 원본 크기는 남긴다', W.geoOK() === true && W.S.grid.mapNatW === natBefore);
+
+  /* 읽기 실패(일시적)와 블롭 소실은 다르게 다뤄야 한다 */
+  await loadMap(1600, 900);
+  var keepId = W.S.grid.mapId;
+  W.idbBroken = true; W.idbDB = null;   /* 저장소를 못 읽는 상황 모사 */
+  W.mapVerLoaded = -1;
+  W.readMapFromStore();
+  await wait(600);
+  ok('저장소를 못 읽으면 상태를 건드리지 않는다',
+    W.S.grid.hasMap === true && W.S.grid.mapId === keepId);
+  /* 다음 검사들을 위해 지도를 다시 읽어 놓는다 */
+  W.idbBroken = false; W.idbDB = null;
+  W.mapVerLoaded = -1; W.readMapFromStore(); await wait(700);
+  ok('저장소가 복구되면 지도를 다시 읽는다', typeof W.MAPDATA === 'string');
+
+  /* 자동 보관이 같은 지도를 반복해서 쓰지 않아야 한다 */
+  W.autoSaveHandle = null; W.autoSaveAt = 0; W.lastAutoSavedRev = -1; W.autoSavedMapVer = -1;
+  W.__dl = []; W.__dlBytes = [];
+  W.acquireEditorLock();
+  W.autoSaveTick();
+  W.S.mission.title = W.S.mission.title + ' 변경'; W.commit();
+  W.autoSaveAt = 0;
+  W.autoSaveTick();
+  ok('자동 보관은 지도를 처음 한 번만 포함한다',
+    W.__dlBytes.length === 2 && W.__dlBytes[0] > W.__dlBytes[1] * 2,
+    Math.round(W.__dlBytes[0]/1024) + 'KB → ' + Math.round(W.__dlBytes[1]/1024) + 'KB');
+  ok('수동 내보내기는 항상 지도를 포함한다',
+    W.exportPayload(true).length > W.exportPayload(false).length * 2);
 
   /* ---------------- 복구점 ---------------- */
   await reload();

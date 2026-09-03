@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright 2026 MuyeongKim · Licensed under the Apache License, Version 2.0
 set -euo pipefail
 
 bump_type="${BUMP_TYPE:-patch}"

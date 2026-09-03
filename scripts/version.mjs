@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright 2026 MuyeongKim · Licensed under the Apache License, Version 2.0 */
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

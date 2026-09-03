@@ -1,0 +1,234 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    /* ── C. 원거리 전용 ───────────────────────────────────────────
+       전제 : 조작 패널 상단에 KPI 줄이 생겼으니, 대형 모니터는 이제
+              기록자를 섬길 필요가 없다. 방 안의 사람만 본다.
+       규칙 : 3m 글랜스 가독선(32px) 미달 요소는 줄이지 않고 지운다.
+              인원 명부 · 센서 · 소티 · 기상 상세 · 좌표는 조작 패널로.
+       남는 것 : 판정 4개 · 격자 · 인상착의 · 기체 상태 · 최근 3건 · 지시
+       ──────────────────────────────────────────────────────────── */
+    :root{
+      --bg:#080B10; --p1:#161F2B; --p2:#202D3C;
+      --text:#F1F6FA; --muted:#A6B9CC; --muted2:#889CB1;
+      --accent:#FF6A1A; --ok:#2BD46E; --warn:#F0C63A; --danger:#FF6B61; --info:#4CC6FA;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);
+      font-family:'Noto Sans KR',system-ui,sans-serif;font-size:16px;line-height:1.25;
+      -webkit-font-smoothing:antialiased}
+    .num{font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+    .board{display:grid;height:1080px;grid-template-rows:auto 1fr auto;gap:12px;padding:14px 16px}
+    /* 헤더 — KPI 를 더 키운다 */
+    .hdr{display:grid;grid-template-columns:1fr 240px;gap:12px}
+    .top1{display:flex;align-items:center;gap:16px;margin-bottom:11px}
+    .brand{font-size:27px;font-weight:900;color:var(--accent);letter-spacing:.01em;white-space:nowrap}
+    .mission{font-size:38px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .msub{font-size:24px;color:var(--muted);white-space:nowrap;margin-left:auto}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .kpi{background:var(--p1);padding:10px 18px 12px;position:relative;overflow:hidden}
+    .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:10px;background:#3C5068}
+    .kpi.ok::before{background:var(--ok)} .kpi.warn::before{background:var(--warn)}
+    .kpi.dg{background:#43110F} .kpi.dg::before{background:var(--danger)}
+    .kpi-l{font-size:23px;color:var(--muted);font-weight:500}
+    .kpi-v{font-size:88px;font-weight:900;line-height:.98;white-space:nowrap}
+    .kpi-v small{font-size:32px;font-weight:700;color:var(--muted);margin-left:6px}
+    .kpi.ok .kpi-v{color:var(--ok)} .kpi.warn .kpi-v{color:var(--warn)} .kpi.dg .kpi-v{color:var(--danger)}
+    .dot{width:32px;height:32px;display:inline-block;vertical-align:-3px;margin-right:10px}
+    .dot.ok{background:var(--ok);border-radius:50%}
+    .dot.warn{background:var(--warn);clip-path:polygon(50% 3%,100% 97%,0 97%)}
+    .dot.dg{background:var(--danger);border-radius:2px}
+    .clockbox{background:var(--p1);padding:12px 18px;text-align:right;display:flex;flex-direction:column;justify-content:center}
+    .clock{font-size:62px;font-weight:900;line-height:1}
+    .cdate{font-size:23px;color:var(--muted)}
+    /* 본문 */
+    .body{display:grid;grid-template-columns:392px 1fr 384px;gap:12px;min-height:0}
+    .col{display:flex;flex-direction:column;gap:12px;min-height:0}
+    .pane{background:var(--p1);padding:13px 16px;display:flex;flex-direction:column;min-height:0}
+    .ph{font-size:22px;font-weight:900;letter-spacing:.06em;color:var(--muted2);margin-bottom:10px;
+      display:flex;align-items:baseline}
+    .ph .r{margin-left:auto;font-size:22px;font-weight:700;color:var(--muted)}
+    /* 실종자 */
+    .nm{font-size:62px;font-weight:900;line-height:1;display:flex;align-items:baseline;gap:13px}
+    .nm em{font-style:normal;font-size:32px;font-weight:700;color:var(--muted)}
+    .wear{display:grid;grid-template-rows:1fr 1fr;gap:10px;margin:13px 0;flex:1 1 auto;min-height:0}
+    .wsw{padding:15px 16px;display:flex;flex-direction:column;justify-content:flex-end}
+    .wsw span{font-size:22px;font-weight:700;letter-spacing:.06em;opacity:.85}
+    .wsw b{font-size:44px;font-weight:900;line-height:1.05}
+    .lastseen{font-size:26px;color:var(--muted);line-height:1.4}
+    .lastseen b{color:var(--text);font-weight:900}
+    .badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+    .badge{font-size:23px;font-weight:700;padding:4px 13px;background:var(--p2);color:#CBD9E7}
+    .badge.hot{background:#4E1614;color:#FFCEC9}
+    /* 격자 */
+    .mapwrap{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;
+      background:repeating-linear-gradient(45deg,#111A24 0 18px,#141E29 18px 36px)}
+    .grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);
+      grid-template-rows:repeat(5,1fr);gap:5px;padding:5px}
+    .gc{position:relative;display:flex;align-items:center;justify-content:center;
+      font-size:40px;font-weight:900;color:rgba(241,246,250,.5);background:rgba(8,11,16,.35)}
+    .gc.s0{box-shadow:inset 0 0 0 4px rgba(166,185,204,.22)}
+    .gc.s1{background-color:rgba(240,198,58,.36);color:#FFF6D6;
+      background-image:repeating-linear-gradient(45deg,transparent 0 9px,rgba(255,255,255,.18) 9px 18px)}
+    .gc.s2{background:rgba(43,212,110,.52);color:#EAFFF3}
+    .gc.s3{background:rgba(255,107,97,.28);color:#FFDEDB;box-shadow:inset 0 0 0 8px var(--danger)}
+    .gc .by{position:absolute;top:4px;right:8px;font-size:21px;font-weight:700;opacity:.85}
+    .cov{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;margin-top:12px}
+    .covpct{font-size:82px;font-weight:900;line-height:.92;color:var(--ok)}
+    .covpct small{font-size:30px;color:var(--muted)}
+    .covbar{height:26px;overflow:hidden;background:#0B1117;display:flex}
+    .covbar i{display:block;height:100%}
+    .rad{background:var(--p2);padding:9px 16px;text-align:right;white-space:nowrap}
+    .rad em{display:block;font-style:normal;font-size:22px;color:var(--muted2)}
+    .rad b{font-size:44px;font-weight:900;color:var(--info)}
+    .leg{display:flex;gap:22px;font-size:26px;font-weight:900;color:#C4D4E2;align-items:center;margin-top:10px}
+    .leg span{display:flex;align-items:center;gap:9px}
+    .leg i{width:26px;height:26px}
+    /* 기체 */
+    .dtile{background:var(--p2);padding:12px 16px;border-left:10px solid #3C5068;flex:1 1 0;
+      display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:0}
+    .dtile.fly{border-left-color:var(--ok)} .dtile.swap{border-left-color:var(--warn)}
+    .d1{display:flex;align-items:baseline;gap:12px}
+    .d1 b{font-size:42px;font-weight:900}
+    .d1 span{margin-left:auto;font-size:26px;font-weight:900;color:var(--muted)}
+    .dtile.fly .d1 span{color:var(--ok)} .dtile.swap .d1 span{color:var(--warn)}
+    .d2{display:flex;align-items:center;gap:13px}
+    .bar{flex:1 1 auto;height:22px;overflow:hidden;background:#0B1117}
+    .bar i{display:block;height:100%;background:var(--ok)}
+    .bar.crit i{background-color:var(--danger);
+      background-image:repeating-linear-gradient(45deg,transparent 0 6px,rgba(0,0,0,.4) 6px 12px)}
+    .dpct{font-size:42px;font-weight:900;min-width:118px;text-align:right}
+    .dpct.crit{color:var(--danger)}
+    .d3{display:flex;gap:22px;font-size:24px;color:var(--muted)}
+    .d3 b{color:var(--text);font-weight:900}
+    /* 최근 3건만 */
+    .recent{display:flex;flex-direction:column;gap:7px}
+    .rrow{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;
+      background:var(--p2);padding:8px 13px;font-size:26px}
+    .rrow .rt{font-size:24px;font-weight:900;color:var(--muted2)}
+    .rrow.heat{background:#33270A;color:#FFF0C4}
+    .rrow.order{background:#0D3247;color:#BEE6FB}
+    /* 티커 */
+    .ticker{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;
+      background:var(--p1);padding:8px 16px;height:70px}
+    .tklb{font-size:24px;font-weight:900;color:#0A0F14;background:var(--accent);padding:4px 12px;white-space:nowrap}
+    .tkmv{font-size:36px;font-weight:900;white-space:nowrap;overflow:hidden}
+    .tkr{display:flex;gap:16px;font-size:24px;color:#C4D4E2;white-space:nowrap}
+    .tkr b{color:var(--text);font-weight:900}
+  </style>
+</helmet>
+<div class="board">
+  <header>
+    <div class="top1">
+      <span class="brand">STAY UP</span>
+      <span class="mission">완주군 소양면 실종자 수색</span>
+      <span class="msub">CP 마을회관 앞 · TRS 소방3 · 전북드론1</span>
+    </div>
+    <div class="hdr">
+      <div class="kpis">
+        <div class="kpi warn"><div class="kpi-l">골든타임 잔여</div><div class="kpi-v num">15:38<small>남음</small></div></div>
+        <div class="kpi ok"><div class="kpi-l">일몰까지</div><div class="kpi-v num">1:17<small>남음</small></div></div>
+        <div class="kpi warn"><div class="kpi-l">비행 판정</div><div class="kpi-v"><i class="dot warn"></i>제한</div></div>
+        <div class="kpi ok"><div class="kpi-l">출동 경과</div><div class="kpi-v num">6:12<small>경과</small></div></div>
+      </div>
+      <div class="clockbox"><div class="clock num">13:50</div><div class="cdate">8월 29일 (금)</div></div>
+    </div>
+  </header>
+
+  <main class="body">
+    <section class="col">
+      <div class="pane" style="flex:1 1 auto">
+        <div class="ph">실종자<span class="r">치매 3등급</span></div>
+        <div class="nm">김○○<em>82세 여</em></div>
+        <div class="wear">
+          <div class="wsw" style="background:#E879A6;color:#3A0C22"><span>상의</span><b>분홍 자켓</b></div>
+          <div class="wsw" style="background:#2B2B33;color:#F1F6FA"><span>하의</span><b>검정 바지</b></div>
+        </div>
+        <div class="lastseen">실종 <b>05:30</b> · 8시간 22분 전<br>최종목격 <b>마을회관 앞</b></div>
+        <div class="badges"><span class="badge">보행 가능</span><span class="badge">청력 저하</span><span class="badge hot">감지기 없음</span></div>
+      </div>
+    </section>
+
+    <section class="col">
+      <div class="pane" style="flex:1 1 auto">
+        <div class="ph">수색구역<span class="r">완료 18 / 30 · 지도폭 2400m</span></div>
+        <div class="mapwrap">
+          <div class="grid">
+            <div class="gc s2">A1<span class="by">지상</span></div><div class="gc s2">A2</div>
+            <div class="gc s2">A3</div><div class="gc s3">A4<span class="by">지상</span></div>
+            <div class="gc s0">A5</div><div class="gc s0">A6</div>
+            <div class="gc s2">B1<span class="by">수색견</span></div><div class="gc s2">B2</div>
+            <div class="gc s2">B3</div><div class="gc s2">B4</div>
+            <div class="gc s3">B5<span class="by">지상</span></div><div class="gc s0">B6</div>
+            <div class="gc s2">C1</div><div class="gc s2">C2</div>
+            <div class="gc s1">C3<span class="by">드론</span></div><div class="gc s2">C4</div>
+            <div class="gc s2">C5</div><div class="gc s0">C6</div>
+            <div class="gc s2">D1</div><div class="gc s1">D2<span class="by">드론</span></div>
+            <div class="gc s2">D3</div><div class="gc s2">D4</div>
+            <div class="gc s0">D5</div><div class="gc s0">D6</div>
+            <div class="gc s2">E1</div><div class="gc s2">E2</div>
+            <div class="gc s2">E3</div><div class="gc s0">E4</div>
+            <div class="gc s1">E5<span class="by">드론</span></div><div class="gc s2">E6</div>
+          </div>
+        </div>
+        <div class="cov">
+          <div class="covpct num">60<small>%</small></div>
+          <div class="covbar"><i style="width:60%;background:var(--ok)"></i><i style="width:10%;background:var(--warn)"></i><i style="width:7%;background:var(--danger)"></i></div>
+          <div class="rad"><em>이동 추정반경</em><b class="num">5.9<small style="font-size:24px"> km</small></b></div>
+        </div>
+        <div class="leg">
+          <span><i style="background:rgba(43,212,110,.52)"></i>18 완료</span>
+          <span><i style="background-color:rgba(240,198,58,.36);background-image:repeating-linear-gradient(45deg,transparent 0 5px,rgba(255,255,255,.3) 5px 10px)"></i>3 수색중</span>
+          <span><i style="background:rgba(255,107,97,.28);box-shadow:inset 0 0 0 5px var(--danger)"></i>2 재수색</span>
+          <span><i style="box-shadow:inset 0 0 0 4px rgba(166,185,204,.28)"></i>7 미수색</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="col">
+      <div class="pane" style="flex:1 1 auto;gap:10px">
+        <div class="ph">기체<span class="r">비행중 1 / 3</span></div>
+        <div class="dtile fly">
+          <div class="d1"><b>1호기</b><span>비행중</span></div>
+          <div class="d2"><div class="bar"><i style="width:68%"></i></div><span class="dpct num">68%</span></div>
+          <div class="d3"><span>C3</span><span>잔여 <b class="num">22분</b></span><span><b class="num">120m</b></span></div>
+        </div>
+        <div class="dtile swap">
+          <div class="d1"><b>2호기</b><span>배터리교체</span></div>
+          <div class="d2"><div class="bar crit"><i style="width:19%"></i></div><span class="dpct num crit">19%</span></div>
+          <div class="d3"><span>D2</span></div>
+        </div>
+        <div class="dtile">
+          <div class="d1"><b>3호기</b><span>이륙대기</span></div>
+          <div class="d2"><div class="bar"><i style="width:100%"></i></div><span class="dpct num">100%</span></div>
+          <div class="d3"><span>E5</span></div>
+        </div>
+      </div>
+      <div class="pane" style="flex:0 0 auto">
+        <div class="ph">최근<span class="r">배터리 9 / 4 / 10 · 2.4h</span></div>
+        <div class="recent">
+          <div class="rrow heat"><span class="rt num">13:42</span><span>C3 계곡부 열원 반응</span></div>
+          <div class="rrow"><span class="rt num">13:28</span><span>1호기 이륙 · C3 정밀</span></div>
+          <div class="rrow order"><span class="rt num">11:50</span><span>D~E열 우선 수색 지시</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="ticker">
+    <span class="tklb">지휘부 지시</span>
+    <div class="tkmv">계곡 하류 D~E열 우선 수색. 열원 감지 시 즉시 좌표 통보. 일몰 30분 전 회수.</div>
+    <div class="tkr"><span>브리핑 <b>18:00</b></span></div>
+  </footer>
+</div>
+</x-dc>
+</body>
+</html>

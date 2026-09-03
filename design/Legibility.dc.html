@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    :root{
+      --bg:#0B1017; --p1:#141C26; --p2:#1D2733; --line:#293646;
+      --text:#E9F0F7; --muted:#93A7BB; --ok:#2BD46E; --warn:#F0C63A; --danger:#FF6B61;
+      --accent:#FF6A1A;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);
+      font-family:'Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.55;
+      -webkit-font-smoothing:antialiased}
+    .sheet{padding:38px 44px 44px}
+    .num{font-variant-numeric:tabular-nums}
+    h1{font-size:30px;font-weight:900;margin:0 0 4px;letter-spacing:-.01em}
+    .lede{font-size:17px;color:var(--muted);margin:0 0 6px;max-width:64ch}
+    .rule{height:3px;background:var(--accent);width:56px;margin:18px 0 26px}
+    h2{font-size:13px;font-weight:900;letter-spacing:.16em;color:var(--accent);
+      margin:34px 0 12px;text-transform:uppercase}
+    h2:first-of-type{margin-top:0}
+    p{margin:0 0 12px;max-width:70ch}
+    b{font-weight:900}
+    .kbd{font-size:13px;font-weight:700;background:var(--p2);padding:1px 6px;color:#C6D5E3}
+    table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 8px}
+    th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
+    th{font-size:12px;font-weight:900;letter-spacing:.08em;color:var(--muted);
+      text-transform:uppercase;border-bottom-width:2px}
+    td.n{text-align:right;font-variant-numeric:tabular-nums}
+    tr.bad td{background:#2A1010} tr.bad td.n{color:#FFB4AE;font-weight:900}
+    tr.good td.n{color:#8BE7B0;font-weight:700}
+    .pill{display:inline-block;font-size:12px;font-weight:900;padding:1px 8px}
+    .pill.no{background:#4A1414;color:#FFC9C4} .pill.yes{background:#123524;color:#6EE7A0}
+    .pill.mid{background:#33270A;color:#FFE9A8}
+    .note{font-size:13.5px;color:var(--muted);margin-top:6px}
+    /* 선 대비 실증 */
+    .linedemo{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:6px 0 4px}
+    .ld{background:var(--p1);padding:16px 14px}
+    .ld em{display:block;font-style:normal;font-size:12px;font-weight:900;
+      letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+    .ld .s{height:56px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted)}
+    .ld .s.b1{border:1px solid #22303F} .ld .s.b2{border:1px solid #48607A}
+    .ld .s.b3{border:4px solid #48607A} .ld .s.b4{background:#2B3B4D;color:#DCE7F2}
+    .ld small{display:block;font-size:12px;color:#7E93AA;margin-top:8px;line-height:1.4}
+    /* 크기 실증 */
+    .sizedemo{display:flex;flex-direction:column;gap:2px;margin:4px 0 6px}
+    .sd{display:flex;align-items:baseline;gap:16px;padding:7px 12px;background:var(--p1)}
+    .sd .tag{font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--muted);width:126px;flex:0 0 auto}
+    .sd .val{font-size:11px;color:#7E93AA;width:112px;flex:0 0 auto;text-align:right;
+      font-variant-numeric:tabular-nums}
+    .sd.pass{background:#0F2418} .sd.fail{background:#241012}
+    /* 방향 비교 */
+    .dirs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px}
+    .dir{background:var(--p1);padding:16px 16px 18px;display:flex;flex-direction:column}
+    .dir .k{font-size:12px;font-weight:900;letter-spacing:.12em;color:var(--accent);margin-bottom:5px}
+    .dir h3{font-size:20px;font-weight:900;margin:0 0 9px}
+    .dir p{font-size:13.5px;margin:0 0 11px;color:#C3D2E0;max-width:none}
+    .dir .tl{font-size:11px;font-weight:900;letter-spacing:.09em;color:var(--muted);margin:0 0 4px}
+    .dir ul{margin:0 0 11px;padding-left:17px;font-size:13px;color:#B6C7D6}
+    .dir li{margin-bottom:3px}
+    .dir .risk{margin-top:auto;font-size:13px;background:var(--p2);padding:9px 11px;color:#D3DFEB}
+    .dir .risk b{color:#FFD9D6}
+    .dir li.fine{color:#8FA3B8;font-size:12px;line-height:1.45;margin-top:5px}
+  </style>
+</helmet>
+<div class="sheet">
+  <h1>판독성 검증</h1>
+  <p class="lede">CP 천막에서 대형 모니터를 보는 거리는 2~4m입니다. 세 방향은 취향이 아니라
+    아래 실측치에 대한 서로 다른 대응입니다.</p>
+  <div class="rule"></div>
+
+  <h2>1 · 시야각 — 3m 에서 읽히는 것은 네 개뿐</h2>
+  <p>55인치 1080p 기준(화면 폭 1218mm, 1px = 0.634mm). 시야각 <b>5 arcmin</b>은 식별 한계,
+    <b>16 arcmin</b>은 흘려봐도 읽히는 선입니다. 현행 표출 화면의 요소를 환산하면:</p>
+  <table>
+    <thead><tr><th>요소</th><th class="n">크기</th><th class="n">높이</th>
+      <th class="n">2m</th><th class="n">3m</th><th class="n">4m</th><th>3m 판정</th></tr></thead>
+    <tbody>
+      <tr class="good"><td>KPI 값</td><td class="n">4.30rem</td><td class="n">30.6mm</td><td class="n">53′</td><td class="n">35′</td><td class="n">26′</td><td><span class="pill yes">읽힘</span></td></tr>
+      <tr class="good"><td>시계</td><td class="n">3.05rem</td><td class="n">21.7mm</td><td class="n">37′</td><td class="n">25′</td><td class="n">19′</td><td><span class="pill yes">읽힘</span></td></tr>
+      <tr class="good"><td>실종자 성명</td><td class="n">2.35rem</td><td class="n">16.7mm</td><td class="n">29′</td><td class="n">19′</td><td class="n">14′</td><td><span class="pill yes">읽힘</span></td></tr>
+      <tr class="good"><td>배터리 숫자</td><td class="n">2.10rem</td><td class="n">14.9mm</td><td class="n">26′</td><td class="n">17′</td><td class="n">13′</td><td><span class="pill yes">읽힘</span></td></tr>
+      <tr class="bad"><td>상황명</td><td class="n">1.55rem</td><td class="n">11.0mm</td><td class="n">19′</td><td class="n">13′</td><td class="n">9′</td><td><span class="pill no">한계</span></td></tr>
+      <tr class="bad"><td>드론 배터리 %</td><td class="n">1.45rem</td><td class="n">10.3mm</td><td class="n">18′</td><td class="n">12′</td><td class="n">9′</td><td><span class="pill no">한계</span></td></tr>
+      <tr class="bad"><td>지휘부 지시 티커</td><td class="n">1.45rem</td><td class="n">10.3mm</td><td class="n">18′</td><td class="n">12′</td><td class="n">9′</td><td><span class="pill no">한계</span></td></tr>
+      <tr class="bad"><td>안전 셀 값</td><td class="n">1.34rem</td><td class="n">9.5mm</td><td class="n">16′</td><td class="n">11′</td><td class="n">8′</td><td><span class="pill no">한계</span></td></tr>
+      <tr class="bad"><td>격자 셀 ID</td><td class="n">1.18rem</td><td class="n">8.4mm</td><td class="n">14′</td><td class="n">10′</td><td class="n">7′</td><td><span class="pill no">한계</span></td></tr>
+      <tr class="bad"><td>범례</td><td class="n">1.15rem</td><td class="n">8.2mm</td><td class="n">14′</td><td class="n">9′</td><td class="n">7′</td><td><span class="pill no">한계</span></td></tr>
+      <tr class="bad"><td>KPI 라벨</td><td class="n">1.08rem</td><td class="n">7.7mm</td><td class="n">13′</td><td class="n">9′</td><td class="n">7′</td><td><span class="pill no">한계</span></td></tr>
+      <tr class="bad"><td>타임라인 본문</td><td class="n">1.02rem</td><td class="n">7.2mm</td><td class="n">12′</td><td class="n">8′</td><td class="n">6′</td><td><span class="pill no">한계</span></td></tr>
+      <tr class="bad"><td>KPI 부제</td><td class="n">0.98rem</td><td class="n">7.0mm</td><td class="n">12′</td><td class="n">8′</td><td class="n">6′</td><td><span class="pill no">한계</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note">3m 에서 글랜스 가독선(16′)을 넘기려면 <b>최소 1.97rem = 32px</b>이 필요합니다.
+    현행 표출 화면은 사실상 <b>2m 용</b>으로 설계돼 있습니다.</p>
+
+  <h2>2 · 1px 테두리는 3m 에서 존재하지 않는다</h2>
+  <p>1px = 0.634mm 이므로 3m 에서 <b>0.73 arcmin</b>입니다. 식별 한계(5′)의 1/7입니다.
+    <b>대비를 얼마로 올려도 안 보입니다.</b> 그루핑은 선이 아니라 면으로 해야 합니다.</p>
+  <div class="linedemo">
+    <div class="ld"><em>현행 1px · 1.34:1</em><div class="s b1">테두리</div>
+      <small>0.73′ — 안 보임<br>대비도 미달</small></div>
+    <div class="ld"><em>1px · 2.77:1</em><div class="s b2">테두리</div>
+      <small>0.73′ — 대비를 올려도<br>여전히 안 보임</small></div>
+    <div class="ld"><em>4px · 2.77:1</em><div class="s b3">테두리</div>
+      <small>2.9′ — 아직 한계 미달</small></div>
+    <div class="ld"><em>채움 면</em><div class="s b4">면으로 구분</div>
+      <small>면적이 있으므로<br>거리와 무관하게 읽힘</small></div>
+  </div>
+
+  <h2>3 · 명도 대비 — 두 조합이 AA 미달</h2>
+  <table>
+    <thead><tr><th>토큰</th><th>배경</th><th>용도</th><th class="n">대비</th><th class="n">필요</th><th>판정</th></tr></thead>
+    <tbody>
+      <tr class="bad"><td><span class="kbd">--muted2</span> #63788E</td><td>--surface</td><td>KPI 부제 15.7px</td><td class="n">3.95:1</td><td class="n">4.5</td><td><span class="pill no">미달</span></td></tr>
+      <tr class="bad"><td><span class="kbd">--muted2</span> #63788E</td><td>--bg</td><td>범례 · 메타 15.7px</td><td class="n">4.35:1</td><td class="n">4.5</td><td><span class="pill no">미달</span></td></tr>
+      <tr><td><span class="kbd">--danger</span> #EF4444</td><td>--surface</td><td>비행 불가 68.8px</td><td class="n">4.79:1</td><td class="n">3.0</td><td><span class="pill mid">통과, 최저</span></td></tr>
+      <tr class="good"><td><span class="kbd">--muted</span> #8FA3B8</td><td>--surface</td><td>KPI 라벨</td><td class="n">6.95:1</td><td class="n">4.5</td><td><span class="pill yes">통과</span></td></tr>
+      <tr class="good"><td><span class="kbd">--text</span> #E9F0F7</td><td>--bg</td><td>본문</td><td class="n">17.26:1</td><td class="n">4.5</td><td><span class="pill yes">통과</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note"><b>--danger 가 의미색 중 대비가 가장 낮은 것이 문제입니다.</b> 가장 급한 상태가
+    가장 안 보입니다. 세 방향 모두 #FF6B61(6.46:1)로 올리고, 불가 타일은 채움 배경(A #3A0F0F · B #3E1010 · C #43110F —
+    각 방향의 면 밝기에 맞춘 값. 흰 글자 대비는 모두 15:1 이상)을 줘서 타일 전체가 신호가 되게 했습니다.</p>
+
+  <h2>4 · 32px 선을 넘기면 이렇게 달라진다</h2>
+  <div class="sizedemo">
+    <div class="sd fail"><span class="tag">현행 KPI 부제</span><span style="font-size:15.7px">실종 후 8:22 경과 · 기준 24h</span><span class="val">0.98rem · 8′@3m</span></div>
+    <div class="sd fail"><span class="tag">현행 타임라인</span><span style="font-size:16.3px">C3 계곡부 열원 반응 · 지상팀 접근</span><span class="val">1.02rem · 8′@3m</span></div>
+    <div class="sd fail"><span class="tag">현행 티커</span><span style="font-size:23.2px;font-weight:700">계곡 하류 D~E열 우선 수색</span><span class="val">1.45rem · 12′@3m</span></div>
+    <div class="sd pass"><span class="tag">32px 선</span><span style="font-size:32px;font-weight:700">계곡 하류 D~E열 우선 수색</span><span class="val">2.00rem · 16′@3m</span></div>
+    <div class="sd pass"><span class="tag">C 격자 셀</span><span style="font-size:40px;font-weight:900">C3</span><span class="val">2.50rem · 20′@3m</span></div>
+  </div>
+
+  <h2>5 · 세 방향 — 같은 측정에 대한 서로 다른 답</h2>
+  <div class="dirs">
+    <div class="dir">
+      <div class="k">방향 A</div>
+      <h3>현행 정제</h3>
+      <p>구조는 그대로. 실측으로 드러난 결함만 고칩니다. 정보는 하나도 빠지지 않습니다.</p>
+      <div class="tl">하는 일</div>
+      <ul>
+        <li>--muted2 → #7E93AA (5.70:1)</li>
+        <li>--danger → #FF6B61 + 채움 패널</li>
+        <li>반경 16종 → 3단 (4 / 2 / 999px) + 원형 표식 50%</li>
+        <li>부제 0.98 → 1.13rem, 타임라인 1.02 → 1.25rem</li>
+        <li>면(surface)을 한 단 올려 테두리 의존을 줄임</li>
+      </ul>
+      <div class="risk"><b>대가</b> 32px 선은 여전히 못 넘습니다. 2m 용 화면이 조금 더 잘 읽히는 것뿐입니다. 실측에서 <b>1080p 에 다 들어가지 않아</b> 격자에 최소 높이를 걸고 타임라인을 4줄로 줄여야 했습니다.</div>
+    </div>
+    <div class="dir">
+      <div class="k">방향 B</div>
+      <h3>2단 시야</h3>
+      <p>보는 거리가 둘이라는 사실을 설계에 반영합니다. 원거리 존과 근거리 존을 나누고
+        라벨로 명시합니다.</p>
+      <div class="tl">하는 일</div>
+      <ul>
+        <li>원거리 존: <b>값 32px 이상</b>, 라벨 18px 이상, 테두리 0</li>
+        <li>근거리 존: 기록자용. 한 단 어둡게 눌러 시선에서 뺌</li>
+        <li>인상착의를 글자에서 <b>대형 색면</b>으로 — 3m 에서 색은 읽힘</li>
+        <li>격자 셀 ID 1.18 → 2.00rem (담당 표기는 근거리 정보로 1.25rem)</li>
+        <li>정보 손실 없음. 배치만 재편</li>
+        <li class="fine">원거리 존 실측: 18px 미달 0건 · 32px 이상 22개. 22px 구간의 실종시각·최종목격은 골든타임 KPI와 지도 핀으로 이미 원거리에 표현돼 있어 중복 표기로 둠</li>
+      </ul>
+      <div class="risk"><b>대가</b> 레이아웃이 크게 바뀝니다. 근거리 존이 좁아 타임라인이 6줄로 줄어듭니다.</div>
+    </div>
+    <div class="dir">
+      <div class="k">방향 C</div>
+      <h3>원거리 전용</h3>
+      <p>조작 패널 상단에 KPI 줄이 생겼으니, 대형 모니터는 더 이상 기록자를 섬길 필요가
+        없습니다. 방 안의 사람만 봅니다.</p>
+      <div class="tl">하는 일</div>
+      <ul>
+        <li>32px 미달 요소를 줄이지 않고 <b>지움</b></li>
+        <li>KPI 4.30 → 5.50rem, 격자 셀 → 2.50rem</li>
+        <li>인원 명부 · 센서 · 소티 · 기상 상세 · 좌표는 조작 패널로</li>
+        <li>타임라인은 최근 3건만</li>
+      </ul>
+      <div class="risk"><b>대가</b> 정보가 실제로 빠집니다. 기록자 옆의 두 사람이 인원·기상 상세를
+        보고 싶을 때 노트북을 봐야 합니다.</div>
+    </div>
+  </div>
+
+  <p class="note" style="margin-top:22px">세 아트보드는 1920×1080 프레임에 넣고 <b>브라우저에서 잘림을 실측</b>했습니다 — 넘침 0, 잘림 0, 생략(…) 0. 폰트는 Noto Sans KR(앱의 실제 폴백 체인)입니다.<br>환산 전제 — 55인치 16:9, 1920×1080, 대문자/한글 높이 = 글자 크기 × 0.70,
+    1rem = 16px @1920×1080. 다른 크기 모니터에서는 화면 폭 비율로 비례합니다(예: 43인치는 1.28배 더 가까이 봐야 같은 시야각).</p>
+</div>
+</x-dc>
+</body>
+</html>

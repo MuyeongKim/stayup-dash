@@ -1,0 +1,11 @@
+# Claude Code 로컬 설정 (개발 도구 · 기기별로 다름)
+.claude/
+
+# 디자인 캔버스 시드 산출물.
+# 아트보드 원본(design/*.dc.html, canvas.json)은 커밋하고,
+# 시드 결과물은 약 2MB 에디터 코드가 포함돼 저장소를 불필요하게 키운다.
+# 발행된 아트팩트가 열람용 원본이다.
+design/stayup-board-legibility.html
+
+# macOS
+.DS_Store

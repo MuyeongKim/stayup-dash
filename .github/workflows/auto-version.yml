@@ -10,8 +10,12 @@ permissions:
 
 concurrency:
   group: stayup-dash-version-main
+  # cancel-in-progress:false 만으로 대기 1건이 유지된다.
+  # 이전에 있던 queue: max 는 GitHub Actions 공식 스키마에 없는 키였고,
+  # 지금은 통과하지만 스키마가 엄격해지면 워크플로 전체가 실패할 수 있어 제거했다.
+  # 짧은 간격의 연속 푸시에서 중간 푸시가 버전 증가 없이 넘어갈 수 있는데,
+  # 버전은 푸시 묶음 단위로 올리는 것이 의도이므로 문제되지 않는다.
   cancel-in-progress: false
-  queue: max
 
 jobs:
   version-up:

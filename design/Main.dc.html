@@ -1,0 +1,336 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    /* ── B. 2단 시야 ──────────────────────────────────────────────
+       실측 근거
+         3m 글랜스 가독선 = 1.97rem(32px). 현재 그 선을 넘는 건 4개뿐.
+         1px 테두리 = 0.73arcmin@3m → 식별 한계(5)의 1/7. 안 보인다.
+       그래서
+         원거리 존 : 값(수치·상태·판정)은 32px 이상. 테두리 0. 면(밝기)으로만 묶는다.
+                    라벨·단위는 18px 이상 — 위치를 한 번 익히면 다시 읽지 않는다.
+                    격자 셀의 담당(드론/지상)은 근거리 정보로 분류한다.
+         근거리 존 : 기록자가 0.5m 에서 읽는 것. 라벨을 달아 분리한다.
+       인상착의는 글자가 아니라 색면으로 — 3m 에서 색은 읽히고 글자는 안 읽힌다.
+       ──────────────────────────────────────────────────────────── */
+    :root{
+      --bg:#070A0E;
+      --far1:#141E29;  /* 원거리 1단 */
+      --far2:#1D2A38;  /* 원거리 2단 */
+      --near:#0D141C;  /* 근거리 존 — 한 단 어둡게 눌러 시선에서 뺀다 */
+      --near2:#151F29;
+      --text:#EDF3F9; --muted:#9CB0C4; --muted2:#7E93AA;
+      --accent:#FF6A1A; --ok:#2BD46E; --warn:#F0C63A; --danger:#FF6B61; --info:#4CC6FA;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);
+      font-family:'Noto Sans KR',system-ui,sans-serif;font-size:16px;line-height:1.3;
+      -webkit-font-smoothing:antialiased}
+    .num{font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+    .board{display:grid;height:1080px;grid-template-rows:auto 1fr auto auto;gap:9px;padding:11px 13px}
+
+    /* ── 헤더 ── */
+    .hdr{display:grid;grid-template-columns:384px 1fr 218px;gap:9px}
+    .idc{background:var(--far1);padding:11px 16px;display:flex;flex-direction:column;justify-content:center;
+      border-left:7px solid var(--accent)}
+    .brand{display:flex;align-items:center;gap:8px;font-size:25px;font-weight:900}
+    .brand .su{color:var(--accent)} .brand .sep{color:#3A4E64;font-weight:400}
+    .mission{font-size:30px;font-weight:900;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .msub{font-size:20px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+    .kpi{background:var(--far1);padding:8px 15px 9px;position:relative;overflow:hidden}
+    .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:#3A4E64}
+    .kpi.ok::before{background:var(--ok)} .kpi.warn::before{background:var(--warn)}
+    .kpi.dg{background:#3E1010} .kpi.dg::before{background:var(--danger)}
+    .kpi-l{font-size:20px;color:var(--muted);font-weight:500;white-space:nowrap}
+    .kpi-v{font-size:72px;font-weight:900;line-height:1;white-space:nowrap;margin-top:-2px}
+    .kpi-v small{font-size:26px;font-weight:700;color:var(--muted);margin-left:5px}
+    .kpi.ok .kpi-v{color:var(--ok)} .kpi.warn .kpi-v{color:var(--warn)} .kpi.dg .kpi-v{color:var(--danger)}
+    .kpi-s{font-size:20px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .dot{width:26px;height:26px;flex:0 0 auto;display:inline-block;vertical-align:-3px;margin-right:8px}
+    .dot.ok{background:var(--ok);border-radius:50%}
+    .dot.warn{background:var(--warn);clip-path:polygon(50% 3%,100% 97%,0 97%)}
+    .dot.dg{background:var(--danger);border-radius:2px}
+    .clockbox{background:var(--far1);padding:9px 15px;text-align:right;display:flex;flex-direction:column;justify-content:center}
+    .clock{font-size:52px;font-weight:900;line-height:1}
+    .cdate{font-size:20px;color:var(--muted)}
+
+    /* ── 원거리 존 : 32px 미만 금지 ── */
+    .far{display:grid;grid-template-columns:384px 1fr 400px;gap:9px;min-height:0}
+    .fz{display:flex;flex-direction:column;gap:9px;min-height:0}
+    .pane{background:var(--far1);padding:11px 14px;display:flex;flex-direction:column;min-height:0}
+    .ph{font-size:19px;font-weight:700;letter-spacing:.05em;color:var(--muted2);margin-bottom:8px;
+      display:flex;align-items:baseline;gap:9px}
+    .ph .r{margin-left:auto;font-size:19px;color:var(--muted)}
+
+    /* 실종자 — 색면이 주인공 */
+    .subj-name{font-size:52px;font-weight:900;line-height:1;display:flex;align-items:baseline;gap:11px}
+    .subj-name em{font-style:normal;font-size:26px;font-weight:700;color:var(--muted)}
+    .wear2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:11px 0 9px}
+    .wsw{padding:13px 12px 11px;display:flex;flex-direction:column;justify-content:flex-end;min-height:104px}
+    .wsw span{font-size:18px;font-weight:700;letter-spacing:.05em;opacity:.85}
+    .wsw b{font-size:32px;font-weight:900;line-height:1.05;margin-top:2px}
+    .subj-kv{font-size:22px;color:var(--muted);line-height:1.45}
+    .subj-kv b{color:var(--text);font-weight:700}
+    .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+    .badge{font-size:20px;font-weight:700;padding:3px 11px;background:var(--far2);color:#C7D6E4}
+    .badge.hot{background:#4A1414;color:#FFC9C4}
+
+    /* 격자 */
+    .mapwrap{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;
+      background:repeating-linear-gradient(45deg,#101821 0 16px,#131D27 16px 32px)}
+    .grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);
+      grid-template-rows:repeat(5,1fr);gap:4px;padding:4px}
+    .gc{position:relative;display:flex;align-items:center;justify-content:center;
+      font-size:32px;font-weight:900;color:rgba(237,243,249,.55);background:rgba(7,10,14,.35)}
+    .gc.s0{box-shadow:inset 0 0 0 3px rgba(156,176,196,.22)}
+    .gc.s1{background-color:rgba(240,198,58,.34);color:#FFF3CE;
+      background-image:repeating-linear-gradient(45deg,transparent 0 7px,rgba(255,255,255,.18) 7px 14px)}
+    .gc.s2{background:rgba(43,212,110,.50);color:#E7FFF1}
+    .gc.s3{background:rgba(255,107,97,.26);color:#FFD9D6;box-shadow:inset 0 0 0 6px var(--danger)}
+    .gc .by{position:absolute;top:3px;right:6px;font-size:20px;font-weight:700;opacity:.85}
+    .covrow{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;margin-top:10px}
+    .covpct{font-size:64px;font-weight:900;line-height:.95;color:var(--ok)}
+    .covpct small{font-size:24px;color:var(--muted)}
+    .covbar{height:20px;overflow:hidden;background:#0A1016;display:flex}
+    .covbar i{display:block;height:100%}
+    .covleg{display:flex;gap:16px;font-size:22px;font-weight:700;color:#BACBDA;align-items:center}
+    .covleg span{display:flex;align-items:center;gap:7px}
+    .covleg i{width:20px;height:20px}
+    .rad{background:var(--far2);padding:7px 13px;text-align:right}
+    .rad em{display:block;font-style:normal;font-size:18px;color:var(--muted2);line-height:1.2}
+    .rad b{font-size:36px;font-weight:900;color:var(--info)}
+
+    /* 드론 — 큰 타일 */
+    .dtile{background:var(--far2);padding:10px 13px;border-left:8px solid #3A4E64;flex:1 1 0;min-height:0;
+      display:flex;flex-direction:column;justify-content:center}
+    .dtile.fly{border-left-color:var(--ok)} .dtile.swap{border-left-color:var(--warn)}
+    .dt1{display:flex;align-items:baseline;gap:10px}
+    .dt1 b{font-size:34px;font-weight:900}
+    .dt1 em{font-style:normal;font-size:19px;color:var(--muted2)}
+    .dt1 span{margin-left:auto;font-size:22px;font-weight:700;color:var(--muted)}
+    .dtile.fly .dt1 span{color:var(--ok)} .dtile.swap .dt1 span{color:var(--warn)}
+    .dt2{display:flex;align-items:center;gap:11px;margin:6px 0 5px}
+    .bar{flex:1 1 auto;height:18px;overflow:hidden;background:#0A1016}
+    .bar i{display:block;height:100%;background:var(--ok)}
+    .bar.crit i{background-color:var(--danger);
+      background-image:repeating-linear-gradient(45deg,transparent 0 5px,rgba(0,0,0,.4) 5px 10px)}
+    .dpct{font-size:34px;font-weight:900;min-width:96px;text-align:right}
+    .dpct.crit{color:var(--danger)}
+    .dt3{display:flex;gap:20px;font-size:20px;color:var(--muted)}
+    .dt3 b{color:var(--text);font-weight:900}
+    /* 배터리 */
+    .bat{display:grid;grid-template-columns:repeat(3,1fr) 1.5fr;gap:8px}
+    .bcell{background:var(--far2);padding:7px 0;text-align:center}
+    .bcell b{display:block;font-size:40px;font-weight:900;line-height:1}
+    .bcell em{font-style:normal;font-size:18px;color:var(--muted2)}
+    .bcell.rd b{color:var(--ok)} .bcell.ch b{color:var(--warn)} .bcell.em2 b{color:var(--muted)}
+    .bcell.dur{border-left:7px solid var(--ok);text-align:left;padding:7px 12px}
+    .bcell.dur b{font-size:40px} .bcell.dur em{display:block}
+
+    /* ── 근거리 존 : 기록자용. 눌러서 시선에서 뺀다 ── */
+    .near{background:var(--near);display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:0;
+      align-items:stretch;min-height:0}
+    .nlbl{writing-mode:vertical-rl;text-orientation:mixed;background:var(--near2);
+      padding:9px 7px;font-size:16px;font-weight:900;letter-spacing:.22em;color:var(--muted2);
+      display:flex;align-items:center;justify-content:center}
+    .nsec{padding:9px 13px;min-width:0;border-left:1px solid #1B2632}
+    .nh{font-size:15px;font-weight:900;letter-spacing:.09em;color:var(--muted2);margin-bottom:6px}
+    .log{display:flex;flex-direction:column;gap:2px}
+    .lrow{display:grid;grid-template-columns:56px 68px 1fr;gap:7px;align-items:baseline;font-size:16px}
+    .lrow .lt{color:var(--muted2)}
+    .lrow .lk{font-size:13px;font-weight:700;padding:1px 5px;background:#1E2A37;color:#B4C6D6;text-align:center}
+    .lrow.heat .lk{background:var(--warn);color:#191401} .lrow.heat{color:#FFEFC0}
+    .lrow.order .lk{background:#0C3247;color:#A7DCF7}
+    .crew{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
+    .crow{display:flex;gap:7px;font-size:16px;align-items:baseline}
+    .crow em{font-style:normal;color:var(--muted2);font-size:14px}
+    .crow b{margin-left:auto;font-weight:700}
+    .crow.tired b{color:var(--warn)}
+    .wxg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px;font-size:16px}
+    .wxg div{display:flex;gap:6px}
+    .wxg em{font-style:normal;color:var(--muted2)} .wxg b{font-weight:700}
+
+    /* ── 티커 ── */
+    .ticker{display:grid;grid-template-columns:auto 1fr auto;gap:13px;align-items:center;
+      background:var(--far1);padding:6px 14px;height:58px}
+    .tklb{font-size:20px;font-weight:900;color:#0A0F14;background:var(--accent);padding:3px 10px;white-space:nowrap}
+    .tkmv{font-size:32px;font-weight:700;white-space:nowrap;overflow:hidden}
+    .tkr{display:flex;gap:13px;font-size:20px;color:#BACBDA;white-space:nowrap}
+    .tkr b{color:var(--text);font-weight:900}
+  </style>
+</helmet>
+<div class="board">
+  <header class="hdr">
+    <div class="idc">
+      <div class="brand"><span class="su">STAY UP</span><span class="sep">|</span>현장 상황판</div>
+      <div class="mission">완주군 소양면 실종자 수색</div>
+      <div class="msub">소양면 대흥리 일대 · CP 마을회관 앞</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi warn"><div class="kpi-l">골든타임 잔여</div>
+        <div class="kpi-v num">15:38<small>남음</small></div><div class="kpi-s">실종 후 8:22 경과</div></div>
+      <div class="kpi ok"><div class="kpi-l">일몰까지</div>
+        <div class="kpi-v num">1:17<small>남음</small></div><div class="kpi-s">일몰 19:05</div></div>
+      <div class="kpi warn"><div class="kpi-l">비행 가능 판정</div>
+        <div class="kpi-v"><i class="dot warn"></i>제한 비행</div><div class="kpi-s">인접기관 동시운용</div></div>
+      <div class="kpi ok"><div class="kpi-l">출동 경과</div>
+        <div class="kpi-v num">6:12<small>경과</small></div><div class="kpi-s">출동 07:38</div></div>
+    </div>
+    <div class="clockbox"><div class="clock num">13:50:22</div><div class="cdate">8월 29일 (금)</div></div>
+  </header>
+
+  <main class="far">
+    <section class="fz">
+      <div class="pane" style="flex:1 1 auto">
+        <div class="ph">실종자<span class="r">감지기 없음</span></div>
+        <div class="subj-name">김○○<em>82세 여</em></div>
+        <div class="wear2">
+          <div class="wsw" style="background:#E879A6;color:#3A0C22"><span>상의</span><b>분홍 자켓</b></div>
+          <div class="wsw" style="background:#2B2B33;color:#E9F0F7"><span>하의</span><b>검정 바지</b></div>
+        </div>
+        <div class="subj-kv">실종 <b>05:30</b> · 8시간 22분 전<br>최종목격 <b>마을회관 앞 버스정류장</b></div>
+        <div class="badges">
+          <span class="badge hot">치매 3등급</span><span class="badge">보행 가능</span><span class="badge">청력 저하</span>
+        </div>
+      </div>
+      <div class="pane" style="flex:0 0 auto">
+        <div class="ph">배터리 자원<span class="r">발전기 가동</span></div>
+        <div class="bat">
+          <div class="bcell rd"><b class="num">9</b><em>완료</em></div>
+          <div class="bcell ch"><b class="num">4</b><em>충전중</em></div>
+          <div class="bcell em2"><b class="num">10</b><em>소진</em></div>
+          <div class="bcell dur"><em>지속 운용</em><b class="num">2.4<small style="font-size:20px;color:var(--muted)"> h</small></b></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="fz">
+      <div class="pane" style="flex:1 1 auto">
+        <div class="ph">수색구역<span class="r">5×6 = 30 구역 · 지도폭 2400m · 좌표 보정됨</span></div>
+        <div class="mapwrap">
+          <div class="grid">
+            <div class="gc s2">A1<span class="by">지상</span></div><div class="gc s2">A2<span class="by">드론</span></div>
+            <div class="gc s2">A3<span class="by">드론</span></div><div class="gc s3">A4<span class="by">지상</span></div>
+            <div class="gc s0">A5</div><div class="gc s0">A6</div>
+            <div class="gc s2">B1<span class="by">수색견</span></div><div class="gc s2">B2<span class="by">드론</span></div>
+            <div class="gc s2">B3<span class="by">드론</span></div><div class="gc s2">B4<span class="by">드론</span></div>
+            <div class="gc s3">B5<span class="by">지상</span></div><div class="gc s0">B6</div>
+            <div class="gc s2">C1<span class="by">드론</span></div><div class="gc s2">C2<span class="by">드론</span></div>
+            <div class="gc s1">C3<span class="by">드론</span></div><div class="gc s2">C4<span class="by">드론</span></div>
+            <div class="gc s2">C5<span class="by">드론</span></div><div class="gc s0">C6</div>
+            <div class="gc s2">D1<span class="by">드론</span></div><div class="gc s1">D2<span class="by">드론</span></div>
+            <div class="gc s2">D3<span class="by">드론</span></div><div class="gc s2">D4<span class="by">드론</span></div>
+            <div class="gc s0">D5</div><div class="gc s0">D6</div>
+            <div class="gc s2">E1<span class="by">드론</span></div><div class="gc s2">E2<span class="by">드론</span></div>
+            <div class="gc s2">E3<span class="by">드론</span></div><div class="gc s0">E4</div>
+            <div class="gc s1">E5<span class="by">드론</span></div><div class="gc s2">E6<span class="by">드론</span></div>
+          </div>
+        </div>
+        <div class="covrow">
+          <div class="covpct num">60<small>%</small></div>
+          <div class="covbar"><i style="width:60%;background:var(--ok)"></i><i style="width:10%;background:var(--warn)"></i><i style="width:7%;background:var(--danger)"></i></div>
+          <div class="rad"><em>이동 추정반경</em><b class="num">5.9<small style="font-size:19px"> km</small></b></div>
+        </div>
+        <div class="covleg" style="margin-top:8px">
+          <span><i style="background:rgba(43,212,110,.5)"></i><b>18</b> 완료</span>
+          <span><i style="background-color:rgba(240,198,58,.34);background-image:repeating-linear-gradient(45deg,transparent 0 4px,rgba(255,255,255,.3) 4px 8px)"></i><b>3</b> 수색중</span>
+          <span><i style="background:rgba(255,107,97,.26);box-shadow:inset 0 0 0 4px var(--danger)"></i><b>2</b> 재수색</span>
+          <span><i style="box-shadow:inset 0 0 0 3px rgba(156,176,196,.28)"></i><b>7</b> 미수색</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="fz">
+      <div class="pane" style="flex:1 1 auto;gap:8px">
+        <div class="ph">드론 운용<span class="r">비행중 1 / 3대</span></div>
+        <div class="dtile fly">
+          <div class="dt1"><b>1호기</b><em>M350 RTK</em><span>비행중</span></div>
+          <div class="dt2"><div class="bar"><i style="width:68%"></i></div><span class="dpct num">68%</span></div>
+          <div class="dt3"><span>비행 <b class="num">31:06</b></span><span>잔여 <b class="num">~22분</b></span><span>구역 <b>C3</b></span><span>고도 <b class="num">120m</b></span></div>
+        </div>
+        <div class="dtile swap">
+          <div class="dt1"><b>2호기</b><em>M30T</em><span>배터리교체</span></div>
+          <div class="dt2"><div class="bar crit"><i style="width:19%"></i></div><span class="dpct num crit">19%</span></div>
+          <div class="dt3"><span>구역 <b>D2</b></span><span>소티 <b class="num">5</b></span></div>
+        </div>
+        <div class="dtile">
+          <div class="dt1"><b>3호기</b><em>Mavic 3T</em><span>이륙대기</span></div>
+          <div class="dt2"><div class="bar"><i style="width:100%"></i></div><span class="dpct num">100%</span></div>
+          <div class="dt3"><span>구역 <b>E5</b></span><span>소티 <b class="num">2</b></span></div>
+        </div>
+      </div>
+      <div class="pane" style="flex:0 0 auto">
+        <div class="ph">안전 · 규제</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+          <div style="background:var(--far2);padding:6px 11px"><div style="font-size:18px;color:var(--muted2)">유인기</div><div style="font-size:32px;font-weight:900;color:var(--ok)">● 없음</div></div>
+          <div style="background:var(--far2);padding:6px 11px"><div style="font-size:18px;color:var(--muted2)">비행승인</div><div style="font-size:32px;font-weight:900;color:var(--ok)">● 완료</div></div>
+          <div style="background:var(--far2);padding:6px 11px"><div style="font-size:18px;color:var(--muted2)">풍속 / 돌풍</div><div style="font-size:32px;font-weight:900;color:var(--ok)" class="num">4.2 / 7.8</div></div>
+          <div style="background:var(--far2);padding:6px 11px"><div style="font-size:18px;color:var(--muted2)">야간 특별승인</div><div style="font-size:32px;font-weight:900;color:var(--ok)">● 보유</div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="near">
+    <div class="nlbl">근거리 · 기록자용</div>
+    <div class="nsec">
+      <div class="nh">이벤트 타임라인 · 10건</div>
+      <div class="log">
+        <div class="lrow heat"><span class="lt num">13:42</span><span class="lk">열원</span><span>C3 계곡부 열원 반응 · 지상팀 접근</span></div>
+        <div class="lrow"><span class="lt num">13:28</span><span class="lk">이륙</span><span>C3 1호기 이륙 · 정밀 수색</span></div>
+        <div class="lrow"><span class="lt num">12:46</span><span class="lk">착륙</span><span>D2 2호기 착륙 · 배터리 교체</span></div>
+        <div class="lrow order"><span class="lt num">11:50</span><span class="lk">지휘부</span><span>계곡 하류 D~E열 우선 수색 지시</span></div>
+        <div class="lrow heat"><span class="lt num">10:40</span><span class="lk">열원</span><span>B5 열원 감지 → 야생동물(오인)</span></div>
+        <div class="lrow"><span class="lt num">09:40</span><span class="lk">교대</span><span>2조 교대 투입 (박○○·이○○)</span></div>
+      </div>
+    </div>
+    <div class="nsec">
+      <div class="nh">출동 인원 · 현행 6명 · 교대 권고 2</div>
+      <div class="crew">
+        <div class="crow tired">홍○○<em>조종</em><b class="num">6:15</b></div>
+        <div class="crow tired">박○○<em>조종</em><b class="num">4:15</b></div>
+        <div class="crow">김○○<em>관측</em><b class="num">6:15</b></div>
+        <div class="crow">이○○<em>관측</em><b class="num">4:15</b></div>
+        <div class="crow">최○○<em>통신</em><b class="num">6:15</b></div>
+        <div class="crow">정○○<em>충전</em><b class="num">6:13</b></div>
+      </div>
+      <div class="nh" style="margin-top:10px">센서 · 소티</div>
+      <div class="wxg">
+        <div><em>1호기</em><b>EO IR 줌 · 4</b></div>
+        <div><em>2호기</em><b>EO IR 스피커 · 5</b></div>
+        <div><em>3호기</em><b>EO IR · 2</b></div>
+      </div>
+    </div>
+    <div class="nsec">
+      <div class="nh">기상 상세 · 수동 관측 13:50 · 3분 경과</div>
+      <div class="wxg">
+        <div><em>풍속</em><b class="num">4.2 m/s</b></div><div><em>돌풍</em><b class="num">7.8 m/s</b></div>
+        <div><em>기온</em><b class="num">24.6 °C</b></div><div><em>강수확률</em><b class="num">20%</b></div>
+        <div><em>강수</em><b>없음</b></div><div><em>한계</em><b class="num">12 / 12</b></div>
+      </div>
+      <div class="nh" style="margin-top:10px">인접기관 동시운용</div>
+      <div style="font-size:16px;color:#C7D6E4">경찰 드론(서편 능선), 산림청 헬기 대기</div>
+      <div class="nh" style="margin-top:10px">좌표 · 지도</div>
+      <div class="wxg">
+        <div><em>C3 중심</em><b class="num">35.89000, 127.21583</b></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="ticker">
+    <span class="tklb">지휘부 지시</span>
+    <div class="tkmv">계곡 하류 D~E열 우선 수색. 열원 감지 시 즉시 지상팀 좌표 통보. 일몰 30분 전 전 기체 회수.</div>
+    <div class="tkr"><span>TRS <b>소방3</b></span><span>호출 <b>전북드론1</b></span><span>브리핑 <b>18:00</b></span></div>
+  </footer>
+</div>
+</x-dc>
+</body>
+</html>
