@@ -82,8 +82,8 @@ function reload(){
       W.alert = function(m){ W.__alerts.push(String(m)); };
       W.confirm = function(){ return true; };
       W.__alerts = [];
-      W.__dl = []; W.__dlBytes = [];
-      W.download = function(n, t){ W.__dl.push(n); W.__dlBytes.push(t ? t.length : 0); };
+      W.__dl = []; W.__dlBytes = []; W.__dlText = [];
+      W.download = function(n, t){ W.__dl.push(n); W.__dlBytes.push(t ? t.length : 0); W.__dlText.push(t || ''); };
       setTimeout(function(){ res(); }, 350);
     };
     f.src = '../stayup-dash.html?regression=' + Date.now();
@@ -120,9 +120,9 @@ function gotoSection(id){
   var b = W.document.querySelector('[data-sec="'+id+'"]');
   if(b) b.click();
 }
-async function loadMap(w, h){
+async function loadMap(w, h, color){
   var cv = W.document.createElement('canvas'); cv.width = w; cv.height = h;
-  cv.getContext('2d').fillRect(0, 0, w, h);
+  var cx=cv.getContext('2d');cx.fillStyle=color||'#000';cx.fillRect(0, 0, w, h);
   var blob = await new Promise(function(r){ cv.toBlob(r, 'image/png'); });
   W.fileToMap(new W.File([blob], 'm.png', {type:'image/png'}));
   await wait(2200);
@@ -154,6 +154,22 @@ async function run(){
   })();
   ok('저장에 실패하면 상대 창으로 내보내지 않는다', badEpoch);
 
+  var durableTitle=W.S.mission.title,realPersist=W.persist,realSend2=W.sendPeer,sentLight=[];
+  W.S.mission.title='저장되지 않은 변경';
+  W.persist=function(){return false;};
+  W.sendPeer=function(m){sentLight.push(m.type);return true;};
+  var lightOk=W.commitLight();
+  W.persist=realPersist;W.sendPeer=realSend2;
+  ok('가벼운 저장도 실패 시 방송하지 않고 마지막 저장 상태로 되돌린다',
+    lightOk===false&&W.S.mission.title===durableTitle&&sentLight.indexOf('state')<0);
+
+  var canonical=W.migrate(W.S);canonical.mission.title='공유 저장소 최신 상황';W.touchState(canonical);
+  W.localStorage.setItem(W.KEY,W.JSON.stringify(canonical));
+  W.S.mission.title='백그라운드 창의 오래된 상황';W.releaseEditorLock();
+  var reacquired=W.acquireEditorLock();
+  ok('편집권을 다시 얻을 때 공유 저장소 최신 상태를 먼저 채택한다',
+    reacquired&&W.S.mission.title==='공유 저장소 최신 상황');
+
   ok('손상 사본은 하나만 남긴다',
     W.document.documentElement.innerHTML.indexOf('.corrupt.') > 0,
     '구현 존재 확인');
@@ -178,6 +194,24 @@ async function run(){
   ok('같은 이름이 재투입되면 정상으로 본다',
     W.flightVerdict(new Date()).lv !== 'danger');
 
+  var flying=W.S.drones.find(function(d){return d.status==='flying';});
+  flying.pilot='';W.commit();
+  ok('비행 중 조종자 공란은 비행 불가',
+    W.flightVerdict(new Date()).lv==='danger'
+    && W.flightVerdict(new Date()).why.some(function(x){return x.indexOf('미지정')>=0;}));
+  flying.pilot='김○○';W.commit();
+  ok('이름이 같아도 관측 역할은 조종자로 인정하지 않는다',W.flightVerdict(new Date()).lv==='danger');
+  flying.pilot='명부외';W.commit();
+  ok('명부에 없는 비행 중 조종자는 비행 불가',W.flightVerdict(new Date()).lv==='danger');
+  var activePilot=W.S.crew.find(function(c){return c.name==='홍○○'&&!c.outAt;});
+  flying.pilot='홍○○';activePilot.role='조종';activePilot.inAt=W.localDateTime(new Date(Date.now()+10*60000));W.commit();
+  ok('미래에 투입 예정인 조종자는 현행 조종자로 인정하지 않는다',W.flightVerdict(new Date()).lv==='danger');
+  activePilot.inAt=W.localDateTime(new Date(Date.now()-60*60000));W.commit();
+  flying.pilot='홍○○';flying.status='commloss';W.commit();
+  var commVerdict=W.flightVerdict(new Date());
+  ok('통신불량은 정상 조종자가 있어도 비행 불가',
+    commVerdict.lv==='danger'&&commVerdict.why.some(function(x){return x.indexOf('통신불량')>=0;}));
+
   /* ---------------- 기상 ---------------- */
   await reload();
   group('기상 확인');
@@ -200,6 +234,29 @@ async function run(){
   ok('확인 후 30분이 지나면 만료된다', W.weatherStatus(new Date()).ok === false);
   W.S.weather.confirmedAt = Date.now() - 29*60000; W.commit();
   ok('29분은 아직 유효하다', W.weatherStatus(new Date()).ok === true);
+  W.S.weather.confirmedAt = Date.now() + 6*60000; W.commit();
+  ok('현장 기상 확인시각이 미래이면 무효다', W.weatherStatus(new Date()).ok === false);
+
+  var realFetch=W.fetch,resolveWx;
+  W.S.weather.src='auto';W.S.weather.auto=true;W.S.weather.confirmed=true;
+  W.S.weather.confirmedAt=Date.now();W.S.weather.observedAt=Date.now();W.commit();
+  W.fetch=function(){return new Promise(function(resolve){resolveWx=resolve;});};
+  W.fetchWeather(false);await wait(80);
+  /* iframe 함수의 isPlainObject는 realm까지 확인하므로, 후보 상태도 iframe에서 만든다. */
+  var replacement=W.migrate(W.S),rw=replacement.weather;
+  rw.auto=false;rw.temp=20;rw.wind=15;rw.gust=16;rw.precip=0;rw.rain=false;
+  rw.stamp=W.localDateTime(new Date());rw.observedAt=Date.now();rw.lastAttemptAt=0;rw.error='';rw.src='manual';
+  rw.confirmed=true;rw.confirmedAt=Date.now();rw.lat=replacement.mission.lat;rw.lon=replacement.mission.lon;
+  var replacementOk=await W.applyStateWithMap(replacement,null);
+  resolveWx({ok:true,json:function(){return Promise.resolve({
+    current:{temperature_2m:10,wind_speed_10m:2,wind_gusts_10m:3,precipitation:0,time:Math.floor(Date.now()/1000)},
+    hourly:{time:[],precipitation_probability:[]}
+  });}});
+  await wait(180);W.fetch=realFetch;
+  ok('상태 교체 전의 늦은 기상 응답이 새 수동 관측을 덮지 않는다',
+    W.S.weather.src==='manual'&&W.S.weather.wind===15&&W.S.weather.gust===16,
+    'apply '+replacementOk+' / '+W.S.weather.src+' / '+W.S.weather.wind+' / '+W.S.weather.gust
+      +' / busy '+W.wxBusy+' / seq '+W.wxRequestSeq+' / '+W.__alerts.slice(-1).join(''));
 
   /* ---------------- 경보 ---------------- */
   await reload();
@@ -287,6 +344,11 @@ async function run(){
   var painted = !!(W.S.grid.cells.C6 && W.S.grid.cells.C6.s === 2
     && W.S.grid.cells.E6.by === '드론');
   var zoneEvId = W.S.events[W.S.events.length-1].id;
+  var savedSweep=W.lastSweep,realPersistSweep=W.persist;
+  W.S.mission.title='저장 실패로 되돌릴 임시 제목';W.persist=function(){return false;};
+  var unrelatedCommit=W.commit();W.persist=realPersistSweep;
+  ok('다른 입력 저장 실패가 정상 저장된 직전 쓸기 되돌리기를 지우지 않는다',
+    unrelatedCommit===false&&W.lastSweep===savedSweep);
   W.undoSweep(); await wait(300);
   ok('되돌리기가 칸을 쓸기 전 상태로 복원한다',
     painted && cellsSig() === sigBefore, '3칸');
@@ -314,6 +376,66 @@ async function run(){
   });
   ok('격자 네 상태가 색 말고 무늬로도 구분된다',
     new Set(cellStyles).size === 4, cellStyles.join('  ·  '));
+
+  /* ---------------- 이벤트 기록 원자성 ---------------- */
+  await reload();
+  group('이벤트 기록 원자성');
+
+  W.loadSample(); await wait(350);gotoSection('sec-grid');await wait(180);
+  var originalCap=W.MAX_EVENTS;W.MAX_EVENTS=W.S.events.length;
+  var capEvents=W.S.events.length,capCell=JSON.stringify(W.S.grid.cells.A5||null);
+  var capDoneCell=JSON.stringify(W.S.grid.cells.A1||null);
+  W.S.ui.paintS=0;W.S.ui.paintBy=null;
+  W.painting={touched:{},done:[],before:{}};
+  W.paintCell(W.document.querySelector('#consMap [data-cell="A1"]'));W.finishPaint();await wait(120);
+  ok('이벤트 한도에서는 완료 구역을 무기록 상태로 낮추지 않는다',
+    JSON.stringify(W.S.grid.cells.A1||null)===capDoneCell&&W.S.events.length===capEvents);
+  W.S.ui.paintS=2;W.S.ui.paintBy=null;
+  W.painting={touched:{},done:[],before:{}};
+  W.paintCell(W.document.querySelector('#consMap [data-cell="A5"]'));W.finishPaint();await wait(120);
+  ok('이벤트 한도에서는 완료 쓸기가 칸과 기록을 모두 그대로 둔다',
+    JSON.stringify(W.S.grid.cells.A5||null)===capCell&&W.S.events.length===capEvents);
+
+  var mannedBefore=W.S.safety.manned;
+  W.document.getElementById('btnManned').click();
+  ok('이벤트 한도에서는 유인기 경보 상태를 바꾸지 않는다',W.S.safety.manned===mannedBefore);
+  var crewBefore=W.S.crew[0].outAt;
+  W.document.querySelector('[data-act="endcrew"][data-ci="0"]').click();
+  ok('이벤트 한도에서는 교대 종료 상태를 바꾸지 않는다',W.S.crew[0].outAt===crewBefore);
+  var readyDrone=W.S.drones.find(function(d){return d.status==='ready';}),readyStatus=readyDrone.status;
+  ok('이벤트 한도에서는 기체 상태를 바꾸지 않는다',
+    W.setDroneStatus(readyDrone,'flying')===false&&readyDrone.status===readyStatus);
+
+  W.MAX_EVENTS=capEvents+1;
+  W.painting={touched:{},done:[],before:{}};
+  W.paintCell(W.document.querySelector('#consMap [data-cell="A5"]'));W.finishPaint();await wait(120);
+  var fullSweepEvent=W.S.events[W.S.events.length-1],fullCell=JSON.stringify(W.S.grid.cells.A5);
+  ok('마지막 한 자리에는 완료 쓸기와 기록이 함께 들어간다',
+    W.S.events.length===W.MAX_EVENTS&&fullSweepEvent.type==='zone'&&W.S.grid.cells.A5.s===2);
+  W.undoSweep();
+  ok('되돌리기 기록 자리가 없으면 칸과 완료기록을 유지한다',
+    JSON.stringify(W.S.grid.cells.A5)===fullCell&&!fullSweepEvent.voided&&!!W.lastSweep);
+
+  var targetId=fullSweepEvent.id;
+  W.MAX_EVENTS=W.S.events.length+1;W.renderConsole(W.document.getElementById('consoleRoot'));
+  var target=W.S.events.find(function(e){return e.id===targetId;});
+  W.document.querySelector('[data-act="correctevent"][data-eid="'+targetId+'"]').click();
+  ok('정정 두 자리가 없으면 원본을 무효화하지 않는다',!target.voided&&W.S.events.length===capEvents+1);
+  W.MAX_EVENTS=W.S.events.length+2;
+  W.prompt=function(msg){return msg.indexOf('사유')>=0?'회귀검사 사유':'수정된 구역 기록';};
+  W.renderConsole(W.document.getElementById('consoleRoot'));
+  W.document.querySelector('[data-act="correctevent"][data-eid="'+targetId+'"]').click();await wait(120);
+  ok('정정 자리가 충분하면 대체기록과 정정이 함께 남는다',
+    target.voided&&W.S.events.length===W.MAX_EVENTS
+    &&W.S.events.slice(-2).every(function(e,i){return i===0||e.type==='correction';}));
+
+  W.MAX_EVENTS=originalCap;
+  var air=W.S.drones[0];air.status='commloss';air.tookOffAt=W.localDateTime(new Date(Date.now()-60000));
+  var recoveryCount=W.S.events.length;
+  ok('통신불량에서 비행중 복귀도 감사기록을 남긴다',
+    W.setDroneStatus(air,'flying')===true&&W.S.events.length===recoveryCount+1
+    &&W.S.events[W.S.events.length-1].text.indexOf('통신 복구')>=0);
+  W.commit();
 
   /* ---------------- 지도 좌표계 ---------------- */
   await reload();
@@ -387,9 +509,13 @@ async function run(){
     return !!p && Math.abs(p.lat-35.89) < 1e-6 && Math.abs(p.lon-127.22) < 1e-6;
   })());
 
-  /* 다른 크기의 지도로 바꾸면 이전 보정은 맞지 않는다 */
-  await loadMap(1200, 800);
-  ok('지도를 바꾸면 좌표 보정이 해제된다', W.geoOK() === false);
+  /* 해상도가 같아도 다른 장소의 지도일 수 있다. 픽셀 크기 비교만 해서는 안 된다. */
+  W.S.grid.mapZoom=200;W.S.grid.mapX=30;W.S.grid.mapY=-20;W.commit();
+  await loadMap(1600, 900, '#fff');
+  ok('같은 크기의 다른 지도로 바꿔도 좌표 보정이 해제된다',
+    W.geoOK()===false&&W.S.grid.ref1===null&&W.S.grid.ref2===null);
+  ok('지도 교체 시 좌표와 충돌하는 확대·이동값도 초기화된다',
+    W.S.grid.mapZoom===100&&W.S.grid.mapX===0&&W.S.grid.mapY===0);
 
   /* ---------------- 조작 패널 ---------------- */
   await reload();
@@ -461,10 +587,38 @@ async function run(){
   var navBtns = W.document.querySelectorAll('[data-act="nav"]');
   gotoSection('sec-grid'); await wait(250);
   var bar = W.document.querySelector('.cons-top').getBoundingClientRect();
-  var h3 = W.document.querySelector('#sec-grid>h3').getBoundingClientRect();
+  var h3 = W.document.querySelector('#sec-grid>h2').getBoundingClientRect();
   ok('섹션 이동이 상단 바에 가리지 않는다',
     navBtns.length === 9 && h3.top >= bar.bottom - 1,
     '칩 ' + navBtns.length + '개');
+
+  ok('조작 패널 제목 계층이 H1 다음 H2로 이어진다',
+    W.document.querySelectorAll('.cons h1').length===1&&W.document.querySelectorAll('.sec>h2').length===9);
+  ok('빠른기록 입력에 접근 가능한 이름이 있다',
+    ['evType','evZone','evText'].every(function(id){return !!W.document.getElementById(id).getAttribute('aria-label');}));
+  ok('상태 선택 버튼은 눌림 상태를 보조기기에 알린다',
+    W.document.querySelectorAll('.paint [aria-pressed],.sens-pick [aria-pressed],#btnManned[aria-pressed]').length>8);
+  ok('지도 안내와 경보가 live region으로 선언돼 있다',
+    W.document.getElementById('mapMsg').getAttribute('role')==='status'
+    &&W.document.getElementById('alertBanner').getAttribute('role')==='alert');
+
+  var gridButtons=[...W.document.querySelectorAll('#consMap .gcell')];
+  ok('격자는 현재 한 칸만 Tab 정지점으로 둔다',gridButtons.filter(function(x){return x.tabIndex===0;}).length===1);
+  var focusCell=gridButtons.filter(function(x){return x.tabIndex===0;})[0];focusCell.focus();
+  focusCell.dispatchEvent(new W.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+  ok('격자 방향키가 인접 칸으로 이동한다',W.document.activeElement.getAttribute('data-cell')==='A2');
+
+  var modeBefore=W.MODE,opener=W.document.getElementById('btnOpenDisplay');
+  opener.focus();W.MODE='display';W.openDrawer();await wait(80);
+  ok('드로어를 열면 닫기 버튼으로 포커스가 이동한다',W.document.activeElement.id==='btnCloseDrawer');
+  var transient=W.document.createElement('button');transient.textContent='재렌더 테스트';
+  W.document.getElementById('drawerIn').appendChild(transient);transient.focus();
+  W.renderConsole(W.document.getElementById('drawerIn'));
+  ok('드로어 재렌더로 기존 동작이 사라져도 포커스가 패널 안에 남는다',
+    W.document.activeElement.id==='btnCloseDrawer'&&W.document.getElementById('drawer').contains(W.document.activeElement));
+  W.closeDrawer();
+  ok('드로어를 닫으면 기존 조작 위치로 포커스가 돌아간다',W.document.activeElement===opener);
+  W.MODE=modeBefore;
 
   /* ---------------- 기록 ↔ 상태 ---------------- */
   await reload();
@@ -507,14 +661,14 @@ async function run(){
     var buf = '';
     return Promise.resolve({
       write: function(t){ buf = t; return Promise.resolve(); },
-      close: function(){ W.__writes.push(buf.length); return Promise.resolve(); }
+      close: function(){ W.__writes.push(buf); return Promise.resolve(); }
     });
   }};
   W.autoSaveAt = 0; W.lastAutoSavedRev = -1;
   W.autoSaveTick(); await wait(350);
   ok('보관 파일이 지정되면 그 파일에 덮어쓴다',
     W.__writes.length === 1 && W.__dl.length === 1,
-    W.__writes[0] ? Math.round(W.__writes[0]/1024) + 'KB' : '');
+    W.__writes[0] ? Math.round(W.__writes[0].length/1024) + 'KB' : '');
 
   W.releaseEditorLock();
   W.addEvent('note', '또 변경'); await wait(200);
@@ -550,6 +704,12 @@ async function run(){
   W.saveRecoveryPoint('저장소 검사');
   W.gcMapBlobs(); await wait(600);
   ok('복구본이 참조하는 지도는 남긴다', !!(await W.mapBlobGet(keptId)));
+
+  W.releaseEditorLock();
+  var liveMapId=W.S.grid.mapId;W.S.grid.mapId='stale-display-map';
+  await W.gcMapBlobs();
+  W.S.grid.mapId=liveMapId;W.acquireEditorLock();
+  ok('편집권 없는 오래된 창의 정리 요청은 최신 지도를 지우지 않는다',!!(await W.mapBlobGet(liveMapId)));
 
   /* 폴백 — IndexedDB 가 막힌 환경에서 종전 동작으로 되돌아가야 한다 */
   W.idbBroken = true; W.idbDB = null;
@@ -598,31 +758,77 @@ async function run(){
 
   /* 읽기 실패(일시적)와 블롭 소실은 다르게 다뤄야 한다 */
   await loadMap(1600, 900);
-  var keepId = W.S.grid.mapId;
-  W.idbBroken = true; W.idbDB = null;   /* 저장소를 못 읽는 상황 모사 */
-  W.mapVerLoaded = -1;
-  W.readMapFromStore();
-  await wait(600);
+  var keepId = W.S.grid.mapId,realMapGet=W.mapBlobGet,mapGetCalls=0;
+  W.mapBlobGet=function(id){
+    mapGetCalls++;
+    if(mapGetCalls===1){W.idbBroken=true;W.idbDB=null;return Promise.reject(new Error('일시 읽기 실패'));}
+    return realMapGet(id);
+  };
+  W.mapRetryDelay=50;W.mapRetryAt=0;W.mapVerLoaded=-1;W.readMapFromStore();
+  await wait(120);
   ok('저장소를 못 읽으면 상태를 건드리지 않는다',
     W.S.grid.hasMap === true && W.S.grid.mapId === keepId);
-  /* 다음 검사들을 위해 지도를 다시 읽어 놓는다 */
-  W.idbBroken = false; W.idbDB = null;
-  W.mapVerLoaded = -1; W.readMapFromStore(); await wait(700);
-  ok('저장소가 복구되면 지도를 다시 읽는다', typeof W.MAPDATA === 'string');
+  W.pollStore();await wait(700);W.mapBlobGet=realMapGet;
+  ok('일시적 저장소 오류 뒤 자동으로 다시 열어 지도를 복구한다',
+    mapGetCalls>=2&&typeof W.MAPDATA==='string'&&W.mapIdLoaded===keepId);
 
-  /* 자동 보관이 같은 지도를 반복해서 쓰지 않아야 한다 */
+  /* 덮어쓴 최신 파일 하나만 있어도 지도까지 복원 가능해야 한다 */
   W.autoSaveHandle = null; W.autoSaveAt = 0; W.lastAutoSavedRev = -1; W.autoSavedMapVer = -1;
-  W.__dl = []; W.__dlBytes = [];
+  W.__dl = []; W.__dlBytes = []; W.__dlText = [];
   W.acquireEditorLock();
   W.autoSaveTick();
   W.S.mission.title = W.S.mission.title + ' 변경'; W.commit();
   W.autoSaveAt = 0;
   W.autoSaveTick();
-  ok('자동 보관은 지도를 처음 한 번만 포함한다',
-    W.__dlBytes.length === 2 && W.__dlBytes[0] > W.__dlBytes[1] * 2,
+  var autoPackages=W.__dlText.map(function(t){try{return JSON.parse(t);}catch(e){return {};}});
+  ok('자동 보관의 최신 파일도 지도 본체를 포함한다',
+    autoPackages.length===2&&autoPackages.every(function(p){return typeof p.map==='string'&&p.map.indexOf('data:image/')===0;}),
     Math.round(W.__dlBytes[0]/1024) + 'KB → ' + Math.round(W.__dlBytes[1]/1024) + 'KB');
   ok('수동 내보내기는 항상 지도를 포함한다',
     W.exportPayload(true).length > W.exportPayload(false).length * 2);
+  var loadedIdentity=W.mapIdLoaded,downloadsBeforeMismatch=W.__dl.length;
+  W.mapIdLoaded='이전-지도';
+  var mismatchedExport=W.exportJson();W.mapIdLoaded=loadedIdentity;
+  ok('상태의 mapId와 실제 적재 지도가 다르면 내보내기를 중단한다',
+    mismatchedExport===false&&W.__dl.length===downloadsBeforeMismatch);
+
+  var incomplete=W.JSON.parse(W.exportPayload(false)),incompleteRejected=false;
+  try{W.validateImportPackage(incomplete);}catch(e){incompleteRejected=true;}
+  ok('지도 참조만 있고 본체가 없는 JSON은 가져오기를 거부한다',incompleteRejected);
+  var beforeBrokenMapId=W.S.grid.mapId;
+  var brokenMapOk=await W.applyStateWithMap(W.migrate(W.S),'data:image/png;base64,AAAA');
+  ok('형식만 data URL인 손상 지도는 실제 해독 뒤 거부한다',
+    brokenMapOk===false&&W.S.grid.mapId===beforeBrokenMapId);
+
+  var recoveryTitle=W.S.mission.title,recoveryMapId=W.S.grid.mapId;
+  W.saveRecoveryPoint('IDB 지도 복구 검사');
+  W.S.mission.title='복구 뒤 사라져야 할 변경';W.commit();W.MAPDATA=null;
+  await W.restoreRecovery();await wait(250);
+  ok('직전 복구점이 IndexedDB 지도와 상태를 함께 되살린다',
+    W.S.mission.title===recoveryTitle&&W.S.grid.hasMap&&W.S.grid.mapId!==recoveryMapId
+    &&typeof W.MAPDATA==='string'&&W.MAPDATA.indexOf('data:image/')===0);
+
+  var purgeMapId=W.S.grid.mapId,realLatePut=W.mapBlobPut,resolveLatePut;
+  W.mapBlobPut=function(){return new Promise(function(resolve){resolveLatePut=resolve;});};
+  var staleState=W.migrate(W.S);staleState.mission.title='삭제 뒤 되살아나면 안 되는 상태';
+  var staleApply=W.applyStateWithMap(staleState,W.MAPDATA);
+  for(var lateWait=0;lateWait<20&&!resolveLatePut;lateWait++)await wait(25);
+  W.mapBlobPut=realLatePut;
+  var realClear=W.mapBlobClear,resolveClear;
+  W.mapBlobClear=function(){return new Promise(function(resolve,reject){
+    resolveClear=function(){realClear().then(resolve,reject);};
+  });};
+  W.prompt=function(){return '완전삭제';};
+  var purgePromise=W.purgeIncidentData();await wait(80);
+  var blockedDuringPurge=W.acquireEditorLock()===false&&W.localStorage.getItem(W.KEY)===null;
+  resolveLatePut();var staleOk=await staleApply;
+  resolveClear();var purgeOk=await purgePromise;W.mapBlobClear=realClear;
+  ok('완전삭제는 IndexedDB 지도까지 비운다',
+    purgeOk===true&&W.S.grid.hasMap===false&&!(await W.mapBlobGet(purgeMapId)));
+  ok('완전삭제 진행 중에는 다른 편집권을 막고 완료 뒤에만 다시 연다',
+    blockedDuringPurge&&W.ownsEditorLock()&&!W.purgeBarrierActive());
+  ok('완전삭제 전에 시작한 늦은 지도·상태 작업이 삭제 내용을 되살리지 않는다',
+    staleOk===false&&W.S.mission.title===''&&W.localStorage.getItem(W.KEY)===null);
 
   /* ---------------- 복구점 ---------------- */
   await reload();
@@ -637,6 +843,51 @@ async function run(){
     W.S.mission.title === before && W.__alerts.some(function(m){
       return m.indexOf('복구본') >= 0; }));
   W.saveRecoveryPoint = realSave;
+
+  var pointState=W.migrate(W.S),autoState=W.migrate(W.S),nowRecovery=Date.now();
+  pointState.mission.title='작업 직전 복구점';autoState.mission.title='더 최근 자동 복구본';
+  W.localStorage.setItem(W.RECOVERY_KEY,W.JSON.stringify({t:nowRecovery-1000,reason:'가져오기 전',state:pointState,map:null}));
+  W.localStorage.setItem(W.SNAPKEY,W.JSON.stringify([{t:nowRecovery,reason:'자동',state:autoState}]));
+  W.renderConsole(W.document.getElementById('consoleRoot'));
+  var recoveryChoices=W.recoveryCandidates(),autoChoice=recoveryChoices.filter(function(c){return c.kind==='자동';})[0];
+  ok('작업 직전과 자동 복구본을 화면에서 함께 선택할 수 있다',
+    recoveryChoices.length===2&&W.document.querySelectorAll('#recoveryPick option').length===2&&!!autoChoice);
+  await W.restoreRecovery(autoChoice.key);await wait(250);
+  ok('선택한 자동 복구본을 실제로 복구한다',W.S.mission.title==='더 최근 자동 복구본');
+
+  var pointA=W.migrate(W.S),pointB=W.migrate(W.S),staleBase=Date.now()+1000;
+  pointA.meta.updated=staleBase;pointA.mission.title='화면에 보였던 복구점';
+  pointB.meta.updated=staleBase+1;pointB.mission.title='뒤늦게 교체된 복구점';
+  W.localStorage.setItem(W.RECOVERY_KEY,W.JSON.stringify({t:staleBase,reason:'A',state:pointA,map:null}));
+  var stalePointKey=W.recoveryCandidates().filter(function(c){return c.kind==='작업 전';})[0].key;
+  W.localStorage.setItem(W.RECOVERY_KEY,W.JSON.stringify({t:staleBase+1,reason:'B',state:pointB,map:null}));
+  var titleBeforeStaleChoice=W.S.mission.title,alertsBeforeStaleChoice=W.__alerts.length;
+  await W.restoreRecovery(stalePointKey);await wait(50);
+  ok('화면을 그린 뒤 교체된 작업 복구점을 잘못 적용하지 않는다',
+    W.S.mission.title===titleBeforeStaleChoice&&W.__alerts.slice(alertsBeforeStaleChoice).some(function(m){
+      return m.indexOf('더 이상 없습니다')>=0;
+    }));
+
+  var cvRecovery=W.document.createElement('canvas');cvRecovery.width=2;cvRecovery.height=2;
+  cvRecovery.getContext('2d').fillRect(0,0,2,2);var oldestMap=cvRecovery.toDataURL('image/png');
+  var oldestMapId='oldest-recovery-map',oldestBase=Date.now()+2000,snapshots=[];
+  for(var ri=0;ri<5;ri++){
+    var rs=W.defaultState();rs.meta.epoch=W.SESSION_EPOCH;rs.meta.updated=oldestBase+ri;
+    rs.mission.title=ri===0?'가장 오래된 지도 복구본':'자동 복구본 '+ri;
+    if(ri===0){rs.grid.hasMap=true;rs.grid.mapId=oldestMapId;rs.grid.mapW=2;rs.grid.mapH=2;rs.grid.mapKB=1;rs.grid.mapNatW=2;rs.grid.mapNatH=2;}
+    snapshots.push({t:oldestBase+ri,reason:ri===0?'가장 오래된 지도':'자동',state:rs});
+  }
+  var liveBeforeOldest=W.defaultState();liveBeforeOldest.meta.epoch=W.SESSION_EPOCH;
+  liveBeforeOldest.mission.title='복구 적용 전 현재 상태';W.S=liveBeforeOldest;W.touch();W.persist();
+  W.MAPDATA=null;W.mapIdLoaded=null;W.mapVerLoaded=-1;W.lastSnapshotUpdated=-1;
+  W.localStorage.removeItem(W.RECOVERY_KEY);W.localStorage.setItem(W.SNAPKEY,W.JSON.stringify(snapshots));
+  W.idbBroken=true;W.idbDB=null;W.localStorage.setItem(W.MAP_PREFIX+oldestMapId,oldestMap);
+  var oldestChoice=W.recoveryCandidates().filter(function(c){return c.reason==='가장 오래된 지도';})[0];
+  var restoredOldest=await W.restoreRecovery(oldestChoice.key);await wait(350);
+  ok('5개 중 가장 오래된 지도 복구본도 GC에 잃지 않고 복구한다',
+    restoredOldest===true&&W.S.mission.title==='가장 오래된 지도 복구본'
+    &&W.S.grid.hasMap&&typeof W.MAPDATA==='string'
+    &&W.getSnapshots().some(function(x){return x.reason==='복구 적용 전'&&x.state.mission.title==='복구 적용 전 현재 상태';}));
 
   /* ---------------- 마무리 ---------------- */
   var pass = results.filter(function(r){ return r.pass; }).length;
