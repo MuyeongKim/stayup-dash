@@ -44,6 +44,7 @@
 <ol id="out"></ol>
 <iframe id="app" src="../stayup-dash.html?regression=1"></iframe>
 
+<script src="review-fixes.js"></script>
 <script>
 "use strict";
 var out = document.getElementById('out'), sum = document.getElementById('sum');
@@ -398,7 +399,10 @@ async function run(){
 
   var mannedBefore=W.S.safety.manned;
   W.document.getElementById('btnManned').click();
-  ok('이벤트 한도에서는 유인기 경보 상태를 바꾸지 않는다',W.S.safety.manned===mannedBefore);
+  ok('일반 이벤트 한도에서도 유인기 긴급 경보와 기록을 함께 남긴다',
+    W.S.safety.manned!==mannedBefore&&W.S.events.length===capEvents+1
+    &&W.S.events[W.S.events.length-1].emergency===true);
+  W.S.safety.manned=mannedBefore;W.S.events.splice(capEvents);W.commit();
   var crewBefore=W.S.crew[0].outAt;
   W.document.querySelector('[data-act="endcrew"][data-ci="0"]').click();
   ok('이벤트 한도에서는 교대 종료 상태를 바꾸지 않는다',W.S.crew[0].outAt===crewBefore);
@@ -536,6 +540,8 @@ async function run(){
   ok('입력 직후 누른 첫 버튼이 유실되지 않는다', W.S.batteries.ready === v0 + 4);
 
   gotoSection('sec-quick'); await wait(250);
+  var noteType=W.document.getElementById('evType');noteType.value='note';
+  noteType.dispatchEvent(new W.Event('change',{bubbles:true}));
   var et = W.document.getElementById('evText');
   et.value = '작성 중인 무전 내용';
   et.dispatchEvent(new W.Event('input', {bubbles:true}));
@@ -888,6 +894,8 @@ async function run(){
     restoredOldest===true&&W.S.mission.title==='가장 오래된 지도 복구본'
     &&W.S.grid.hasMap&&typeof W.MAPDATA==='string'
     &&W.getSnapshots().some(function(x){return x.reason==='복구 적용 전'&&x.state.mission.title==='복구 적용 전 현재 상태';}));
+
+  await runReviewFixes();
 
   /* ---------------- 마무리 ---------------- */
   var pass = results.filter(function(r){ return r.pass; }).length;
