@@ -385,6 +385,15 @@ b,strong{font-weight:700}
    5. 우열 - 드론 운용 현황 / 이벤트 타임라인
    ========================================================================== */
 .card-drones{flex:0 0 auto;max-height:82%}
+.drone-risk-summary{flex:0 0 auto;min-height:0;max-height:40%;overflow:auto;margin:.35rem .7rem 0;padding:.35rem .45rem;border:1px solid #7C4A0A;border-radius:.35rem;background:#21190A}
+.drone-risk-heading{margin:0 0 .2rem;font-size:.95rem;font-weight:800;color:#FDE68A;line-height:1.3}
+.drone-risk-list{display:flex;flex-direction:column;gap:.2rem}
+.drone-risk-item{display:block;width:100%;padding:.3rem .4rem;text-align:left;font-family:inherit;font-size:.98rem;font-weight:700;line-height:1.3;color:#FDE68A;background:#33210A;border:1px solid #7C4A0A;border-radius:.25rem;cursor:pointer;overflow-wrap:anywhere}
+.drone-risk-item.danger{color:#FECACA;background:#3B1010;border-color:#991B1B}
+.drone-risk-item:focus-visible,.drone:focus-visible{outline:3px solid #7DD3FC;outline-offset:-3px}
+.cons .drone-risk-summary{max-height:none;margin:0 0 12px;padding:9px 10px}
+.cons .drone-risk-heading{font-size:13px}
+.cons .drone-risk-item{font-size:14px;min-height:44px}
 .drones{display:flex;flex-direction:column;gap:.34rem}
 .drone{
   background:var(--surface2);border:1px solid var(--border);
@@ -663,6 +672,10 @@ textarea{resize:vertical;min-height:52px}
 .cons-map .gcell{font-size:12px;cursor:pointer}
 .cons-map .gcell .by{font-size:9px}
 .cons-map .gcell:focus{outline:3px solid var(--accent);outline-offset:-3px}
+.map-mode{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;margin:8px 0;border:1px solid var(--warn);border-radius:6px;color:var(--text);background:var(--surface2)}
+.map-mode[hidden]{display:none}
+.map-mode .mode-help{flex:1 1 240px;font-size:13px}
+.cons-map.placing-pin{outline:2px solid var(--warn);outline-offset:2px}
 .paste-zone{
   border:2px dashed var(--border2);border-radius:6px;padding:14px;text-align:center;
   color:var(--muted);font-size:12.5px;line-height:1.6;cursor:pointer;background:#0B1218;
@@ -821,6 +834,116 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .cons .ct-nav button[aria-current="location"]{background:var(--surface3);color:var(--text);border-color:var(--info)}
 .grid-editor-columns{grid-template-columns:minmax(0,1fr)}
 @media (pointer:coarse){.cons .ct-nav button,summary{min-height:44px}}
+/* 운영자가 다음 조작을 바로 찾도록 판정 사유와 입력 피드백을 가까이 둔다. */
+.verdict-help{border-left:4px solid var(--info)}
+.verdict-help>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none}
+.verdict-help>summary::before{content:'▸';flex:0 0 auto}
+.verdict-help[open]>summary::before{content:'▾'}
+#consoleVerdictReason{flex:1;line-height:1.45}
+.verdict-count{font-size:12px;white-space:nowrap;color:var(--info)}
+.verdict-reasons{list-style:none;margin:0;padding:0 12px 12px}
+.verdict-reasons li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--border)}
+.verdict-reasons li>span{min-width:0;overflow-wrap:anywhere}
+.verdict-help>.note{padding:0 12px 12px}
+.quick-grid{display:block}
+#sec-quick h2 #btnManned{margin-left:auto;font-size:13px;padding:7px 12px;min-height:36px}
+.quick-entry{min-width:0}
+.quick-targets{display:grid;grid-template-columns:1fr 1.3fr .8fr 1fr;gap:8px}
+.quick-targets:has(#evEntityWrap:empty){grid-template-columns:1fr 1fr 1fr}
+.quick-entry label.f{margin:0;min-width:0}
+#evEntityWrap{min-width:0}
+.quick-message{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;margin-top:10px}
+.quick-message button{margin-top:23px;min-height:36px}
+.quick-time{display:flex;flex-wrap:wrap;align-items:start;gap:8px;margin-top:10px}
+.quick-time:has(#evTimeLabel[hidden]){display:none}
+.quick-time select{min-width:130px}
+.quick-contract{margin-top:8px;color:var(--text)}
+.field-error{display:block;color:#FCA5A5;font-size:13px;line-height:1.45;margin-top:5px;font-weight:600}
+.mobile-verdict,.mobile-nav,.mobile-more{display:none}
+.cons input,.cons select,.cons textarea{scroll-margin-top:180px;scroll-margin-bottom:90px}
+@media(max-width:900px){.quick-grid{grid-template-columns:1fr}}
+@media(max-width:480px){
+  .cons{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+  .cons-top .ct-nav,.cons-top .ct-kpi{display:none}
+  .cons-top{margin-bottom:0;gap:6px;padding-top:8px;padding-bottom:8px}
+  .cons-top .ct-mode{margin-left:auto}
+  .cons-top .spacer{display:none}
+  .cons-top .save-pill,.cons-top .sync-pill{font-size:11px;padding:3px 6px}
+  .cons-top #btnOpenDisplay{min-height:36px;font-size:12px;padding:5px 8px}
+  .mobile-verdict{display:block;position:sticky;top:0;z-index:55;margin:0 -10px 10px;padding:8px 10px;background:#0A0F15;border-bottom:1px solid var(--control-border)}
+  .mobile-verdict button{font-family:inherit;font-size:14px;font-weight:700;line-height:1.4;display:block;width:100%;text-align:left;background:var(--surface2);color:var(--text);border:1px solid var(--control-border);border-radius:6px;padding:9px 10px;min-height:44px}
+  .mobile-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:fixed;bottom:0;left:0;right:0;z-index:80;padding:6px 8px calc(6px + env(safe-area-inset-bottom));gap:6px;border-top:1px solid var(--control-border);background:#0A0F15}
+  .mobile-nav button{font:700 14px/1.2 system-ui,sans-serif;min-height:44px;border:1px solid var(--control-border);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer}
+  .mobile-nav button[aria-current],.mobile-nav button[aria-expanded=true]{border-color:var(--info);color:var(--info)}
+  .mobile-more{display:grid;position:fixed;bottom:calc(63px + env(safe-area-inset-bottom));left:8px;right:8px;z-index:79;grid-template-columns:1fr 1fr;gap:8px;background:var(--surface);padding:12px;border:1px solid var(--control-border);border-radius:8px;max-height:50vh;overflow:auto;box-shadow:0 -8px 32px #0008}
+  .mobile-more button{min-height:44px}
+  .verdict-help>summary{flex-wrap:wrap;gap:6px}
+  .verdict-count{margin-left:20px}
+  .verdict-reasons li{align-items:stretch;flex-direction:column;gap:6px}
+  .quick-targets{grid-template-columns:1fr 1fr}
+  .quick-targets:has(#evEntityWrap:empty){grid-template-columns:1fr 1fr}
+  #sec-quick h2 #btnManned{flex:1 0 100%;margin-left:0;min-height:44px}
+  .quick-message{grid-template-columns:1fr}
+  .quick-message button{margin-top:0;min-height:44px}
+  .cons input,.cons select,.cons textarea{scroll-margin-top:100px}
+}
+/* 원거리에서는 핵심 면적을 늘리고 원본 상세는 조작 패널에 유지한다. */
+.far-view{gap:calc(.55 * var(--unit));padding:calc(.65 * var(--unit));font-size:calc(1.15 * var(--unit))}
+.far-view .hdr{grid-template-columns:calc(22 * var(--unit)) minmax(0,1fr) calc(12 * var(--unit));gap:calc(.65 * var(--unit))}
+.far-view .kpis{grid-template-columns:1.7fr 1fr 1fr;gap:calc(.6 * var(--unit))}
+.far-view #kFlight{order:-1}
+.far-view #kElapsed{display:none}
+.far-view .kpi{padding:calc(.7 * var(--unit))}
+.far-view .kpi-v{font-size:min(calc(3.8 * var(--unit)),24cqw)}
+.far-view .kpi-flight .kpi-v{font-size:min(calc(4.4 * var(--unit)),18cqw)}
+.far-view .kpi-l{font-size:calc(1.15 * var(--unit))}
+.far-view .kpi-s{font-size:calc(1.1 * var(--unit))}
+.far-view .mission{font-size:calc(1.5 * var(--unit))}
+.far-view .mission-sub,.far-view .cdate{font-size:calc(1.05 * var(--unit))}
+.far-view .cols{grid-template-columns:calc(20 * var(--unit)) minmax(0,1fr) calc(30 * var(--unit));gap:calc(.6 * var(--unit))}
+.far-view .col-l{grid-template-rows:minmax(0,1.8fr) minmax(0,1fr)}
+.far-view .col-l>.card:nth-child(3){display:none}
+.far-view .col-c{grid-template-rows:minmax(0,2.6fr) minmax(0,1fr)}
+.far-view .col-r{grid-template-rows:minmax(0,1fr) minmax(0,.33fr)}
+.far-view .card-h{padding:calc(.6 * var(--unit));font-size:calc(1.2 * var(--unit))}
+.far-view .card-h h2{font-size:calc(1.3 * var(--unit))}
+.far-view .card-h .h-right{font-size:calc(.95 * var(--unit))}
+.far-view .card-b{padding:calc(.6 * var(--unit))}
+.far-view .subj-name .nm{font-size:calc(2.7 * var(--unit))}
+.far-view .subj-name .ag{font-size:calc(1.5 * var(--unit))}
+.far-view .subj-name .sx,.far-view .wear-lb,.far-view .kv dt{font-size:calc(1.1 * var(--unit))}
+.far-view .wear-tx,.far-view .kv{font-size:calc(1.35 * var(--unit))}
+.far-view .kv{grid-template-columns:calc(5 * var(--unit)) 1fr}
+.far-view .tag{font-size:calc(1.1 * var(--unit))}
+.far-view .batt-cell .bn{font-size:calc(2.3 * var(--unit))}
+.far-view .batt-cell .bl,.far-view .endur .el{font-size:calc(1 * var(--unit))}
+.far-view .endur .ev{font-size:calc(2 * var(--unit))}
+.far-view .drone{padding:calc(.6 * var(--unit))}
+.far-view .d-name{font-size:calc(1.5 * var(--unit))}
+.far-view .d-model,.far-view .d-foot,.far-view .d-rows>div:first-child,.far-view .d-rows>div:last-child{display:none}
+.far-view .d-st{font-size:calc(1.1 * var(--unit))}
+.far-view .d-pct{font-size:calc(1.8 * var(--unit))}
+.far-view .d-rows{grid-template-columns:1fr 1fr;gap:calc(.4 * var(--unit))}
+.far-view .d-rows em,.far-view .battery-stamp{font-size:calc(.95 * var(--unit))}
+.far-view .d-rows b{font-size:calc(1.35 * var(--unit))}
+.far-view .safety-row{gap:calc(.35 * var(--unit))}
+.far-view .sf{padding:calc(.32 * var(--unit)) calc(.5 * var(--unit))}
+.far-view .sf .sl{font-size:calc(.95 * var(--unit))}
+.far-view .sf .sv{font-size:calc(1.3 * var(--unit))}
+.far-view .sf.wide .sv{font-size:calc(1.1 * var(--unit))}
+.far-view .drone-risk-summary{margin:calc(.35 * var(--unit));padding:calc(.4 * var(--unit))}
+.far-view .drone-risk-heading{font-size:calc(1.05 * var(--unit))}
+.far-view .drone-risk-item{font-size:calc(1.25 * var(--unit));padding:calc(.3 * var(--unit))}
+.far-view .gcell{font-size:calc(1.6 * var(--unit))}
+.far-view .gcell .by{font-size:calc(.95 * var(--unit))}
+.far-view .log-row{grid-template-columns:max-content minmax(0,1fr);font-size:calc(1.15 * var(--unit))}
+.far-view .log-row .lx{grid-column:1/-1}
+.far-view .log-row .lt,.far-view .log-row .lk{font-size:calc(1.05 * var(--unit))}
+.far-view .ticker{height:auto;min-height:calc(5.2 * var(--unit));gap:calc(.65 * var(--unit));padding:calc(.6 * var(--unit))}
+.far-view .tk-lb{font-size:calc(1.1 * var(--unit));padding:calc(.3 * var(--unit))}
+.far-view .tk-track{height:auto;overflow:visible;min-width:0}
+.far-view .tk-move{animation:none!important;transform:none!important;white-space:normal;font-size:calc(1.4 * var(--unit));line-height:1.4;max-height:none;display:block;overflow-wrap:anywhere}
+.far-view .tk-right{display:block;max-width:calc(18 * var(--unit));white-space:normal;font-size:calc(1 * var(--unit));line-height:1.5}
 @media print{body{background:#fff}}
 </style>
 </head>
@@ -919,6 +1042,7 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
     <section class="col col-r">
       <div class="card card-drones">
         <div class="card-h"><h2>드론 운용 현황</h2><span class="h-right" id="droneMeta"></span></div>
+        <div class="drone-risk-summary" id="droneRiskSummary" data-drone-risk-summary="display" aria-label="운용 중 기체 위험 요약" hidden></div>
         <div class="card-b" id="droneBody"></div>
       </div>
       <div class="card card-log">
@@ -999,7 +1123,7 @@ function defaultState(){
     meta:{ v:STATE_VERSION, updated:0, revision:0, epoch:'' },
     mission:{
       title:'', location:'', dispatchedAt:'', lat:null, lon:null,
-      coordsConfirmedAt:0, trs:'', callsign:'', briefing:'', orders:''
+      coordsConfirmedAt:0, trs:'', callsign:'', briefing:'', orders:'', priorityOrder:''
     },
     subject:{
       name:'', age:'', sex:'',
@@ -1028,7 +1152,7 @@ function defaultState(){
               error:'', src:'none', confirmed:false, confirmedAt:0, lat:null, lon:null },
     /* paintS: 칠할 상태 0~3, null 이면 상태를 건드리지 않음
        paintBy: 칠할 담당, null 이면 담당을 건드리지 않음 */
-    ui:{ scale:1, dim:0, ackFound:0, paintS:2, paintBy:null, autoSave:true }
+    ui:{ scale:1, dim:0, viewPreset:'standard', ackFound:0, paintS:2, paintBy:null, autoSave:true }
   };
 }
 var S = defaultState();
@@ -1395,6 +1519,7 @@ function migrate(raw){
   d.mission.coordsConfirmedAt=sanNum(m.coordsConfirmedAt,0,Number.MAX_SAFE_INTEGER,0,false);
   d.mission.trs = sanText(m.trs,40); d.mission.callsign = sanText(m.callsign,60);
   d.mission.briefing = sanText(m.briefing,60); d.mission.orders = sanText(m.orders,2000);
+  d.mission.priorityOrder = sanText(m.priorityOrder,80);
 
   var s = isPlainObject(raw.subject) ? raw.subject : {};
   d.subject.name = sanText(s.name,80); d.subject.age = sanNum(s.age,0,130,'',true);
@@ -1496,6 +1621,7 @@ function migrate(raw){
 
   var u=isPlainObject(raw.ui)?raw.ui:{};
   d.ui.scale=sanNum(u.scale,0.75,1.5,1,false); d.ui.dim=sanNum(u.dim,0,1,0,false);
+  d.ui.viewPreset=u.viewPreset==='far'?'far':'standard';
   d.ui.ackFound=sanNum(u.ackFound,0,Number.MAX_SAFE_INTEGER,0,false);
   d.ui.autoSave=sanBool(u.autoSave,true);
   /* 구버전의 '셀 탭 동작'(상태 순환 / 담당 직접지정)을 새 팔레트로 옮긴다. */
@@ -2512,7 +2638,37 @@ function renderCrew(){
    수색구역: 지도 이미지 + 격자 오버레이
    표출 화면(읽기 전용)과 조작 패널(클릭 편집)이 같은 함수를 공유한다.
    -------------------------------------------------------------------------- */
-var pinMode = null;      /* 'last' | 'found' | null - 조작 패널에서 핀 배치용 */
+var pinMode = null;      /* 'last' | 'found' | 'ref1' | 'ref2' | null */
+function pinModeLabel(){return {last:'최종목격 핀',found:'발견 핀',ref1:'기준점 1',ref2:'기준점 2'}[pinMode]||'';}
+function updatePinModeUi(){
+  var status=$('mapModeStatus'),map=$('consMap'),label=pinModeLabel();
+  if(status){
+    status.hidden=!label;
+    status.innerHTML=label?'<span class="mode-help"><b>'+label+' 배치 중</b> · 지도 클릭 또는 방향키로 칸 선택 후 Enter/Space · Esc로 취소</span><button type="button" class="btn sm" data-act="cancelpin">배치 취소</button>':'';
+  }
+  if(map){map.classList.toggle('placing-pin',!!label);if(label)map.setAttribute('aria-describedby','mapModeStatus');else map.removeAttribute('aria-describedby');}
+  document.querySelectorAll('[data-act="pin"],[data-act="refpick"]').forEach(function(b){
+    var selected=!!pinMode&&(b.getAttribute('data-p')||b.getAttribute('data-r'))===pinMode;
+    b.setAttribute('aria-pressed',selected?'true':'false');b.classList.toggle('primary',selected);
+  });
+}
+function setPinMode(mode,root){
+  pinMode=/^(last|found|ref[12])$/.test(mode||'')?mode:null;
+  updatePinModeUi();
+  var map=(root||document).querySelector('#consMap'),cell=map&&map.querySelector('[data-cell="'+gridFocusId+'"]');
+  if(cell)cell.focus();
+}
+function placeMapPoint(x,y){
+  if(!pinMode||!ensureEditor()||!isFinite(x)||!isFinite(y))return false;
+  var mode=pinMode;x=clamp(x,0,100);y=clamp(y,0,100);
+  if(mode==='ref1'||mode==='ref2'){
+    var prev=S.grid[mode]||{};
+    S.grid[mode]={x:+x.toFixed(2),y:+y.toFixed(2),lat:prev.lat==null?null:prev.lat,lon:prev.lon==null?null:prev.lon};
+  }else S.grid[mode==='last'?'pinLast':'pinFound']={x:+x.toFixed(1),y:+y.toFixed(1)};
+  pinMode=null;
+  if(!commit()){pinMode=mode;updatePinModeUi();return false;}
+  updatePinModeUi();return true;
+}
 var mapMsgHtml = '';     /* 지도 붙여넣기 결과 안내 (조작 패널 재렌더 시에도 유지) */
 /* 빠른기록 입력줄은 data-path 가 없어 재렌더 때마다 초기화됐다. 한 줄 타이핑하다
    다른 버튼을 한 번만 눌러도 내용이 사라지고, 발생시각은 렌더 시각으로 되돌아가
@@ -2776,17 +2932,12 @@ function buildGrid(host, interactive){
       var fitEl = host.querySelector('.mapfit');
       var box = (fitEl || host).getBoundingClientRect();
       if(pinMode){
+        if(!box.width||!box.height)return;
+        ev.preventDefault();
+        var placedCell=cellUnder(ev);if(placedCell)setGridFocus(placedCell,true);
         var x = clamp((ev.clientX-box.left)/box.width*100, 0, 100);
         var y = clamp((ev.clientY-box.top)/box.height*100, 0, 100);
-        if(pinMode === 'ref1' || pinMode === 'ref2'){
-          /* 이미 입력해 둔 위경도는 살린다. 위치만 다시 찍는 경우가 많다. */
-          var prev = S.grid[pinMode] || {};
-          S.grid[pinMode] = {x:+x.toFixed(2), y:+y.toFixed(2),
-            lat: prev.lat==null?null:prev.lat, lon: prev.lon==null?null:prev.lon};
-        }else{
-          S.grid[pinMode === 'last' ? 'pinLast' : 'pinFound'] = {x:+x.toFixed(1), y:+y.toFixed(1)};
-        }
-        pinMode = null; commit(); return;
+        placeMapPoint(x,y);return;
       }
       var cellEl = cellUnder(ev); if(!cellEl) return;
       if(!paintTargetsSelected()){ mapMsg('칠할 항목을 먼저 고르세요 (상태 또는 담당).','warn'); return; }
@@ -2809,6 +2960,12 @@ function buildGrid(host, interactive){
       if(ev.detail !== 0) return;
       if(!ensureEditor()) return;
       var cellEl = ev.target.closest ? ev.target.closest('.gcell') : null; if(!cellEl) return;
+      setGridFocus(cellEl,false);
+      if(pinMode){
+        var pos=/^([A-L])(\d{1,2})$/.exec(cellEl.getAttribute('data-cell')||'');
+        if(pos){ev.preventDefault();placeMapPoint((parseInt(pos[2],10)-0.5)/C*100,(pos[1].charCodeAt(0)-65+0.5)/R*100);}
+        return;
+      }
       if(!paintTargetsSelected()){ mapMsg('칠할 항목을 먼저 고르세요 (상태 또는 담당).','warn'); return; }
       var id = cellEl.getAttribute('data-cell');
       painting = {touched:{}, done:[], before:{}};
@@ -2887,6 +3044,68 @@ function batteryStamp(d,now){
   var minutes=Math.max(0,Math.floor((time-at)/60000));
   return '배터리 수동 입력 · '+(minutes===0?'방금':minutes+'분 전')+' 확인';
 }
+/* 위험 요약은 운용 중인 기체의 확인을 돕는다. 비행 판정이나 기체 등록 순서는 바꾸지 않는다.
+   수동 배터리 확인 5분 경과는 재확인 주의이며, 실제 잔량/통신 위험과 구분한다. */
+var DRONE_BATTERY_STALE_MS=5*60000;
+function droneRiskItems(now){
+  var time=now==null?Date.now():now;
+  return S.drones.reduce(function(items,d){
+    if(d.status!=='flying'&&d.status!=='commloss')return items;
+    var reasons=[],level='warn',battery=num(d.battery,0),at=num(d.batteryUpdatedAt,0);
+    if(d.status==='commloss'){reasons.push('통신 두절');level='danger';}
+    if(d.battery==null||d.battery==='')reasons.push('배터리 잔량 미입력');
+    else if(battery<20){reasons.push('저배터리 위험 '+Math.round(battery)+'%');level='danger';}
+    else if(battery<30)reasons.push('저배터리 주의 '+Math.round(battery)+'%');
+    if(!at||at>time+5000)reasons.push('배터리 확인시각 없음');
+    else if(time-at>=DRONE_BATTERY_STALE_MS)reasons.push('배터리 '+Math.floor((time-at)/60000)+'분 전 확인 · 재확인 필요');
+    if(reasons.length)items.push({id:d.id,name:d.name||'기체',level:level,reasons:reasons});
+    return items;
+  },[]);
+}
+function focusDroneRisk(summary,id){
+  var target=null;
+  if(summary.getAttribute('data-drone-risk-summary')==='display'){
+    var body=$('droneBody');
+    body.querySelectorAll('.drone[data-id]').forEach(function(card){if(card.getAttribute('data-id')===id)target=card;});
+    if(!target)return;
+    body.scrollTop+=target.getBoundingClientRect().top-body.getBoundingClientRect().top;
+  }else{
+    var root=summary.closest('#consoleRoot, #drawerIn'),index=-1;
+    S.drones.forEach(function(d,i){if(d.id===id)index=i;});
+    if(root&&index>=0)target=root.querySelector('.item[data-di="'+index+'"]');
+    if(!target)return;
+    target.scrollIntoView({block:'center',behavior:'instant'});
+  }
+  target.tabIndex=-1;target.focus({preventScroll:true});
+}
+function refreshDroneRisks(now){
+  var all=droneRiskItems(now),items=all.filter(function(item){return item.level==='danger';}).concat(all.filter(function(item){return item.level!=='danger';}));
+  document.querySelectorAll('[data-drone-risk-summary]').forEach(function(summary){
+    summary.hidden=!items.length;
+    if(!items.length){summary.innerHTML='';return;}
+    var heading=summary.querySelector('.drone-risk-heading'),list=summary.querySelector('.drone-risk-list');
+    if(!heading){
+      heading=document.createElement('p');heading.className='drone-risk-heading';summary.appendChild(heading);
+      list=document.createElement('div');list.className='drone-risk-list';summary.appendChild(list);
+      summary.onclick=function(ev){var button=ev.target.closest('[data-drone-risk-id]');if(button&&summary.contains(button))focusDroneRisk(summary,button.getAttribute('data-drone-risk-id'));};
+    }
+    var dangerous=items.filter(function(item){return item.level==='danger';}).length;
+    var title='기체 확인 필요 '+items.length+'대'+(dangerous?' · 위험 '+dangerous+'대':'')+' · 선택하여 이동';
+    if(heading.textContent!==title)heading.textContent=title;
+    var keep=Object.create(null);
+    items.forEach(function(item,index){
+      keep[item.id]=true;
+      var button=null;
+      Array.prototype.forEach.call(list.children,function(child){if(child.getAttribute('data-drone-risk-id')===item.id)button=child;});
+      if(!button){button=document.createElement('button');button.type='button';button.setAttribute('data-drone-risk-id',item.id);}
+      button.className='drone-risk-item '+item.level;
+      var text=item.name+' · '+item.reasons.join(' / ');
+      if(button.textContent!==text)button.textContent=text;
+      if(list.children[index]!==button)list.insertBefore(button,list.children[index]||null);
+    });
+    Array.prototype.slice.call(list.children).forEach(function(button){if(!keep[button.getAttribute('data-drone-risk-id')])button.remove();});
+  });
+}
 function refreshBatteryStamps(){
   var stamps=Object.create(null),now=Date.now();
   S.drones.forEach(function(d){stamps[d.id]=batteryStamp(d,now);});
@@ -2894,8 +3113,10 @@ function refreshBatteryStamps(){
     var text=stamps[el.getAttribute('data-battery-stamp')];
     if(text&&el.textContent!==text)el.textContent=text;
   });
+  refreshDroneRisks(now);
 }
 function renderDrones(){
+  refreshDroneRisks();
   if(!S.drones.length){
     $('droneBody').innerHTML = '<div class="empty">기체 미등록 — 조작 패널에서 기체를 추가하세요</div>';
     $('droneMeta').textContent = '';
@@ -2909,7 +3130,7 @@ function renderDrones(){
     var sens = (d.sensors||[]).map(function(s){
       return '<span'+(s==='IR'?' class="ir"':'')+'>'+esc(s)+'</span>';
     }).join('');
-    html += '<article class="drone st-'+esc(d.status||'ready')+' '+lvl+'" data-id="'+d.id+'">'
+    html += '<article class="drone st-'+esc(d.status||'ready')+' '+lvl+'" data-id="'+esc(d.id)+'" tabindex="-1" aria-label="'+esc((d.name||'기체')+' 운용 현황')+'">'
       + '<div class="d-top"><span class="d-name">'+esc(d.name||'기체')+'</span>'
         + '<span class="d-model">'+esc(d.model||'')+'</span>'
         + '<span class="d-st">'+esc(DRONE_ST[d.status]||'대기')+'</span></div>'
@@ -2974,13 +3195,15 @@ function renderLog(){
 function renderTicker(){
   var m = S.mission;
   var txt = (m.orders||'').trim() || '지시사항 없음';
+  var far=S.ui.viewPreset==='far';
+  if(far)txt=(m.priorityOrder||'').trim()||(m.orders&&m.orders.length<=80?m.orders:'원거리용 우선 지시 미입력 · 조작 패널의 지휘부 지시 전문을 확인하세요');
   var mv = $('tkMove');
   /* 문자 수(44자)로 판단하면 트랙보다 짧은 문장도 두 벌이 동시에 보여
      같은 지시가 연달아 두 번 적힌 것처럼 읽힌다. 실제로 넘칠 때만 흘린다. */
   mv.classList.remove('scroll'); mv.style.animationDuration=''; mv.textContent = txt;
   var track = mv.parentNode;
-  if(track)track.setAttribute('aria-label','지휘부 지시: '+txt+' · 포커스하거나 마우스를 올리면 흐름이 멈춥니다');
-  if(!MOTION_QUERY.matches && track && mv.scrollWidth > track.clientWidth + 2){
+  if(track)track.setAttribute('aria-label','지휘부 지시: '+txt+(far?'':' · 포커스하거나 마우스를 올리면 흐름이 멈춥니다'));
+  if(!far&&!MOTION_QUERY.matches && track && mv.scrollWidth > track.clientWidth + 2){
     mv.innerHTML = esc(txt)+'&nbsp;&nbsp;&nbsp;&nbsp;'+esc(txt)+'&nbsp;&nbsp;&nbsp;&nbsp;';
     mv.classList.add('scroll');
     mv.style.animationDuration = Math.max(14, txt.length*0.45)+'s';
@@ -3150,6 +3373,7 @@ function applyUi(){
   document.documentElement.style.setProperty('--s', num(S.ui.scale,1));
   document.documentElement.style.setProperty('--dim', num(S.ui.dim,0));
   $('board').classList.toggle('large-type',num(S.ui.scale,1)>1.15);
+  $('board').classList.toggle('far-view',S.ui.viewPreset==='far');
 }
 
 /* ==========================================================================
@@ -3168,6 +3392,54 @@ function setPath(path, val){
     o = o[parts[i]];
   }
   o[parts[parts.length-1]] = val;
+}
+/* 오류 초안은 현재 창에만 유지한다. 출동 전환이나 대상 삭제 뒤 재사용하지 않는다. */
+var fieldErrors={},fieldErrorSeq=-1;
+function fieldErrorKey(el){
+  var path=el.getAttribute('data-path')||el.id;
+  var match=/^(drones|crew)\.(\d+)\.(.+)$/.exec(path);
+  if(match){var item=S[match[1]][+match[2]];return item?match[1]+'.'+item.id+'.'+match[3]:'';}
+  return path;
+}
+function errorRegistry(){
+  if(fieldErrorSeq!==stateLifecycleSeq){fieldErrors={};fieldErrorSeq=stateLifecycleSeq;}
+  return fieldErrors;
+}
+function fieldErrorId(el){return 'error-'+(el.getAttribute('data-path')||el.id).replace(/[^a-zA-Z0-9_-]/g,'-');}
+function showFieldError(el,message,focus){
+  if(!el)return;
+  var key=fieldErrorKey(el),path=el.getAttribute('data-path');
+  if(key)errorRegistry()[key]={value:el.value,message:message,canonical:path?getPath(path):undefined};
+  el.classList.add('invalid');el.setAttribute('aria-invalid','true');
+  var id=fieldErrorId(el),error=document.getElementById(id);
+  if(!error){error=document.createElement('span');error.id=id;error.className='field-error';error.setAttribute('role','status');el.insertAdjacentElement('afterend',error);}
+  error.textContent=message;
+  var described=(el.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
+  if(described.indexOf(id)<0)described.push(id);el.setAttribute('aria-describedby',described.join(' '));
+  if(focus){var fold=el.closest('details');if(fold)fold.open=true;el.focus();}
+}
+function clearFieldError(el){
+  if(!el)return;delete errorRegistry()[fieldErrorKey(el)];
+  el.classList.remove('invalid');el.removeAttribute('aria-invalid');
+  var id=fieldErrorId(el),error=document.getElementById(id);if(error)error.remove();
+  var described=(el.getAttribute('aria-describedby')||'').split(/\s+/).filter(function(x){return x&&x!==id;});
+  if(described.length)el.setAttribute('aria-describedby',described.join(' '));else el.removeAttribute('aria-describedby');
+}
+function restoreFieldErrors(root){
+  var errors=errorRegistry();
+  root.querySelectorAll('input,select,textarea').forEach(function(el){
+    var key=fieldErrorKey(el),error=errors[key];if(!error)return;
+    if(!ownsEditorLock()){delete errors[fieldErrorKey(el)];return;}
+    var path=el.getAttribute('data-path');
+    if(path&&getPath(path)!==error.canonical){delete errors[key];return;}
+    el.value=error.value;showFieldError(el,error.message,false);
+  });
+}
+function inputErrorMessage(el){
+  if(el.validity.rangeOverflow||el.validity.rangeUnderflow)
+    return (el.min!==''&&el.max!==''?el.min+'~'+el.max:el.min!==''?el.min+' 이상':el.max+' 이하')+'로 입력하세요. 잘못된 값은 저장하지 않습니다.';
+  if(el.validity.stepMismatch)return '입력 간격 '+(el.step||'1')+'에 맞춰 주세요. 잘못된 값은 저장하지 않습니다.';
+  return '입력 형식과 값을 확인하세요. 잘못된 값은 저장하지 않습니다.';
 }
 function fld(label, path, type, attrs){
   var v = getPath(path);
@@ -3238,6 +3510,10 @@ function consoleFold(key,label,description,content){
 }
 function organizeConsole(root){
   var cons=root.querySelector('.cons');if(!cons)return;
+  var alarm=root.querySelector('#btnManned'),quickHeading=root.querySelector('#sec-quick h2');
+  if(alarm&&quickHeading)quickHeading.appendChild(alarm);
+  var timeMode=root.querySelector('#evTimeMode'),targets=root.querySelector('.quick-targets');
+  if(timeMode&&targets)targets.appendChild(timeMode.closest('label'));
   var sections=['quick','drone','batt','grid','safety','mission','subject','crew','data'];
   sections.forEach(function(id){var sec=root.querySelector('#sec-'+id);if(sec)cons.appendChild(sec);});
   [['mission','상황 설정','상황명 · 출동시각 · 현장 좌표 · 지휘부 지시'],
@@ -3270,16 +3546,45 @@ function scrollToSection(root,target){
     if(parent.tagName==='DETAILS'){parent.open=true;if(parent.dataset.fold)consoleFolds[parent.dataset.fold]=true;}
   }
   var bar=root.querySelector('.cons-top');
-  var pad=(bar&&getComputedStyle(bar).position==='sticky'?bar.getBoundingClientRect().height:0)+10;
+  var mobile=root.querySelector('.mobile-verdict');
+  var pad=(bar&&getComputedStyle(bar).position==='sticky'?bar.getBoundingClientRect().height:
+    mobile&&getComputedStyle(mobile).display!=='none'?mobile.getBoundingClientRect().height:0)+10;
   var host=scrollHost(target), tTop=target.getBoundingClientRect().top;
   if(host) host.scrollTop=Math.max(0,host.scrollTop+tTop-host.getBoundingClientRect().top-pad);
   else window.scrollTo(0,Math.max(0,window.scrollY+tTop-pad));
   var heading=target.querySelector('h2');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
-  root.querySelectorAll('.ct-nav button').forEach(function(b){
+  root.querySelectorAll('.ct-nav button,.mobile-nav button').forEach(function(b){
     if(b.getAttribute('data-sec')===target.id)b.setAttribute('aria-current','location');else b.removeAttribute('aria-current');
   });
 }
 
+/* 배열 순번은 삭제·정렬 후 다른 대상을 가리킨다. 렌더 시점의 엔터티 ID와
+   버튼 인자를 DOM에 남겨, 상태 변경 뒤에도 같은 조작에만 포커스를 돌린다. */
+function stampConsoleFocus(root){
+  var seen={};
+  root.querySelectorAll('input,textarea,select,button,summary,[data-cell]').forEach(function(el){
+    var path=el.getAttribute('data-path')||'',match=/^(drones|crew)\.(\d+)\.(.+)$/.exec(path);
+    var kind=match?match[1]:(el.hasAttribute('data-di')?'drones':(el.hasAttribute('data-ci')?'crew':''));
+    var index=match?+match[2]:+(el.getAttribute(kind==='drones'?'data-di':'data-ci'));
+    var entity=kind&&S[kind][index],entityKey=entity?kind+':'+entity.id:'';
+    var sec=el.closest('.sec'),fold=el.closest('details[data-fold]');
+    var scope=(sec?sec.id:'console')+(el.closest('#eventHistory')?':history':'');
+    var parts=[scope,entityKey,el.tagName];
+    if(path)parts.push('path',match?match[3]:path);
+    else if(el.id)parts.push('id',el.id);
+    else if(el.tagName==='SUMMARY'&&fold)parts.push('fold',fold.dataset.fold);
+    else Array.prototype.slice.call(el.attributes).filter(function(a){
+      return /^data-/.test(a.name)&&!/^data-(di|ci|focus-)/.test(a.name);
+    }).sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(a){parts.push(a.name,a.value);});
+    var key=JSON.stringify(parts),ordinal=seen[key]||0;seen[key]=ordinal+1;
+    el.setAttribute('data-focus-key',key+':'+ordinal);
+    if(entityKey){
+      el.setAttribute('data-focus-entity',entityKey);
+      var item=el.closest('.item');
+      if(item){item.setAttribute('data-focus-entity-root',entityKey);item.tabIndex=-1;}
+    }
+  });
+}
 function renderConsole(root){
   if(!root) return;
   if(consoleIdleTimer){ clearTimeout(consoleIdleTimer); consoleIdleTimer = null; }
@@ -3287,25 +3592,35 @@ function renderConsole(root){
   var activeEl=document.activeElement,focusInside=!!(activeEl&&root.contains(activeEl));
   var focusPath = focusInside&&activeEl.getAttribute?activeEl.getAttribute('data-path'):null;
   var focusId=focusInside&&activeEl.id?activeEl.id:'';
-  var focusAct=focusInside&&activeEl.getAttribute?activeEl.getAttribute('data-act'):null;
-  var focusSelStart = null;
+  var focusKey=focusInside&&activeEl.getAttribute?activeEl.getAttribute('data-focus-key'):null;
+  var focusEntity=focusInside&&activeEl.getAttribute?activeEl.getAttribute('data-focus-entity'):null;
+  var focusSection=focusInside&&activeEl.closest?activeEl.closest('.sec'):null;
+  var focusSectionId=focusSection?focusSection.id:'';
+  var focusSelStart = null,focusSelEnd=null,focusSelDirection=null;
   if(focusPath && document.activeElement.selectionStart != null)
-    focusSelStart = document.activeElement.selectionStart;
+    {focusSelStart=activeEl.selectionStart;focusSelEnd=activeEl.selectionEnd;focusSelDirection=activeEl.selectionDirection;}
 
   root.querySelectorAll('details[data-fold]').forEach(function(fold){consoleFolds[fold.dataset.fold]=fold.open;});
   root.innerHTML = consoleHtml();
   organizeConsole(root);
   root.hidden = false;
   bindConsole(root);
+  if(typeof restoreFieldErrors==='function')restoreFieldErrors(root);
   renderGridAll();
+  updatePinModeUi();
+  stampConsoleFocus(root);
+  if(typeof refreshDroneRisks==='function')refreshDroneRisks();
 
   root.scrollTop = scrollTop;
-  var back=focusPath?root.querySelector('[data-path="'+focusPath+'"]'):null;
-  if(!back&&focusId)back=root.querySelector('#'+(typeof CSS!=='undefined'&&CSS.escape?CSS.escape(focusId):focusId));
-  if(!back&&focusAct)back=root.querySelector('[data-act="'+focusAct+'"]');
+  var back=null;
+  if(focusKey)root.querySelectorAll('[data-focus-key]').forEach(function(el){if(el.getAttribute('data-focus-key')===focusKey)back=el;});
+  if(!back&&!focusKey&&focusId)root.querySelectorAll('[id]').forEach(function(el){if(el.id===focusId)back=el;});
+  if(back&&back.disabled)back=null;
+  if(!back&&focusEntity)root.querySelectorAll('[data-focus-entity-root]').forEach(function(el){if(el.getAttribute('data-focus-entity-root')===focusEntity)back=el;});
+  if(!back&&focusSectionId){var section=root.querySelector('#'+focusSectionId);back=section&&section.querySelector('h2');if(back)back.tabIndex=-1;}
   if(back){
-    back.focus();
-    try{if(focusSelStart!=null)back.setSelectionRange(focusSelStart,focusSelStart);}catch(e){}
+    back.focus({preventScroll:true});
+    try{if(focusSelStart!=null)back.setSelectionRange(focusSelStart,focusSelEnd,focusSelDirection);}catch(e){}
   }else if(focusInside&&!$('drawer').hidden&&$('drawer').contains(root)){
     var close=root.querySelector('#btnCloseDrawer');if(close)close.focus();
   }
@@ -3484,9 +3799,42 @@ function consoleKpiCells(){
   return cell('골든', kpiGolden(now)) + cell('일몰', kpiSunset(now))
        + cell('판정', kpiFlight(now)) + cell('출동', kpiElapsed(now));
 }
+function verdictDestination(reason){
+  if(/좌표|위도|경도|일출·일몰/.test(reason))return {sec:'mission',path:'mission.lat',label:'현장 좌표 확인'};
+  if(/조종자|통신불량/.test(reason))return {sec:'drone',path:'',label:'기체·조종자 확인'};
+  if(/지속풍 한계/.test(reason))return {sec:'safety',path:'safety.windLimit',label:'지속풍 한계 입력'};
+  if(/돌풍 한계/.test(reason))return {sec:'safety',path:'safety.gustLimit',label:'돌풍 한계 입력'};
+  if(/기상|풍속|돌풍|강수/.test(reason))return {sec:'safety',path:'weather.wind',label:'현장 기상 확인'};
+  return {sec:'safety',path:'',label:'안전·승인 확인'};
+}
+function verdictReasonsHtml(verdict){
+  if(verdict.lv==='ok')return '<p class="note">입력된 제한사항이 없습니다. 실제 승인과 현장 조건을 계속 확인하세요.</p>';
+  return '<ul class="verdict-reasons">'+verdict.why.map(function(reason){
+    var dest=verdictDestination(reason);
+    return '<li><span>'+esc(reason)+'</span><button type="button" class="btn sm" data-act="verdictnav" data-sec="sec-'+dest.sec
+      +'" data-path-target="'+dest.path+'">'+dest.label+'</button></li>';
+  }).join('')+'</ul>';
+}
+function verdictHelpHtml(){
+  var v=flightVerdict(new Date());
+  return '<details class="settings-fold verdict-help" id="verdictHelp" data-fold="verdict-help">'
+    +'<summary><span id="consoleVerdictReason">'+esc(v.txt+' · '+v.why[0])+'</span><span class="verdict-count" id="verdictCount">'
+    +(v.lv==='ok'?'판정 근거 보기':'확인할 항목 '+v.why.length+'개')+'</span></summary>'
+    +'<div id="verdictReasons">'+verdictReasonsHtml(v)+'</div></details>';
+}
+function refreshVerdictHelp(){
+  var v=flightVerdict(new Date()),reason=v.txt+' · '+v.why[0];
+  ['consoleVerdictReason','mobileVerdictText'].forEach(function(id){var el=$(id);if(el&&el.textContent!==reason)el.textContent=reason;});
+  var count=$('verdictCount');if(count)count.textContent=v.lv==='ok'?'판정 근거 보기':'확인할 항목 '+v.why.length+'개';
+  var reasons=$('verdictReasons'),key=JSON.stringify(v);
+  if(reasons&&reasons.dataset.key!==key&&!reasons.contains(document.activeElement)){
+    reasons.innerHTML=verdictReasonsHtml(v);reasons.dataset.key=key;
+  }
+}
 function refreshConsoleKpi(){
   var host = document.getElementById('ctKpi');
   if(host) host.innerHTML = consoleKpiCells();
+  refreshVerdictHelp();
 }
 
 function paintPalette(){
@@ -3529,13 +3877,13 @@ function quickEntityHtml(){
   var kind=quickEntityKind();if(!kind)return '';
   var list=kind==='drone'?S.drones:S.crew;
   if(!list.some(function(x){return x.id===quickEv.entityId;}))quickEv.entityId='';
-  return '<select id="evEntity" aria-label="'+(kind==='drone'?'기록 대상 기체':'기록 대상 인원')+'" required>'
+  return '<span>'+(kind==='drone'?'기체':'인원')+'</span><select id="evEntity" aria-label="'+(kind==='drone'?'기록 대상 기체':'기록 대상 인원')+'" required>'
     +'<option value="">'+(kind==='drone'?'기체 선택':'인원 선택')+'</option>'
     +list.map(function(x,i){return '<option value="'+esc(x.id)+'"'+(quickEv.entityId===x.id?' selected':'')+'>'
       +esc(x.name||(kind==='drone'?'기체':'인원')+' '+(i+1))+(kind==='crew'&&x.outAt?' (교대 종료)':'')+'</option>';}).join('')+'</select>';
 }
 function bindQuickEntity(root){
-  var el=root.querySelector('#evEntity');if(el)el.onchange=function(){quickEv.entityId=el.value;};
+  var el=root.querySelector('#evEntity');if(el)el.onchange=function(){quickEv.entityId=el.value;clearFieldError(el);};
 }
 function eventRowHtml(e){
   return '<div class="recent-event'+(e.voided?' event-voided':'')+'">'
@@ -3610,6 +3958,19 @@ function consoleHtml(){
     + '</nav>'
     + '</div>';
 
+  var verdict=flightVerdict(new Date());
+  h+='<div class="mobile-verdict"><button type="button" data-act="verdictnav" data-sec="verdictHelp" id="mobileVerdictText">'
+    +esc(verdict.txt+' · '+verdict.why[0])+'</button></div>'+verdictHelpHtml()
+    +'<nav class="mobile-nav" aria-label="주요 화면 이동">'
+      +'<button type="button" data-act="nav" data-sec="sec-quick">조작</button>'
+      +'<button type="button" data-act="nav" data-sec="sec-grid">지도</button>'
+      +'<button type="button" data-act="nav" data-sec="sec-drone">기체</button>'
+      +'<button type="button" id="btnMoreNav" aria-expanded="false" aria-controls="mobileMore">더보기</button></nav>'
+    +'<div id="mobileMore" class="mobile-more" hidden>'
+      +[['safety','안전·기상'],['batt','배터리 자원'],['crew','인원'],['mission','상황·지시'],['subject','실종자'],['data','화면·데이터']].map(function(p){
+        return '<button class="btn" type="button" data-act="nav" data-sec="sec-'+p[0]+'">'+p[1]+'</button>';
+      }).join('')+'</div>';
+
   if(!STORAGE_OK){
     h += '<div class="warn-strip danger">이 브라우저에서는 <b>로컬 저장이 차단</b>되어 읽기 전용입니다. '
       + '입력한 내용이 새로고침 후 사라지고, 표출 화면과의 동기화도 불안정합니다. '
@@ -3623,16 +3984,19 @@ function consoleHtml(){
     + '<div class="quick-grid">'
       + '<button class="btn alarm big'+(S.safety.manned?' on':'')+'" id="btnManned" aria-pressed="'+(S.safety.manned?'true':'false')+'">'
         + (S.safety.manned ? '유인기 경보 해제' : '\u26A0\uFE0E 유인기 진입 (전 기체 즉시 착륙)') + '</button>'
-      + '<div class="inline">'
-        + '<select id="evType" aria-label="기록 유형" style="flex:0 0 120px">'
+      + '<div class="quick-entry">'
+        + '<div class="quick-targets"><label class="f"><span>기록 유형</span><select id="evType" aria-label="기록 유형">'
           + Object.keys(EV_TYPE).map(function(k){
               return '<option value="'+k+'"'+(quickEv.type===k?' selected':'')+'>'+EV_TYPE[k]+'</option>'; }).join('')
-        + '</select>'
-        + '<span id="evEntityWrap">'+quickEntityHtml()+'</span>'
-        + '<input id="evTime" type="datetime-local" value="'+esc(quickEvTime())+'" style="flex:0 0 190px" aria-label="사건 발생시각">'
-        + '<input id="evZone" aria-label="기록 구역" placeholder="구역" value="'+esc(quickEv.zone)+'" style="flex:0 0 72px">'
-        + '<input id="evText" aria-label="기록 내용" placeholder="내용 입력 후 Enter" value="'+esc(quickEv.text)+'" style="flex:1 1 140px">'
-        + '<button class="btn primary" id="btnAddEv">기록</button>'
+        + '</select></label>'
+        + '<label class="f" id="evEntityWrap">'+quickEntityHtml()+'</label>'
+        + '<label class="f"><span>구역</span><input id="evZone" aria-label="기록 구역" placeholder="예: A1" value="'+esc(quickEv.zone)+'"></label></div>'
+        + '<div class="quick-message"><label class="f"><span>내용</span><input id="evText" aria-label="기록 내용" placeholder="내용 입력 후 Enter" value="'+esc(quickEv.text)+'"></label>'
+        + '<button class="btn primary" id="btnAddEv">이력만 기록</button></div>'
+        + '<div class="quick-time"><label class="f"><span>발생시각</span><select id="evTimeMode"><option value="now"'+(quickEv.timeAuto?' selected':'')+'>지금</option>'
+        +'<option value="custom"'+(!quickEv.timeAuto?' selected':'')+'>과거 시각 지정</option></select></label>'
+        + '<label class="f" id="evTimeLabel"'+(quickEv.timeAuto?' hidden':'')+'><span>사건 발생시각</span><input id="evTime" type="datetime-local" value="'+esc(quickEvTime())+'" aria-label="사건 발생시각"></label></div>'
+        + '<div class="note quick-contract" id="quickContract">기체·인원·구역의 현재 상태는 바뀌지 않습니다. 상태 변경은 각 항목의 조작 버튼을 사용하세요.</div>'
       + '</div>'
     + '</div>'
     + emergencyHistoryNotice()
@@ -3662,7 +4026,9 @@ function consoleHtml(){
     + '<div class="f3">'+fld('TRS 채널','mission.trs','text','placeholder="소방3"')
     + fld('호출부호','mission.callsign','text','placeholder="전북드론1"')
     + '<div></div></div>'
-    + fld('지휘부 지시사항 (하단 티커)','mission.orders','textarea','placeholder="계곡 하류 우선 수색, 18시 이후 야간 장비 투입"')
+    + fld('현재 우선 지시 (원거리 표출 · 80자 이내)','mission.priorityOrder','textarea','maxlength="80" placeholder="지금 가장 먼저 실행할 지시를 짧게 입력"')
+    + '<div class="note">원거리 표출에서는 우선 지시를 고정 표시합니다. 긴 원문은 아래 전문에 남기세요.</div>'
+    + fld('지휘부 지시 전문 (기본 표출)','mission.orders','textarea','placeholder="계곡 하류 우선 수색, 18시 이후 야간 장비 투입"')
     + '<div class="row-tools"><button class="btn sm '+(S.mission.coordsConfirmedAt?'on':'primary')+'" data-act="confirmcoords">'
       +(S.mission.coordsConfirmedAt?'좌표 확인됨 · 다시 확인':'현장 좌표 확인 완료')+'</button></div>'
     + '<div class="note">위·경도는 일출·일몰과 기상 조회의 안전 기준입니다. 공란이면 임의 지역으로 대체하지 않으며, 좌표를 바꾸면 기상·비행승인을 다시 확인해야 합니다.</div>'
@@ -3695,6 +4061,7 @@ function consoleHtml2(){
   /* --- 드론 기체 --- */
   h += '<div class="sec" id="sec-drone"><h2>드론 운용 <span class="hint">기체별 카드가 표출 화면 우측에 표시됩니다</span>'
     + '<span class="spacer"></span><button class="btn sm primary" id="btnAddDrone">＋ 기체 추가</button></h2><div class="sec-b">';
+  h+='<div class="drone-risk-summary" data-drone-risk-summary="console" aria-label="운용 중 기체 위험 요약" hidden></div>';
   if(!S.drones.length) h += '<div class="note">등록된 기체가 없습니다. 우측 상단 “기체 추가”를 누르세요.</div>';
   S.drones.forEach(function(d,i){
     h += '<div class="item" data-di="'+i+'">'
@@ -3779,6 +4146,7 @@ function consoleHtml2(){
     + '<div class="grid2">'
       + '<div>'
         + paintPalette()
+        + '<div class="map-mode" id="mapModeStatus" role="status" aria-live="polite" hidden></div>'
         + '<div class="cons-map" id="consMap"></div>'
         + '<div class="row-tools">'
           + '<button class="btn sm" data-act="pin" data-p="last">최종목격 핀 배치</button>'
@@ -3864,6 +4232,8 @@ function consoleHtml2(){
 
   /* --- 화면 · 데이터 --- */
   h += '<div class="sec" id="sec-data"><h2>화면 설정 · 데이터</h2><div class="sec-b">'
+    + sel('표출 구성','ui.viewPreset',[['standard','기본 · 전체 정보'],['far','원거리 · 핵심 정보']])
+    + '<div class="note">원거리는 판정·위험 기체·수색구역·우선 지시를 크게 보여줍니다. 기체 제원과 인원 상세는 조작 패널에서 확인하세요.</div>'
     + '<div class="f2">'
       + '<label class="f"><span>표출 화면 배율 ('+num(S.ui.scale,1).toFixed(2)+')</span>'
         + '<input type="range" min="0.75" max="1.5" step="0.05" data-path="ui.scale" value="'+num(S.ui.scale,1)+'"></label>'
@@ -3959,19 +4329,19 @@ function bindConsole(root){
     if(!path) return;
     if(!ownsEditorLock()){renderConsole(root);return;}
     if(el.checkValidity&&!el.checkValidity()){
-      el.classList.add('invalid'); setPath(path,null);
+      setPath(path,null);showFieldError(el,inputErrorMessage(el),false);
       var badBattery=path.match(/^drones\.(\d+)\.battery$/);
       if(badBattery&&S.drones[+badBattery[1]])S.drones[+badBattery[1]].batteryUpdatedAt=0;
       if(path==='mission.lat'||path==='mission.lon')invalidateSafetyContext();
       commitLight(); return;
     }
-    el.classList.remove('invalid');
+    clearFieldError(el);
     var val=readInput(el);
     if(path==='weather.observedAt')val=tms(val);
     if(path==='weather.rain')val=val==='true'?true:(val==='false'?false:null);
     var co=path.match(/^crew\.(\d+)\.outAt$/);
     if(co&&val&&S.crew[+co[1]]&&S.crew[+co[1]].inAt&&tms(val)<tms(S.crew[+co[1]].inAt)){
-      el.classList.add('invalid');return;
+      showFieldError(el,'교대 종료시각은 투입시각 이후로 입력하세요.',false);return;
     }
     var sm=path.match(/^drones\.(\d+)\.status$/);
     if(sm){
@@ -4035,6 +4405,7 @@ function bindConsole(root){
   function bindQuick(id, key, upper){
     var el = root.querySelector('#'+id); if(!el) return;
     el.oninput = el.onchange = function(){
+      clearFieldError(el);
       quickEv[key] = upper ? el.value.toUpperCase() : el.value;
       if(key === 'time') quickEv.timeAuto = false;
       if(key === 'type'){var wrap=root.querySelector('#evEntityWrap');if(wrap){wrap.innerHTML=quickEntityHtml();bindQuickEntity(root);}}
@@ -4046,6 +4417,16 @@ function bindConsole(root){
   }
   bindQuick('evType','type'); bindQuick('evZone','zone',true); bindQuick('evText','text');
   bindQuick('evTime','time');bindQuickEntity(root);bindEventHistory(root);
+  var timeMode=root.querySelector('#evTimeMode');
+  if(timeMode)timeMode.onchange=function(){
+    quickEv.timeAuto=timeMode.value==='now';
+    if(!quickEv.timeAuto&&!quickEv.time)quickEv.time=localDateTime(new Date());
+    var timeInput=root.querySelector('#evTime');clearFieldError(timeInput);
+    timeInput.value=quickEvTime();root.querySelector('#evTimeLabel').hidden=quickEv.timeAuto;
+    if(!quickEv.timeAuto)timeInput.focus();
+  };
+  var more=root.querySelector('#btnMoreNav');
+  if(more)more.onclick=function(){var menu=root.querySelector('#mobileMore');menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden));};
   if(!quickEv.type){ var ty=root.querySelector('#evType'); if(ty) quickEv.type=ty.value; }
 
   function pushEv(){
@@ -4057,23 +4438,28 @@ function bindConsole(root){
     var kind=quickEntityKind(),entity=null,metadata={};
     if(kind){
       (kind==='drone'?S.drones:S.crew).forEach(function(item){if(item.id===quickEv.entityId)entity=item;});
-      if(!entity){alert(kind==='drone'?'기록 대상 기체를 선택하세요.':'기록 대상 인원을 선택하세요.');return;}
+      if(!entity){showFieldError(root.querySelector('#evEntity'),kind==='drone'?'기록 대상 기체를 선택하세요.':'기록 대상 인원을 선택하세요.',true);return;}
       metadata.entityType=kind;metadata.entityId=entity.id;
       if(!x)x=(entity.name||'대상')+' '+(t==='crew'?'교대 종료':EV_TYPE[t]);
     }
-    if(!x && !z){ return; }
-    if(!when){alert('사건 발생시각을 확인하세요.');return;}
-    if(when>Date.now()+5*60000){alert('사건 발생시각이 현재보다 5분 이상 미래입니다.');return;}
+    if(!x && !z){showFieldError(root.querySelector('#evText'),'기록할 내용 또는 구역을 입력하세요.',true);return;}
+    if(!when||when>Date.now()+5*60000){
+      root.querySelector('#evTimeLabel').hidden=false;
+      showFieldError(root.querySelector('#evTime'),!when?'사건 발생시각을 확인하세요.':'현재보다 5분 이상 미래인 시각은 기록할 수 없습니다.',true);return;
+    }
     if(t==='zone'){
       var ids=z.split(/[\s,]+/).filter(Boolean),valid=ids.length&&ids.every(function(id){return /^[A-L](?:1[0-2]|[1-9])$/.test(id)&&id.charCodeAt(0)-65<gridRows()&&intv(id.slice(1),0)<=gridCols();});
-      if(!valid){alert('현재 격자의 구역을 입력하세요. 여러 구역은 A1, A2처럼 쉼표로 나눕니다.');return;}
+      if(!valid){showFieldError(root.querySelector('#evZone'),'현재 격자의 구역을 입력하세요. 예: A1, A2',true);return;}
       metadata.zoneStates={};ids.forEach(function(id){metadata.zoneStates[id]=2;});
     }
     if(!addEvent(t,x||EV_TYPE[t],z,false,when,metadata))return;
     quickEv.zone=''; quickEv.text=''; quickEv.time=''; quickEv.timeAuto=true;
+    ['evEntity','evZone','evText','evTime'].forEach(function(id){clearFieldError(root.querySelector('#'+id));});
     var zEl=root.querySelector('#evZone'), xEl=root.querySelector('#evText');
     if(zEl) zEl.value=''; if(xEl) xEl.value='';
     var tEl=root.querySelector('#evTime'); if(tEl) tEl.value=quickEvTime();
+    root.querySelector('#evTimeMode').value='now';root.querySelector('#evTimeLabel').hidden=true;
+    if(xEl)xEl.focus();
   }
   var ab = root.querySelector('#btnAddEv'); if(ab) ab.onclick = pushEv;
   var et = root.querySelector('#evText');
@@ -4107,9 +4493,17 @@ function bindConsole(root){
       return;
     }
     if(act==='eventpage'){eventHistory.page=intv(b.getAttribute('data-page'),0);renderEventHistory(root);return;}
-    if(act==='nav'){
+    if(act==='nav'||act==='verdictnav'){
+      var menu=root.querySelector('#mobileMore');if(menu)menu.hidden=true;
+      var menuButton=root.querySelector('#btnMoreNav');if(menuButton)menuButton.setAttribute('aria-expanded','false');
       var target=root.querySelector('#'+b.getAttribute('data-sec'));
-      if(target)scrollToSection(root,target);
+      if(target){
+        if(target.tagName==='DETAILS'){target.open=true;consoleFolds[target.dataset.fold]=true;}
+        scrollToSection(root,target);
+        var path=b.getAttribute('data-path-target'),field=path?root.querySelector('[data-path="'+path+'"]'):null;
+        if(field)field.focus({preventScroll:true});
+        else if(target.tagName==='DETAILS')target.querySelector('summary').focus({preventScroll:true});
+      }
       return;
     }
     if(['export','report'].indexOf(act)<0&&!ensureEditor())return;
@@ -4168,9 +4562,9 @@ function bindConsole(root){
       }
     }
     else if(act === 'pin'){
-      pinMode = b.getAttribute('data-p');
-      b.textContent = '지도를 클릭하세요…';
+      setPinMode(b.getAttribute('data-p'),root);
     }
+    else if(act === 'cancelpin'){setPinMode(null,root);}
     else if(act === 'clearpins'){ S.grid.pinLast = null; S.grid.pinFound = null; commit(); }
     else if(act === 'clearcells'){
       if(confirm('모든 구역 상태·담당과 기체 담당구역을 초기화할까요? 기존 구역 기록은 이전 수색 이력으로 보관합니다.')){
@@ -4211,7 +4605,7 @@ function bindConsole(root){
       }
       commit();
     }
-    else if(act==='refpick'){ pinMode = b.getAttribute('data-r'); renderConsole(root); }
+    else if(act==='refpick'){setPinMode(b.getAttribute('data-r'),root);}
     else if(act==='geoapply'){
       var gr = geoFromRefs(S.grid.ref1, S.grid.ref2);
       if(gr.err){ alert(gr.err); return; }
@@ -4322,9 +4716,9 @@ function bindConsole(root){
   if(!ownsEditorLock()){
     root.querySelectorAll('input,textarea,select,button').forEach(function(el){
       var act=el.getAttribute('data-act');
-      var safe=act==='takecontrol'||act==='export'||act==='report'||act==='nav'||act==='eventpage'
+      var safe=act==='takecontrol'||act==='export'||act==='report'||act==='nav'||act==='verdictnav'||act==='eventpage'
         ||['eventSearch','eventTypeFilter','eventStatusFilter'].indexOf(el.id)>=0
-        ||el.id==='btnOpenDisplay'||el.id==='btnCloseDrawer';
+        ||el.id==='btnOpenDisplay'||el.id==='btnCloseDrawer'||el.id==='btnMoreNav';
       if(!safe)el.disabled=true;
     });
   }
@@ -4754,6 +5148,7 @@ function buildReport(){
   lines.push('  · 장소     : '+(S.mission.location||'-'));
   lines.push('  · 출동시각 : '+(S.mission.dispatchedAt||'-').replace('T',' '));
   lines.push('  · 좌표     : '+(hasValidCoordinates()?(S.mission.lat+', '+S.mission.lon)+(S.mission.coordsConfirmedAt?' (현장확인)':' (미확인)'):'미입력'));
+  if(S.mission.priorityOrder)lines.push('  · 우선 지시: '+S.mission.priorityOrder);
   lines.push('');
   lines.push('2. 실종자');
   lines.push('  · 인적사항 : '+(S.subject.name||'-')+' / '+(S.subject.age||'-')+'세 / '+(S.subject.sex||'-')
@@ -4891,7 +5286,7 @@ function loadSample(){
   s.events = evs.map(function(e){
     return { t: now.getTime() + e[0]*60000, type:e[1], text:e[2], zone:e[3] };
   });
-  s.ui = { scale: num(S.ui.scale,1), dim: num(S.ui.dim,0), ackFound:0, paintS:2, paintBy:null };
+  s.ui = { scale: num(S.ui.scale,1), dim: num(S.ui.dim,0), viewPreset:S.ui.viewPreset==='far'?'far':'standard', ackFound:0, paintS:2, paintBy:null };
   applyStateWithMap(s,MAPDATA,opSeq,opEpoch,fileSeq).then(function(ok){
     if(!ok) alert('샘플을 저장하지 못해 기존 상태를 유지했습니다.');
   });
@@ -4940,6 +5335,7 @@ document.addEventListener('keydown', function(ev){
     if(MODE === 'display') toggleDrawer();
     return;
   }
+  if(ev.key==='Escape'&&pinMode){ev.preventDefault();setPinMode(null);return;}
   if(ev.key === 'Escape' && !$('drawer').hidden){ closeDrawer(); return; }
   if(typing) return;
   /* 쓸다가 잘못 지나가는 경우가 가장 흔하다. 입력칸에 있을 때는 동작하지 않는다. */

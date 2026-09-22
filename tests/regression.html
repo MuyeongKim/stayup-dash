@@ -45,6 +45,7 @@
 <iframe id="app" src="../stayup-dash.html?regression=1"></iframe>
 
 <script src="review-fixes.js"></script>
+<script src="ui-ux-fixes.js"></script>
 <script>
 "use strict";
 var out = document.getElementById('out'), sum = document.getElementById('sum');
@@ -590,7 +591,7 @@ async function run(){
   ok('상태가 바뀌면 KPI 줄이 따라간다',
     W.document.querySelector('#ctKpi .ck b').textContent === '--:--');
 
-  var navBtns = W.document.querySelectorAll('[data-act="nav"]');
+  var navBtns = W.document.querySelectorAll('.ct-nav [data-act="nav"]');
   gotoSection('sec-grid'); await wait(250);
   var bar = W.document.querySelector('.cons-top').getBoundingClientRect();
   var h3 = W.document.querySelector('#sec-grid>h2').getBoundingClientRect();
@@ -896,6 +897,7 @@ async function run(){
     &&W.getSnapshots().some(function(x){return x.reason==='복구 적용 전'&&x.state.mission.title==='복구 적용 전 현재 상태';}));
 
   await runReviewFixes();
+  await runUiUxFixes();
 
   /* ---------------- 마무리 ---------------- */
   var pass = results.filter(function(r){ return r.pass; }).length;
