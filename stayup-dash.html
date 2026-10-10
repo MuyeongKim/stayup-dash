@@ -324,14 +324,16 @@ b,strong{font-weight:700}
 .pin{
   position:absolute;width:0;height:0;pointer-events:none;z-index:5;
 }
+/* 표출용 rem은 모바일에서 3px 안팎까지 줄어든다. 핀의 좌표는 그대로 두고
+   점·라벨·테두리에 화면 픽셀 하한을 둬 조작 패널과 큰 지도에서도 읽히게 한다. */
 .pin .pdot{
   position:absolute;left:0;top:0;transform:translate(-50%,-50%);
-  width:1.05rem;height:1.05rem;border-radius:50%;border:.16rem solid #fff;
-  box-shadow:0 0 .5rem rgba(0,0,0,.9);
+  width:max(14px,1.05rem);height:max(14px,1.05rem);border-radius:50%;border:max(2px,.16rem) solid #fff;
+  box-shadow:0 0 max(6px,.5rem) rgba(0,0,0,.9);
 }
 .pin .plb{
   position:absolute;left:0;bottom:.8rem;transform:translateX(-50%);
-  font-size:.9rem;font-weight:800;padding:.05rem .3rem;border-radius:.2rem;
+  font-size:max(13px,.9rem);font-weight:800;padding:max(2px,.05rem) max(5px,.3rem);border-radius:max(3px,.2rem);
   background:rgba(7,10,14,.93);white-space:nowrap;max-width:var(--pin-max-width,400px);overflow-wrap:anywhere;
 }
 .pin.last .pdot{background:var(--info)}   .pin.last .plb{color:#7DD3FC;border:1px solid #155E75}
@@ -815,8 +817,8 @@ textarea{resize:vertical;min-height:52px}
 .large-type .d-rows{grid-template-columns:repeat(2,minmax(0,1fr))}
 .large-type .log-row{grid-template-columns:max-content minmax(0,1fr);gap:.2rem .4rem}
 .large-type .log-row .lx{grid-column:1/-1}
-.large-type .pin .plb{font-size:calc(1.05 * var(--unit))}
-.large-type .pin .pdot{width:calc(1.2 * var(--unit));height:calc(1.2 * var(--unit))}
+.large-type .pin .plb{font-size:max(13px,calc(1.05 * var(--unit)))}
+.large-type .pin .pdot{width:max(14px,calc(1.2 * var(--unit)));height:max(14px,calc(1.2 * var(--unit)))}
 .large-type .pin .stem{height:calc(.8 * var(--unit))}
 .d-rows em{word-break:keep-all}
 .d-top,.d-foot{flex-wrap:wrap}

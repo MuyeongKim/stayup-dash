@@ -133,6 +133,75 @@ async function loadMap(w, h, color){
   await wait(2200);
 }
 
+async function runMobileMapPins(){
+  var frame=document.getElementById('app'),oldWidth=frame.style.width,oldHeight=frame.style.height;
+  var pins=[['last','pinLast'],['found','pinFound']];
+  function pinMeasurements(host){
+    return pins.map(function(entry){
+      var label=host.querySelector('.pin.'+entry[0]+' .plb');
+      var dot=host.querySelector('.pin.'+entry[0]+' .pdot');
+      return {kind:entry[0],label:label,dot:dot,font:label?parseFloat(W.getComputedStyle(label).fontSize):0,
+        labelRect:label&&label.getBoundingClientRect(),dotRect:dot&&dot.getBoundingClientRect()};
+    });
+  }
+  try{
+    for(var wi=0;wi<2;wi++){
+      var width=[320,390][wi];
+      frame.style.width=width+'px';frame.style.height='844px';
+      await workspaceSetup(1600,900);
+      group('모바일 지도 핀 · '+width+'px');
+      /* 좌표가 붙은 긴 라벨도 실제 좁은 지도 안에서 검사한다. */
+      W.S.grid.geo={west:127.1,east:127.2,north:35.2,south:35.1,src:'manual',at:Date.now()};
+      for(var expanded=0;expanded<2;expanded++){
+        W.S.grid.pinLast={x:40,y:45};W.S.grid.pinFound={x:60,y:55};W.commit();await wait(80);
+        var before=W.JSON.stringify(W.S),revision=W.S.meta.revision;
+        if(expanded)W.openMapWorkspace('consMap');
+        var host=workspaceHost(),name=width+'px '+(expanded?'큰 지도':'조작 패널');
+        W.resetMapView(host);await wait(80);
+        var measured=pinMeasurements(host);
+        ok(name+'의 두 핀 라벨과 점은 각각 최소 12px로 보인다',
+          W.innerWidth===width&&measured.every(function(pin){
+            return pin.label&&pin.dot&&pin.font>=12&&pin.labelRect.height>=12
+              &&pin.dotRect.width>=12&&pin.dotRect.height>=12;
+          }),measured.map(function(pin){return pin.kind+' 글자 '+pin.font.toFixed(2)
+            +'px / 점 '+(pin.dotRect?pin.dotRect.width.toFixed(2):'없음')+'px';}).join(' · '));
+
+        W.setMapView(host,{zoom:2.25,x:17,y:-11});await wait(40);
+        var fit=host.querySelector('.mapfit').getBoundingClientRect();
+        measured=pinMeasurements(host);
+        ok(name+' 확대·이동 후 핀 중심은 원본 이미지 좌표와 일치한다',
+          measured.every(function(pin,index){
+            var point=W.S.grid[pins[index][1]],dot=pin.dotRect;
+            return dot&&Math.abs(dot.left+dot.width/2-(fit.left+fit.width*point.x/100))<0.75
+              &&Math.abs(dot.top+dot.height/2-(fit.top+fit.height*point.y/100))<0.75;
+          }));
+        W.resetMapView(host);
+        ok(name+' 열기·확대·이동·전체 맞춤은 상태와 판 번호를 바꾸지 않는다',
+          W.JSON.stringify(W.S)===before&&W.S.meta.revision===revision);
+
+        var edgesVisible=true;
+        for(var corner=0;corner<2;corner++){
+          W.S.grid.pinLast={x:corner?99:1,y:1};
+          W.S.grid.pinFound={x:corner?1:99,y:99};W.commit();await wait(60);
+          host=workspaceHost();var hostRect=host.getBoundingClientRect();
+          edgesVisible=edgesVisible&&pinMeasurements(host).every(function(pin){
+            var rect=pin.labelRect;
+            return pin.label&&rect&&rect.width>0&&rect.height>0
+              &&W.getComputedStyle(pin.label).visibility!=='hidden'
+              &&rect.left>=hostRect.left-1&&rect.right<=hostRect.right+1
+              &&rect.top>=hostRect.top-1&&rect.bottom<=hostRect.bottom+1;
+          });
+        }
+        ok(name+' 네 모서리의 좌표 라벨이 지도 밖으로 잘리지 않는다',edgesVisible);
+        if(expanded)W.closeMapWorkspace();
+      }
+    }
+  }finally{
+    if(W&&W.mapExpandedTarget)W.closeMapWorkspace();
+    frame.style.width=oldWidth;frame.style.height=oldHeight;
+  }
+}
+
 async function run(){
   /* ---------------- 저장 · 개인정보 ---------------- */
   await reload();
@@ -902,6 +971,7 @@ async function run(){
   await runReviewFixes();
   await runUiUxFixes();
   await runMapWorkspace();
+  await runMobileMapPins();
 
   /* ---------------- 마무리 ---------------- */
   var pass = results.filter(function(r){ return r.pass; }).length;
