@@ -41,9 +41,13 @@ STAY UP은 현장 조작자가 입력한 내용을 같은 PC의 대형 모니터
 
 - [PDF 사용설명서](./docs/STAY-UP-사용설명서.pdf): 인쇄하거나 다른 사람에게 전달할 때 사용합니다.
 - [HTML 사용설명서](./docs/user-guide.html): ZIP을 푼 뒤 `docs/user-guide.html`을 브라우저로 엽니다. 본문과 그림은 인터넷 없이 읽을 수 있습니다.
-- [실제 조작 패널](./assets/readme/console-preview.png) · [기본 표출 화면](./assets/readme/dashboard-preview.png) · [원거리 표출 화면](./assets/readme/far-preview.png): 모두 검토용 샘플 데이터입니다.
-- [큰 지도 작업 화면](./assets/readme/map-workspace-preview.png): 좌표·핀·확대 동작을 확인하는 검증용 지도이며 실제 지형이 아닙니다.
+- [조작 패널](./assets/readme/console-preview.png) · [원거리 표출 화면](./assets/readme/far-preview.png): 지도 미적용 상태의 이전 검토용 샘플입니다.
+- [실제 지도 기본 표출](./assets/readme/dashboard-preview.png) · [큰 지도 구역 칠하기](./assets/readme/map-workspace-preview.png) · [확대·이동](./assets/readme/map-zoom-pan-preview.png) · [전체 맞춤과 핀](./assets/readme/map-pins-preview.png): 실제 완주군 지도 위에 가상 상황을 표시한 PC 예시입니다. 지도 © OpenStreetMap 기여자 · [저작권 및 ODbL 안내](https://www.openstreetmap.org/copyright).
 - [대표 썸네일 PNG](./assets/readme/stayup-thumbnail.png) · [제작 프롬프트](./assets/readme/thumbnail-prompt.md)
+
+![완주군 실제 지도와 가상 수색 상황을 함께 표시한 STAY UP 기본 표출 화면](./assets/readme/dashboard-preview.png)
+
+*2026-10-10, v1.2.4 PC 기본 표출(1920×1080). 지도는 실제 지형이며 실종자·기체·인원·핀·기록은 가상 시연 데이터입니다. 실제 현장 사례가 아니며 지리좌표 보정도 하지 않았습니다. 지도폭·추정반경·배터리·기상·판정은 샘플 입력과 계산 결과로 실측·실시간 정보가 아닙니다. 지도 © OpenStreetMap 기여자 · [저작권 및 ODbL 안내](https://www.openstreetmap.org/copyright).*
 
 ## 무엇을 한 화면에 모으나
 
@@ -174,7 +178,13 @@ open -a "Google Chrome" stayup-dash.html
 
 ### 지도 보기와 표시 설정
 
-[큰 지도 작업 화면 예시](./assets/readme/map-workspace-preview.png)에서 지도 도구의 배치를 확인할 수 있습니다. 그림의 지도는 실제 지형이 아닌 검증용 이미지입니다.
+![실제 완주군 지도 위의 가상 C3 C4 D4 완료 구역과 핀](./assets/readme/map-workspace-preview.png)
+
+*큰 지도에서 C3·C4·D4를 완료·담당 드론으로 칠한 PC 예시입니다. 실제 완주군 지도 위의 구역·핀·상황은 가상이며 실제 수색 실적이 아닙니다. 지리좌표 보정과 실거리 검증은 하지 않았습니다. 지도 © OpenStreetMap 기여자 · [저작권 및 ODbL 안내](https://www.openstreetmap.org/copyright).*
+
+[전체 맞춤과 핀](./assets/readme/map-pins-preview.png), [약 244% 확대·이동](./assets/readme/map-zoom-pan-preview.png) 사진은 같은 원본 지도에서 보기 상태만 달라진 예시입니다. 지도 © OpenStreetMap 기여자 · [저작권 및 ODbL 안내](https://www.openstreetmap.org/copyright). 지도 출처·촬영 조건은 [지도 이미지 출처](./assets/readme/MAP_SOURCE.md)에 기록했습니다.
+
+**남은 모바일 표시 제약:** 390px 휴대 화면에서는 핀 라벨 약 2.93px, 점 약 3.41px로 지나치게 작게 보이는 문제가 남아 있습니다. 이번 문서 갱신에는 앱 수정이 포함되지 않았습니다. 작은 화면만으로 핀을 식별하지 말고 PC의 큰 지도에서 확인하세요.
 
 - **기본은 `보기·이동`입니다.** 지형을 살펴보려고 누르거나 끌어도 구역·핀·활동기록을 바꾸지 않습니다.
 - `확대`·`축소`로 1~16배 범위에서 세부를 보고 확대된 사진을 마우스·손가락으로 끌어서 이동합니다. `전체 맞춤`으로 사진 전체가 보이는 상태로 돌아옵니다. 사진·격자·핀·이동 추정반경이 함께 확대·이동하므로 같은 표시가 같은 지형을 가리킵니다.
@@ -300,6 +310,8 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 - Google Chrome 151에서 `file://` 직접 부팅
 
 ### 이번 업데이트
+
+2026-10-10 문서 화면 예시를 실제 OpenStreetMap 완주군 지도 촬영본으로 갱신했습니다. 실종자·기체·인원·핀·기록은 가상이며 실제 현장 사용 실적이 아닙니다. Markdown·오프라인 HTML·PDF에 같은 사진과 인접 출처 캡션을 반영했고, 지리좌표 미보정·샘플 수치·모바일 핀 가독성 제약을 명시했습니다. 앱의 동작 로직은 변경하지 않았으며 이번 문서 작업에서 전체 앱 회귀검사를 다시 실행하지 않았습니다. 버전 번호는 기존 GitHub 자동 증가 정책에 따라 푸시 후 갱신됩니다.
 
 2026-10-10 메인 지도 사용성과 위치 기록 보호를 보완했습니다. 앱 버전은 기존 GitHub 자동 버전 정책에 따라 릴리스 시 갱신합니다.
 
@@ -493,6 +505,18 @@ python3 -m http.server 8899 --bind 127.0.0.1
 node -e "const fs=require('fs');const s=fs.readFileSync('stayup-dash.html','utf8');const m=s.match(/<script>([\s\S]*?)<\/script>/);if(!m)throw Error('script missing');new Function(m[1]);console.log('inline script syntax: OK')"
 ```
 
+### 사용설명서 다시 만들기
+
+본문과 사진 캡션의 원본은 [USER_GUIDE.md](./USER_GUIDE.md)이며, [scripts/build-user-guide.mjs](./scripts/build-user-guide.mjs)가 사진을 base64로 포함한 HTML과 PDF를 만듭니다. 앱 실행에는 이 문서 생성 도구가 필요하지 않습니다. 문서 생성에는 Node.js 20 이상, `marked`와 `playwright`, Chromium 계열 브라우저가 필요합니다. 이번 생성에는 `marked 17.0.5`, `playwright 1.62.1`, Chrome 155를 사용했습니다.
+
+```bash
+npm install --prefix /tmp/stayup-guide-tools --no-save marked@17.0.5 playwright@1.62.1
+/tmp/stayup-guide-tools/node_modules/.bin/playwright install chromium
+node scripts/build-user-guide.mjs --modules /tmp/stayup-guide-tools/node_modules
+```
+
+설치된 Chrome을 사용하려면 `--browser`로 실행파일 경로를 지정합니다. HTML만 만들려면 `--html-only`를 붙입니다. PDF 생성 뒤에는 이미지와 출처가 같은 페이지에 있는지, 표·본문의 페이지 잘림과 목차 이동을 다시 확인하세요. 외부 모듈 폴더와 문서 검증용 PNG·로그는 저장소에 커밋하지 않습니다.
+
 ### 원격 저장소 두 곳
 
 | 원격 | 주소 | 자동 버전 |
@@ -524,6 +548,7 @@ stayup-dash/
 ├── .github/workflows/auto-version.yml
 ├── scripts/
 │   ├── auto-version.sh
+│   ├── build-user-guide.mjs
 │   └── version.mjs
 ├── tests/
 │   ├── regression.html
@@ -542,6 +567,9 @@ stayup-dash/
     ├── far-preview.png
     ├── console-preview.png
     ├── map-workspace-preview.png
+    ├── map-zoom-pan-preview.png
+    ├── map-pins-preview.png
+    ├── MAP_SOURCE.md
     ├── stayup-thumbnail.png
     └── thumbnail-prompt.md
 ```
@@ -549,6 +577,8 @@ stayup-dash/
 ## 라이선스
 
 [Apache License 2.0](./LICENSE) · Copyright 2026 MuyeongKim
+
+문서의 실제 지도 사진은 **지도 © OpenStreetMap 기여자**의 데이터를 사용합니다. [OpenStreetMap 저작권 및 ODbL 안내](https://www.openstreetmap.org/copyright)와 [지도 이미지 출처](./assets/readme/MAP_SOURCE.md)를 확인하세요. 앱 코드의 라이선스와 구분합니다.
 
 특허 조항과 기여자 조건이 명시돼 있어 기관이 도입을 검토할 때 법무 검토가 수월합니다. 사용·수정·재배포가 가능하며, 재배포 시 라이선스 사본과 변경 사실을 함께 표시해야 합니다.
 
