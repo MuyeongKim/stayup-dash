@@ -289,11 +289,11 @@ b,strong{font-weight:700}
    컨테이너 축에 따라 안정적으로 풀리지 않는다. */
 .mapfit{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:100%;height:100%;overflow:hidden;border-radius:.2rem;
+  width:100%;height:100%;overflow:visible;border-radius:.2rem;
 }
 .mapimg{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  transform-origin:center center;pointer-events:none;user-select:none;
+  position:absolute;inset:0;width:100%;height:100%;object-fit:fill;
+  pointer-events:none;user-select:none;
 }
 .mapnote{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
@@ -322,20 +322,30 @@ b,strong{font-weight:700}
 }
 .gcell.act{outline:.14rem solid var(--accent);outline-offset:-.14rem}
 .pin{
-  position:absolute;transform:translate(-50%,-100%);pointer-events:none;
-  display:flex;flex-direction:column;align-items:center;z-index:5;
+  position:absolute;width:0;height:0;pointer-events:none;z-index:5;
 }
 .pin .pdot{
+  position:absolute;left:0;top:0;transform:translate(-50%,-50%);
   width:1.05rem;height:1.05rem;border-radius:50%;border:.16rem solid #fff;
   box-shadow:0 0 .5rem rgba(0,0,0,.9);
 }
 .pin .plb{
+  position:absolute;left:0;bottom:.8rem;transform:translateX(-50%);
   font-size:.9rem;font-weight:800;padding:.05rem .3rem;border-radius:.2rem;
-  background:rgba(7,10,14,.85);margin-bottom:.12rem;white-space:nowrap;
+  background:rgba(7,10,14,.93);white-space:nowrap;max-width:var(--pin-max-width,400px);overflow-wrap:anywhere;
 }
 .pin.last .pdot{background:var(--info)}   .pin.last .plb{color:#7DD3FC;border:1px solid #155E75}
 .pin.found .pdot{background:var(--danger)}.pin.found .plb{color:#FCA5A5;border:1px solid #7F1D1D}
-.pin .stem{width:.14rem;height:.8rem;background:#fff;opacity:.75}
+.pin .stem{display:none}
+.pin.edge-top .plb{bottom:auto;top:.8rem}
+.pin.edge-left .plb{left:4px;transform:none}
+.pin.edge-right .plb{left:auto;right:4px;transform:none}
+.pin .plb.wrap{white-space:normal}
+.mapfit .rcircle{max-width:none}
+.mapwrap,.cons-map{isolation:isolate}
+.mapwrap{touch-action:pan-y}
+.mapwrap.map-pan-enabled,.cons-map.map-pan-enabled{touch-action:none;cursor:grab}
+.mapwrap.map-dragging,.cons-map.map-dragging{cursor:grabbing}
 .rcircle{
   position:absolute;border-radius:50%;border:.14rem dashed rgba(56,189,248,.75);
   background:rgba(56,189,248,.07);transform:translate(-50%,-50%);pointer-events:none;z-index:4;
@@ -666,10 +676,13 @@ textarea{resize:vertical;min-height:52px}
 .pb.p1.on{background:var(--warn)}
 .pb.p2.on{background:var(--ok);color:#04140A}
 .pb.p3.on{background:var(--danger);color:#1A0505}
-/* touch-action:none 이 없으면 터치로 쓸어내릴 때 페이지가 스크롤돼 칠하기가 끊긴다. */
+/* 기본 보기에서는 페이지 스크롤을 허용하며, 명시적으로 칠하기를 선택했을 때만 편집한다. */
 .cons-map{position:relative;width:100%;aspect-ratio:16/10;border:1px solid var(--border2);
-  border-radius:6px;overflow:hidden;background:#0B1219;cursor:crosshair;touch-action:none}
-.cons-map .gcell{font-size:12px;cursor:pointer}
+  border-radius:6px;overflow:hidden;background:#0B1219;cursor:default;touch-action:pan-y}
+.cons-map .gcell{font-size:12px;cursor:inherit}
+.cons-map.map-paint{touch-action:none;cursor:crosshair}
+.cons-map.placing-pin{touch-action:pan-y;cursor:crosshair}
+.cons-map.map-pan-enabled.placing-pin{touch-action:none}
 .cons-map .gcell .by{font-size:9px}
 .cons-map .gcell:focus{outline:3px solid var(--accent);outline-offset:-3px}
 .map-mode{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;margin:8px 0;border:1px solid var(--warn);border-radius:6px;color:var(--text);background:var(--surface2)}
@@ -733,12 +746,8 @@ textarea{resize:vertical;min-height:52px}
   input[type="checkbox"]{width:22px;height:22px;transform:none}
   .chkline{min-height:44px;gap:10px}
   .row-tools,.paint .prow,.sens-pick{gap:8px}
-  .cons-map{overflow:auto;touch-action:pan-x pan-y;overscroll-behavior:contain;cursor:default}
-  .cons-map .mapfit{
-    position:relative !important;top:auto !important;left:auto !important;
-    transform:none !important;margin:auto;
-  }
-  .cons-map .gcell{min-width:44px;min-height:44px}
+  .cons-map{overscroll-behavior:auto}
+  .cons-map .gcell{min-width:0;min-height:0}
 }
 
 /* 세로가 짧은 휴대 화면에서는 상단 바가 화면 절반을 계속 가리지 않게 스크롤시킨다. */
@@ -944,6 +953,79 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .far-view .tk-track{height:auto;overflow:visible;min-width:0}
 .far-view .tk-move{animation:none!important;transform:none!important;white-space:normal;font-size:calc(1.4 * var(--unit));line-height:1.4;max-height:none;display:block;overflow-wrap:anywhere}
 .far-view .tk-right{display:block;max-width:calc(18 * var(--unit));white-space:normal;font-size:calc(1 * var(--unit));line-height:1.5}
+/* 지도 도구는 보기 설정만 변경한다. 사진과 공간 표식의 자료는 그대로 보존한다. */
+.map-workspace{min-width:0;min-height:0}
+.display-map-workspace{display:flex;flex-direction:column;flex:1 1 auto;gap:4px}
+.display-map-workspace .mapwrap{flex:1 1 auto;min-height:80px}
+.map-tools{font:13px/1.45 system-ui,sans-serif;color:var(--text);margin:0 0 6px}
+.map-tools-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.map-tools .btn{font-size:13px;min-height:32px;padding:6px 10px}
+.display-map-workspace .map-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+.display-map-workspace .map-options{margin-top:0}
+.display-map-workspace .map-options[open]{flex:1 0 100%}
+.map-zoom{font:700 13px/1.3 system-ui,sans-serif;min-width:44px;text-align:center}
+.map-options{margin-top:6px;border:1px solid var(--border2);border-radius:6px;padding:0 8px}
+.map-options>summary{padding:6px 0;cursor:pointer;font-size:13px;font-weight:700}
+.map-options-body{padding:4px 0 10px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.map-options .chkline{margin:0;font-size:13px}
+.map-options-body>.map-tools-row{flex-basis:100%}
+.map-fill{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
+.map-fill input{width:130px;min-width:0}
+.map-position{font-size:12px;line-height:1.45;color:var(--muted);padding:5px 0;overflow-wrap:anywhere;flex:0 0 auto}
+.map-empty-actions{display:flex;gap:10px;align-items:center;padding:12px;background:var(--surface2);border:1px dashed var(--control-border);border-radius:6px;margin-top:8px}
+.map-empty-actions span{font-size:13px;color:var(--muted)}
+.map-review-notice{padding:12px;margin:8px 0;border:1px solid var(--warn);background:#33210A;color:#FDE68A;font-size:14px;line-height:1.5}
+.map-review-notice .btn{margin-top:8px}
+.map-palette-fold{border:1px solid var(--border2);border-radius:6px;padding:0 10px;margin-bottom:8px;flex:0 0 auto}
+.map-palette-fold>summary{padding:9px 0;font-size:13px;font-weight:700;cursor:pointer}
+.map-palette-fold .paint{margin-bottom:10px}
+.mapfit.hide-grid .gridlayer{visibility:hidden;pointer-events:none}
+.mapfit.hide-by .gcell .by{display:none}
+.mapfit.hide-radius .rcircle{display:none}
+.mapfit .gcell.s0{background:rgba(7,10,14,calc(var(--map-fill,.42)*.38))}
+.mapfit .gcell.s1{background-color:rgba(232,185,49,calc(var(--map-fill,.42)*.67))}
+.mapfit .gcell.s2{background-color:rgba(34,197,94,var(--map-fill,.42))}
+.mapfit .gcell.s3{background-color:rgba(239,68,68,calc(var(--map-fill,.42)*.52))}
+.cons-map{aspect-ratio:auto;height:min(54vh,580px);min-height:260px}
+.map-dialog{width:calc(100vw - 24px);max-width:1800px;height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);margin:auto;padding:16px;border:1px solid var(--border2);border-radius:12px;background:var(--bg);color:var(--text);font-size:15px;overflow:hidden}
+.map-dialog[open]{display:flex;flex-direction:column;gap:10px}
+.map-dialog::backdrop{background:rgba(0,0,0,.78)}
+.map-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto}
+.map-dialog-head h2{font-size:20px;margin:0}
+.map-dialog-head .btn{font-size:14px;min-height:40px}
+.map-dialog-status{font-size:14px;line-height:1.4;flex:0 0 auto;padding:7px 10px;border-left:4px solid var(--warn);background:var(--surface2)}
+.map-dialog-status.danger{border-color:var(--danger);color:#FECACA;background:#3B1010}
+.map-dialog-alert{flex:0 0 auto;max-height:26vh;overflow:auto;border:1px solid var(--danger);border-radius:6px;background:#3B1010;color:#FECACA;padding:9px 11px;font:700 14px/1.5 system-ui,sans-serif}
+.map-dialog-alert [data-map-alert-text]{white-space:pre-line;overflow-wrap:anywhere}
+.map-dialog-alert .btn{margin-top:7px;min-height:40px;font-size:13px}
+.map-dialog>.map-workspace{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:auto}
+.map-dialog .cons-map,.map-dialog .mapwrap{height:auto;min-height:160px;flex:1 0 160px;aspect-ratio:auto}
+.map-dialog .map-tools,.map-dialog .paint,.map-dialog .row-tools,.map-dialog .map-mode{flex:0 0 auto}
+.map-dialog .map-empty-actions{flex:0 0 auto}
+.board.large-type:not(.far-view) .col-c{grid-template-rows:minmax(0,2.8fr) minmax(0,1fr)}
+.board.large-type:not(.far-view) .card-grid .card-h{padding:.35rem .55rem}
+.board.large-type:not(.far-view) .cov{gap:6px 10px}
+.board.large-type:not(.far-view) .radchip{padding:4px 8px}
+.board.large-type:not(.far-view) .legend{gap:4px 10px;font-size:18px}
+.board.large-type:not(.far-view) .cov-pct{font-size:48px}
+.board.large-type:not(.far-view) .card-safety .card-h{padding:8px 10px}
+.board.large-type:not(.far-view) .card-safety .card-h h2{font-size:22px}
+.board.large-type:not(.far-view) .card-safety .card-h .h-right{font-size:14px}
+.board.large-type:not(.far-view) .safety-row{gap:4px}
+.board.large-type:not(.far-view) .sf{padding:5px 8px}
+.board.large-type:not(.far-view) .sf .sl{font-size:15px}
+.board.large-type:not(.far-view) .sf .sv{font-size:21px}
+.board.large-type:not(.far-view) .sf.wide .sv{font-size:18px}
+@media(max-width:600px){
+ .map-tools .btn{font-size:12px;padding:7px 9px}
+ .cons-map{height:46vh;min-height:260px}
+ .map-empty-actions{align-items:stretch;flex-direction:column}
+ .map-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;padding:10px}
+ .map-dialog-head h2{font-size:18px}
+ .map-dialog>.map-workspace{overflow:auto}
+ .map-dialog .map-tools-row{gap:5px}
+}
+@media(pointer:coarse){.map-tools .btn,.map-options summary{min-height:44px}.map-tools .chkline{min-height:44px}.map-fill input{min-height:44px}}
 @media print{body{background:#fff}}
 </style>
 </head>
@@ -1018,7 +1100,11 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
           <span class="h-right" id="gridMeta"></span>
         </div>
         <div class="card-b">
+          <div class="map-workspace display-map-workspace" id="displayMapWorkspace" data-map-workspace="mapWrap">
+          <div id="displayMapTools"></div>
           <div class="mapwrap" id="mapWrap"></div>
+          <div class="map-position" data-map-position="mapWrap"></div>
+          </div>
           <div class="cov">
             <div class="cov-pct num"><span id="covPct">0</span><small>%</small></div>
             <div class="cov-bar" id="covBar"></div>
@@ -1135,7 +1221,7 @@ function defaultState(){
     batteries:{ ready:0, charging:0, empty:0, generator:false, avgFlightMin:25, concurrent:2 },
     grid:{
       rows:5, cols:6, cells:{}, generation:uid(), mapVer:0, mapId:null, hasMap:false, mapW:0, mapH:0, mapKB:0,
-      mapZoom:100, mapX:0, mapY:0, mapOpacity:0.85, widthMeters:2000,
+      mapZoom:100, mapX:0, mapY:0, viewportVersion:1, spatialReview:false, mapOpacity:0.85, widthMeters:2000,
       /* geo: 지도 네 변의 위경도. 있으면 격자·핀에 실제 좌표가 생기고
          가로 실거리도 손입력이 아니라 계산값을 쓴다. 없으면 종전과 같이 픽셀 좌표계. */
       geo:null, ref1:null, ref2:null,
@@ -1568,6 +1654,10 @@ function migrate(raw){
   d.grid.mapW=sanInt(g.mapW,0,20000,0); d.grid.mapH=sanInt(g.mapH,0,20000,0); d.grid.mapKB=sanInt(g.mapKB,0,20000,0);
   d.grid.mapZoom=sanNum(g.mapZoom,50,400,100,false); d.grid.mapX=sanNum(g.mapX,-200,200,0,false);
   d.grid.mapY=sanNum(g.mapY,-200,200,0,false); d.grid.mapOpacity=sanNum(g.mapOpacity,0.1,1,0.85,false);
+  /* 구버전은 배경만 변환했다. 이미 저장된 잘못된 보정을 자동 복구했다고 간주하지 않는다. */
+  d.grid.spatialReview=sanBool(g.spatialReview,false)||!!(g.viewportVersion!==1&&g.hasMap
+    &&(g.geo||d.grid.mapZoom!==100||d.grid.mapX!==0||d.grid.mapY!==0));
+  d.grid.viewportVersion=1;d.grid.mapZoom=100;d.grid.mapX=0;d.grid.mapY=0;
   d.grid.widthMeters=sanNum(g.widthMeters,50,100000,2000,false);
   function pin(v){ return isPlainObject(v) ? {x:sanNum(v.x,0,100,50,false),y:sanNum(v.y,0,100,50,false)} : null; }
   d.grid.pinLast=pin(g.pinLast); d.grid.pinFound=pin(g.pinFound);
@@ -1644,6 +1734,7 @@ function migrate(raw){
 function showSystemAlert(message){
   var el=$('systemAlert'); if(!el) return;
   el.textContent=message||''; el.hidden=!message;
+  if(typeof updateMapDialogStatus==='function')updateMapDialogStatus();
 }
 function refreshSystemAlert(){
   if(!SAVE_STATUS.ok)showSystemAlert('저장 실패: '+(SAVE_STATUS.message||'브라우저 저장공간을 확인하고 즉시 JSON으로 내보내세요.'));
@@ -2113,7 +2204,7 @@ function hasSpatialData(state){
 function resetSpatialGrid(state,clearPins){
   state.grid.cells={};state.grid.generation=uid();
   state.drones.forEach(function(d){d.zone='';});
-  if(clearPins){state.grid.pinLast=null;state.grid.pinFound=null;}
+  if(clearPins){state.grid.pinLast=null;state.grid.pinFound=null;state.grid.spatialReview=false;}
 }
 var gridDimensionsDraft=null;
 function gridDimensionValue(key){
@@ -2639,6 +2730,97 @@ function renderCrew(){
    표출 화면(읽기 전용)과 조작 패널(클릭 편집)이 같은 함수를 공유한다.
    -------------------------------------------------------------------------- */
 var pinMode = null;      /* 'last' | 'found' | 'ref1' | 'ref2' | null */
+var mapEditMode = 'view'; /* 창별 보기 설정이며 출동 데이터에는 저장하지 않는다. */
+var mapViews = Object.create(null);
+var mapGesture = null;
+function mapIdentity(){
+  return [S.meta.epoch,stateLifecycleSeq,S.grid.mapId||'',S.grid.mapVer||0,S.grid.generation||0].join('|');
+}
+function mapViewState(host){
+  var key=host&&host.id||'mapWrap',identity=mapIdentity(),rec=mapViews[key];
+  if(rec&&rec.identity!==identity&&key==='consMap'){cancelMapInteraction();mapEditMode='view';pinMode=null;}
+  if(!rec||rec.identity!==identity)rec=mapViews[key]={identity:identity,zoom:1,x:0,y:0};
+  return rec;
+}
+function mapBaseSize(host){
+  var W=Math.max(0,host.clientWidth-16),H=Math.max(0,host.clientHeight-16);
+  var ar=(S.grid.hasMap&&S.grid.mapW>0&&S.grid.mapH>0)?S.grid.mapW/S.grid.mapH:0;
+  var w=W,h=H;if(ar){h=w/ar;if(h>H){h=H;w=h*ar;}}
+  return {w:w,h:h};
+}
+function layoutMapPins(host){
+  var hr=host.getBoundingClientRect();
+  host.querySelectorAll('.pin').forEach(function(pin){
+    var label=pin.querySelector('.plb');if(!label)return;
+    var pr=pin.getBoundingClientRect(),visible=pr.left>=hr.left&&pr.left<=hr.right&&pr.top>=hr.top&&pr.top<=hr.bottom;
+    label.style.visibility=visible?'':'hidden';
+    label.style.maxWidth=Math.max(40,hr.width-20)+'px';label.classList.remove('wrap');
+    if(label.scrollWidth>hr.width-20)label.classList.add('wrap');
+    var w=label.offsetWidth,h=label.offsetHeight;
+    var left=clamp(pr.left-w/2,hr.left+10,Math.max(hr.left+10,hr.right-w-10));
+    var top=pr.top-h-12;if(top<hr.top+6)top=pr.top+12;
+    top=clamp(top,hr.top+6,Math.max(hr.top+6,hr.bottom-h-6));
+    label.style.transform='none';label.style.bottom='auto';label.style.left=(left-pr.left)+'px';label.style.top=(top-pr.top)+'px';
+  });
+}
+function syncMapInteractionUi(host){
+  if(!host)return;
+  var edit=host.id==='consMap'&&ownsEditorLock(),mode=edit&&pinMode?'pin':(edit?mapEditMode:'view');
+  host.dataset.mapMode=mode;
+  host.classList.toggle('map-paint',mode==='paint');host.classList.toggle('map-view',mode==='view');
+  host.classList.toggle('placing-pin',mode==='pin');
+  host.classList.toggle('map-pan-enabled',mode!=='paint'&&mapViewState(host).zoom>1);
+}
+function setMapView(host,patch){
+  if(!host)return;
+  cancelMapInteraction();
+  var v=mapViewState(host),old=v.zoom;patch=patch||{};
+  if(patch.zoom!==undefined)v.zoom=clamp(num(patch.zoom,old),1,16);
+  v.x=patch.x!==undefined?num(patch.x,0):v.x*v.zoom/old;
+  v.y=patch.y!==undefined?num(patch.y,0):v.y*v.zoom/old;
+  fitMapBox(host);host.dispatchEvent(new CustomEvent('mapviewchange',{bubbles:true}));
+  return v;
+}
+function resetMapView(host){return setMapView(host,{zoom:1,x:0,y:0});}
+function setMapEditMode(mode){
+  cancelMapInteraction();pinMode=null;mapEditMode=mode==='paint'?'paint':'view';
+  var host=$('consMap');
+  if(host&&mapEditMode==='paint'&&typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches){
+    var sz=mapBaseSize(host),minimum=Math.max(gridCols()*44/Math.max(1,sz.w),gridRows()*44/Math.max(1,sz.h),1);
+    if(mapViewState(host).zoom<minimum)setMapView(host,{zoom:minimum});
+  }
+  updatePinModeUi();
+  if(typeof updateMapWorkspaceUi==='function')updateMapWorkspaceUi(host);
+}
+function getMapPoint(host,clientX,clientY){
+  var fit=host&&host.querySelector('.mapfit');if(!fit)return null;
+  var r=fit.getBoundingClientRect(),h=host.getBoundingClientRect();
+  if(!r.width||!r.height||clientX<r.left||clientX>r.right||clientY<r.top||clientY>r.bottom
+     ||clientX<h.left||clientX>h.right||clientY<h.top||clientY>h.bottom)return null;
+  return {x:(clientX-r.left)/r.width*100,y:(clientY-r.top)/r.height*100};
+}
+function cancelMapInteraction(){
+  var gesture=mapGesture;mapGesture=null;
+  /* 포인터가 내려가 있는 동안 값은 painting.after에만 존재하므로 취소 시 저장할 것이 없다. */
+  if(painting){
+    var pending=painting;painting=null;
+    document.querySelectorAll('#consMap .gcell').forEach(function(el){
+      var id=el.getAttribute('data-cell');if(!pending.touched[id])return;
+      var cur=S.grid.cells[id]||{s:0,by:''};el.className='gcell s'+(cur.s||0);
+      el.setAttribute('aria-label',id+' '+CELL_ST[cur.s||0]+(cur.by?' 담당 '+cur.by:' 담당 없음'));
+      el.innerHTML=id+(cur.by?'<span class="by">'+esc(cur.by)+'</span>':'');
+    });
+  }
+  if(gesture&&gesture.host){
+    gesture.host.classList.remove('map-dragging');
+    try{gesture.host.releasePointerCapture(gesture.pointerId);}catch(ignore){}
+  }
+}
+function mapEditsAllowed(mode){
+  if(!ensureEditor())return false;
+  return /^ref[12]$/.test(mode||'')||typeof ensureMapReviewed!=='function'||ensureMapReviewed();
+}
+
 function pinModeLabel(){return {last:'최종목격 핀',found:'발견 핀',ref1:'기준점 1',ref2:'기준점 2'}[pinMode]||'';}
 function updatePinModeUi(){
   var status=$('mapModeStatus'),map=$('consMap'),label=pinModeLabel();
@@ -2646,21 +2828,24 @@ function updatePinModeUi(){
     status.hidden=!label;
     status.innerHTML=label?'<span class="mode-help"><b>'+label+' 배치 중</b> · 지도 클릭 또는 방향키로 칸 선택 후 Enter/Space · Esc로 취소</span><button type="button" class="btn sm" data-act="cancelpin">배치 취소</button>':'';
   }
-  if(map){map.classList.toggle('placing-pin',!!label);if(label)map.setAttribute('aria-describedby','mapModeStatus');else map.removeAttribute('aria-describedby');}
+  if(map){syncMapInteractionUi(map);if(label)map.setAttribute('aria-describedby','mapModeStatus');else map.removeAttribute('aria-describedby');}
   document.querySelectorAll('[data-act="pin"],[data-act="refpick"]').forEach(function(b){
     var selected=!!pinMode&&(b.getAttribute('data-p')||b.getAttribute('data-r'))===pinMode;
     b.setAttribute('aria-pressed',selected?'true':'false');b.classList.toggle('primary',selected);
   });
+  if(typeof updateMapWorkspaceUi==='function')updateMapWorkspaceUi(map);
 }
 function setPinMode(mode,root){
+  cancelMapInteraction();
   pinMode=/^(last|found|ref[12])$/.test(mode||'')?mode:null;
+  if(pinMode){mapEditMode='view';if(typeof mapLayers==='object')mapLayers.grid=true;}
   updatePinModeUi();
   var map=(root||document).querySelector('#consMap'),cell=map&&map.querySelector('[data-cell="'+gridFocusId+'"]');
-  if(cell)cell.focus();
+  if(cell)cell.focus({preventScroll:true});
 }
 function placeMapPoint(x,y){
-  if(!pinMode||!ensureEditor()||!isFinite(x)||!isFinite(y))return false;
-  var mode=pinMode;x=clamp(x,0,100);y=clamp(y,0,100);
+  if(!pinMode||!mapEditsAllowed(pinMode)||!isFinite(x)||!isFinite(y)||x<0||x>100||y<0||y>100)return false;
+  var mode=pinMode;
   if(mode==='ref1'||mode==='ref2'){
     var prev=S.grid[mode]||{};
     S.grid[mode]={x:+x.toFixed(2),y:+y.toFixed(2),lat:prev.lat==null?null:prev.lat,lon:prev.lon==null?null:prev.lon};
@@ -2708,13 +2893,14 @@ function restorePaintCells(before){
 function paintCell(el){
   if(!painting) return;
   var id = el.getAttribute('data-cell'); if(!id || painting.touched[id]) return;
-  var cur = S.grid.cells[id] || {s:0,by:''};
+  var existing = S.grid.cells[id] || {s:0,by:''};
+  var cur={s:existing.s,by:existing.by};
   var wasDone = cur.s === 2;
   /* 고치기 전 값을 남긴다. cur 을 그 자리에서 바꾸므로 반드시 여기서 떠야 한다. */
   painting.before[id] = { s:intv(cur.s,0), by:cur.by||'', existed:!!S.grid.cells[id] };
   if(S.ui.paintS !== null && S.ui.paintS !== undefined) cur.s = intv(S.ui.paintS,0);
   if(S.ui.paintBy !== null && S.ui.paintBy !== undefined) cur.by = S.ui.paintBy;
-  S.grid.cells[id] = cur;
+  if(!painting.after)painting.after={};painting.after[id]=cur;
   painting.touched[id] = true;
   if(cur.s === 2 && !wasDone) painting.done.push(id);
   /* 쓸어내리는 동안 전체를 다시 그리면 끊긴다. 만진 칸만 직접 고친다. */
@@ -2729,7 +2915,9 @@ function paintCell(el){
 function finishPaint(){
   if(!painting) return;
   var p = painting; painting = null;
+  if(p.state&&p.state!==S||p.epoch&&p.epoch!==SESSION_EPOCH||p.revision!==undefined&&p.revision!==S.meta.revision||!ownsEditorLock())return false;
   var ids = Object.keys(p.touched); if(!ids.length) return;
+  ids.forEach(function(id){if(p.after&&p.after[id])S.grid.cells[id]=p.after[id];});
   ids.sort();
   var done = p.done.slice().sort();
   var correctedDone=ids.filter(function(id){
@@ -2803,30 +2991,15 @@ function paintTargetsSelected(){
 }
 
 function fitMapBox(host){
-  var fit = host && host.querySelector('.mapfit'); if(!fit) return;
-  var ar = (S.grid.hasMap && S.grid.mapW>0 && S.grid.mapH>0) ? S.grid.mapW/S.grid.mapH : 0;
-  var touchEdit=host.classList.contains('cons-map')
-    &&typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches;
-  if(touchEdit){
-    var minW=gridCols()*44+4,minH=gridRows()*44+4;
-    var tw=Math.max(host.clientWidth,minW),th=Math.max(host.clientHeight,minH);
-    if(ar){th=tw/ar;if(th<minH){th=minH;tw=th*ar;}}
-    var tws=tw.toFixed(1)+'px',ths=th.toFixed(1)+'px';
-    if(fit.style.width!==tws||fit.style.height!==ths){fit.style.width=tws;fit.style.height=ths;}
-    return;
-  }
-  if(!ar){
-    if(fit.style.width!=='100%'){ fit.style.width='100%'; fit.style.height='100%'; }
-    return;
-  }
-  /* 숨겨진 창·최소화된 표출 화면에서 그리면 크기가 0으로 읽힌다. 그때는 건너뛰고
-     아래 1초 점검에서 다시 맞춘다. 값이 바뀔 때만 써서 레이아웃을 흔들지 않는다. */
-  var W = host.clientWidth, H = host.clientHeight;
-  if(!W || !H) return;
-  var w = W, h = W/ar;
-  if(h > H){ h = H; w = H*ar; }
-  var ws = w.toFixed(1)+'px', hs = h.toFixed(1)+'px';
-  if(fit.style.width !== ws || fit.style.height !== hs){ fit.style.width = ws; fit.style.height = hs; }
+  var fit=host&&host.querySelector('.mapfit');if(!fit)return;
+  var sz=mapBaseSize(host);if(!sz.w||!sz.h)return;
+  var v=mapViewState(host),w=sz.w*v.zoom,h=sz.h*v.zoom;
+  v.x=clamp(v.x,-Math.max(0,(w-host.clientWidth+16)/2),Math.max(0,(w-host.clientWidth+16)/2));
+  v.y=clamp(v.y,-Math.max(0,(h-host.clientHeight+16)/2),Math.max(0,(h-host.clientHeight+16)/2));
+  var ws=w.toFixed(2)+'px',hs=h.toFixed(2)+'px';
+  if(fit.style.width!==ws)fit.style.width=ws;if(fit.style.height!==hs)fit.style.height=hs;
+  fit.style.transform='translate(calc(-50% + '+v.x.toFixed(2)+'px),calc(-50% + '+v.y.toFixed(2)+'px))';
+  syncMapInteractionUi(host);layoutMapPins(host);
 }
 /* 컨테이너는 안전 카드 높이·창 크기·배율 슬라이더로 계속 변한다. 그때마다 다시 맞춘다. */
 function observeMapFit(host){
@@ -2836,13 +3009,15 @@ function observeMapFit(host){
 }
 
 function buildGrid(host, interactive){
+  if(!host)return;
+  cancelMapInteraction();
+  if(host.id==='consMap'&&!interactive){mapEditMode='view';pinMode=null;}
   var g = S.grid;
   var hadGridFocus=!!(interactive&&host.contains(document.activeElement));
   var html = '<div class="mapfit">';
   if(MAPDATA){
-    var tf = geoOK() ? 'none' : 'scale('+(num(g.mapZoom,100)/100)+') translate('+num(g.mapX,0)+'%,'+num(g.mapY,0)+'%)';
-    html += '<img class="mapimg" alt="" src="'+MAPDATA+'" style="opacity:'
-          + num(g.mapOpacity,0.85) + ';transform:'+tf+'">';
+    html += '<img class="mapimg" alt="수색 지도 또는 현장 사진" draggable="false" src="'+MAPDATA+'" style="opacity:'
+          + num(g.mapOpacity,0.85) + '">';
   } else if(interactive){
     /* 표출 화면에는 운영요원용 안내문을 띄우지 않는다. 격자 뒤로 비쳐 읽히지도 않고,
        지휘부가 보는 화면에 조작 지시문이 남는다. 지도 미적용 여부는 카드 헤더로 알린다. */
@@ -2898,83 +3073,109 @@ function buildGrid(host, interactive){
   host.innerHTML = html;
   fitMapBox(host); observeMapFit(host);
 
-  if(interactive){
-    function setGridFocus(el,moveFocus){
-      if(!el)return;
-      gridFocusId=el.getAttribute('data-cell')||gridFocusId;
-      host.querySelectorAll('.gcell').forEach(function(c){c.tabIndex=c===el?0:-1;});
-      if(moveFocus)el.focus();
-    }
-    host.onfocusin=function(ev){
-      var c=ev.target.closest&&ev.target.closest('.gcell');if(c&&host.contains(c))setGridFocus(c,false);
-    };
-    host.onkeydown=function(ev){
-      if(!/^Arrow(Up|Down|Left|Right)$/.test(ev.key))return;
-      var cur=ev.target.closest&&ev.target.closest('.gcell');if(!cur)return;
-      var m=/^([A-L])(\d{1,2})$/.exec(cur.getAttribute('data-cell')||'');if(!m)return;
-      var rr=m[1].charCodeAt(0)-65,cc=parseInt(m[2],10)-1;
-      if(ev.key==='ArrowUp')rr--;else if(ev.key==='ArrowDown')rr++;
-      else if(ev.key==='ArrowLeft')cc--;else cc++;
-      rr=clamp(rr,0,R-1);cc=clamp(cc,0,C-1);
-      var next=host.querySelector('[data-cell="'+cellId(rr,cc)+'"]');
-      if(next){ev.preventDefault();setGridFocus(next,true);}
-    };
-    function cellUnder(ev){
-      var el = document.elementFromPoint(ev.clientX, ev.clientY);
-      var c = el && el.closest ? el.closest('.gcell') : null;
-      return (c && host.contains(c)) ? c : null;
-    }
-    host.onpointerdown = function(ev){
-      if(ev.button != null && ev.button !== 0) return;
-      if(!ensureEditor()) return;
-      /* 핀도 격자와 같은 좌표계여야 한다. 컨테이너 기준으로 찍으면 표출 화면에서
-         다른 지점에 나타난다. */
-      var fitEl = host.querySelector('.mapfit');
-      var box = (fitEl || host).getBoundingClientRect();
-      if(pinMode){
-        if(!box.width||!box.height)return;
-        ev.preventDefault();
-        var placedCell=cellUnder(ev);if(placedCell)setGridFocus(placedCell,true);
-        var x = clamp((ev.clientX-box.left)/box.width*100, 0, 100);
-        var y = clamp((ev.clientY-box.top)/box.height*100, 0, 100);
-        placeMapPoint(x,y);return;
-      }
-      var cellEl = cellUnder(ev); if(!cellEl) return;
-      if(!paintTargetsSelected()){ mapMsg('칠할 항목을 먼저 고르세요 (상태 또는 담당).','warn'); return; }
-      ev.preventDefault();
-      painting = {touched:{}, done:[], before:{}};
-      paintCell(cellEl);
-      try{ host.setPointerCapture(ev.pointerId); }catch(e){}
-    };
-    host.onpointermove = function(ev){
-      if(!painting) return;
-      var el = cellUnder(ev); if(el) paintCell(el);
-    };
-    host.onpointerup = host.onpointercancel = function(ev){
-      if(!painting) return;
-      try{ host.releasePointerCapture(ev.pointerId); }catch(e){}
-      finishPaint();
-    };
-    /* 키보드(Enter·Space)는 포인터 없이 click 만 발생한다(detail 0). 그 경로만 여기서 받는다. */
-    host.onclick = function(ev){
-      if(ev.detail !== 0) return;
-      if(!ensureEditor()) return;
-      var cellEl = ev.target.closest ? ev.target.closest('.gcell') : null; if(!cellEl) return;
-      setGridFocus(cellEl,false);
-      if(pinMode){
-        var pos=/^([A-L])(\d{1,2})$/.exec(cellEl.getAttribute('data-cell')||'');
-        if(pos){ev.preventDefault();placeMapPoint((parseInt(pos[2],10)-0.5)/C*100,(pos[1].charCodeAt(0)-65+0.5)/R*100);}
-        return;
-      }
-      if(!paintTargetsSelected()){ mapMsg('칠할 항목을 먼저 고르세요 (상태 또는 담당).','warn'); return; }
-      var id = cellEl.getAttribute('data-cell');
-      painting = {touched:{}, done:[], before:{}};
-      paintCell(cellEl); finishPaint();
-      setTimeout(function(){var nn=document.querySelector('#consMap [data-cell="'+id+'"]');if(nn)nn.focus();},0);
-    };
-    if(hadGridFocus)setTimeout(function(){setGridFocus(host.querySelector('[data-cell="'+gridFocusId+'"]'),true);},0);
+  function setGridFocus(el,moveFocus){
+    if(!el||!interactive)return;
+    gridFocusId=el.getAttribute('data-cell')||gridFocusId;
+    host.querySelectorAll('.gcell').forEach(function(c){c.tabIndex=c===el?0:-1;});
+    if(moveFocus)el.focus({preventScroll:true});
   }
+  function cellUnder(ev){
+    var el=document.elementFromPoint(ev.clientX,ev.clientY);
+    var c=el&&el.closest?el.closest('.gcell'):null;
+    return c&&host.contains(c)&&getMapPoint(host,ev.clientX,ev.clientY)?c:null;
+  }
+  function editingNow(){return interactive&&ownsEditorLock();}
+  host.onfocusin=function(ev){
+    var c=ev.target.closest&&ev.target.closest('.gcell');if(c&&host.contains(c))setGridFocus(c,false);
+  };
+  host.onkeydown=function(ev){
+    if(ev.key==='Escape'){
+      var active=!!(mapGesture||painting||pinMode);cancelMapInteraction();if(pinMode)setPinMode(null);
+      if(active){ev.preventDefault();ev.stopPropagation();}return;
+    }
+    if(!/^Arrow(Up|Down|Left|Right)$/.test(ev.key))return;
+    var cur=ev.target.closest&&ev.target.closest('.gcell');if(!cur)return;
+    var m=/^([A-L])(\d{1,2})$/.exec(cur.getAttribute('data-cell')||'');if(!m)return;
+    var rr=m[1].charCodeAt(0)-65,cc=parseInt(m[2],10)-1;
+    if(ev.key==='ArrowUp')rr--;else if(ev.key==='ArrowDown')rr++;else if(ev.key==='ArrowLeft')cc--;else cc++;
+    rr=clamp(rr,0,R-1);cc=clamp(cc,0,C-1);
+    var next=host.querySelector('[data-cell="'+cellId(rr,cc)+'"]');
+    if(next){
+      ev.preventDefault();setGridFocus(next,true);
+      var nr=next.getBoundingClientRect(),hr=host.getBoundingClientRect(),v=mapViewState(host);
+      var dx=nr.left<hr.left+8?hr.left+8-nr.left:(nr.right>hr.right-8?hr.right-8-nr.right:0);
+      var dy=nr.top<hr.top+8?hr.top+8-nr.top:(nr.bottom>hr.bottom-8?hr.bottom-8-nr.bottom:0);
+      if(dx||dy)setMapView(host,{x:v.x+dx,y:v.y+dy});
+    }
+  };
+  host.onpointerdown=function(ev){
+    if(ev.button!=null&&ev.button!==0)return;
+    if(ev.pointerType==='touch'&&ev.isPrimary===false){cancelMapInteraction();return;}
+    if(mapGesture){cancelMapInteraction();return;}
+    var mode=editingNow()?(pinMode?'pin':mapEditMode):'view';
+    var v=mapViewState(host),pt=getMapPoint(host,ev.clientX,ev.clientY);
+    if(mode==='paint'&&(!pt||!mapEditsAllowed()))return;
+    if(mode==='paint'&&!paintTargetsSelected()){mapMsg('칠할 항목을 먼저 고르세요 (상태 또는 담당).','warn');return;}
+    var gesture=mapGesture={host:host,pointerId:ev.pointerId,pointerType:ev.pointerType,mode:mode,pin:pinMode,
+      startX:ev.clientX,startY:ev.clientY,x:v.x,y:v.y,moved:false,state:S,epoch:SESSION_EPOCH,revision:S.meta.revision};
+    if(mode==='paint'){
+      var c=cellUnder(ev);if(!c){mapGesture=null;return;}
+      ev.preventDefault();
+      painting={touched:{},done:[],before:{},after:{},state:S,epoch:SESSION_EPOCH,revision:S.meta.revision};
+      paintCell(c);
+    }else if(v.zoom>1){ev.preventDefault();host.classList.add('map-dragging');}
+    /* 100% 보기와 핀 모드에서는 브라우저의 세로 스크롤 취소 신호를 그대로 받는다. */
+    try{host.setPointerCapture(ev.pointerId);}catch(ignore){}
+  };
+  host.onpointermove=function(ev){
+    var p=mapGesture;if(!p||p.host!==host||p.pointerId!==ev.pointerId)return;
+    if(p.state!==S||p.epoch!==SESSION_EPOCH||p.revision!==S.meta.revision||(p.mode!=='view'&&!editingNow())){cancelMapInteraction();return;}
+    var dx=ev.clientX-p.startX,dy=ev.clientY-p.startY;
+    if(Math.hypot(dx,dy)>8)p.moved=true;
+    if(p.mode==='paint'){
+      ev.preventDefault();var el=cellUnder(ev);if(el)paintCell(el);
+    }else if(p.moved&&mapViewState(host).zoom>1){
+      ev.preventDefault();var v=mapViewState(host);v.x=p.x+dx;v.y=p.y+dy;fitMapBox(host);
+    }
+  };
+  host.onpointerup=function(ev){
+    var p=mapGesture;if(!p||p.host!==host||p.pointerId!==ev.pointerId)return;
+    mapGesture=null;host.classList.remove('map-dragging');
+    try{host.releasePointerCapture(ev.pointerId);}catch(ignore){}
+    if(p.state!==S||p.epoch!==SESSION_EPOCH||p.revision!==S.meta.revision||(p.mode!=='view'&&!editingNow())){cancelMapInteraction();return;}
+    if(p.mode==='paint'){finishPaint();return;}
+    if(p.mode==='pin'&&pinMode===p.pin&&!p.moved&&Math.hypot(ev.clientX-p.startX,ev.clientY-p.startY)<=8){
+      var pt=getMapPoint(host,ev.clientX,ev.clientY);
+      if(!pt||!getMapPoint(host,p.startX,p.startY)){mapMsg('사진 안의 위치를 선택하세요. 여백에는 핀을 놓을 수 없습니다.','warn');return;}
+      ev.preventDefault();var c=cellUnder(ev);if(c)setGridFocus(c,true);placeMapPoint(pt.x,pt.y);
+    }
+    host.dispatchEvent(new CustomEvent('mapviewchange',{bubbles:true}));
+  };
+  host.onpointercancel=function(){cancelMapInteraction();};
+  host.onlostpointercapture=function(ev){if(mapGesture&&mapGesture.host===host&&mapGesture.pointerId===ev.pointerId)cancelMapInteraction();};
+  /* 키보드/보조기기의 click(detail 0)만 처리한다. 보기 모드의 Enter는 데이터를 바꾸지 않는다. */
+  host.onclick=function(ev){
+    if(ev.detail!==0||!editingNow())return;
+    var cellEl=ev.target.closest?ev.target.closest('.gcell'):null;if(!cellEl)return;
+    setGridFocus(cellEl,false);
+    if(pinMode){
+      var pos=/^([A-L])(\d{1,2})$/.exec(cellEl.getAttribute('data-cell')||'');
+      if(pos){ev.preventDefault();placeMapPoint((parseInt(pos[2],10)-0.5)/C*100,(pos[1].charCodeAt(0)-65+0.5)/R*100);}
+      return;
+    }
+    if(mapEditMode!=='paint'||!mapEditsAllowed())return;
+    if(!paintTargetsSelected()){mapMsg('칠할 항목을 먼저 고르세요 (상태 또는 담당).','warn');return;}
+    var id=cellEl.getAttribute('data-cell');
+    painting={touched:{},done:[],before:{},after:{},state:S,epoch:SESSION_EPOCH,revision:S.meta.revision};
+    paintCell(cellEl);finishPaint();
+    setTimeout(function(){var nn=document.querySelector('#consMap [data-cell="'+id+'"]');if(nn)nn.focus({preventScroll:true});},0);
+  };
+  if(hadGridFocus)setTimeout(function(){setGridFocus(host.querySelector('[data-cell="'+gridFocusId+'"]'),true);},0);
+  if(typeof updateMapWorkspaceUi==='function')updateMapWorkspaceUi(host);
+
 }
+window.addEventListener('blur',cancelMapInteraction);
+window.addEventListener('pointerdown',function(ev){if(mapGesture&&ev.pointerType==='touch'&&ev.isPrimary===false)cancelMapInteraction();});
 function renderGridAll(){
   if(MODE === 'display' || !$('board').hidden) buildGrid($('mapWrap'), false);
   var cm = $('consMap'); if(cm) buildGrid(cm,ownsEditorLock());
@@ -3358,6 +3559,149 @@ function handlePeerAction(m){
 /* ==========================================================================
    S8. 전체 렌더 · 배율/밝기 적용
    ========================================================================== */
+/* 보기 설정은 현재 창에만 적용하며 출동 기록·반대쪽 창의 보기를 바꾸지 않는다. */
+var mapLayers={grid:true,by:true,radius:true,fill:0.42};
+var mapExpandedTarget='',mapDialog=null,mapExpandPlaceholder=null,mapExpandBack=null;
+function mapToolsHtml(hostId,editable){
+  function button(action,label){return '<button type="button" class="btn sm" data-map-host="'+hostId+'" data-map-action="'+action+'">'+label+'</button>';}
+  return '<div class="map-tools" data-map-tools="'+hostId+'">'
+    +'<div class="map-tools-row">'+(editable?button('view','보기·이동')+button('paint','구역 칠하기'):'')
+    +button('zoom-out','축소')+'<output class="map-zoom" data-map-zoom="'+hostId+'">100%</output>'+button('zoom-in','확대')
+    +button('fit','전체 맞춤')+button('expand','지도 크게 보기')+'</div>'
+    +'<details class="map-options"><summary>표시 설정 · 이동</summary><div class="map-options-body">'
+    +'<div class="map-tools-row" aria-label="지도 이동">'+button('pan-left','← 왼쪽')+button('pan-right','오른쪽 →')+button('pan-up','↑ 위쪽')+button('pan-down','아래쪽 ↓')+'</div>'
+    +['grid','by','radius'].map(function(key,i){return '<label class="chkline"><input type="checkbox" data-map-layer="'+key+'"'+(mapLayers[key]?' checked':'')+'>'+['격자','담당','추정반경'][i]+'</label>';}).join('')
+    +'<label class="map-fill">격자 채움 농도 <input type="range" min="0" max="100" step="5" data-map-layer="fill" value="'+Math.round(mapLayers.fill*100)+'"></label>'
+    +'</div></details></div>';
+}
+function ensureMapReviewed(){
+  if(!S.grid.spatialReview)return true;
+  mapMsg('이전 지도·표식을 대조한 뒤 지도·표식 확인 완료를 눌러 주세요.','warn');return false;
+}
+/* native dialog 위에서는 바깥 경보와 저장 안내가 가려지므로 같은 근거를 안에도 표시한다. */
+function updateMapDialogStatus(){
+  if(!mapDialog||!mapDialog.open)return;
+  var status=mapDialog.querySelector('.map-dialog-status'),v=flightVerdict(new Date());
+  var reason=v.txt+(v.why[0]?' · '+v.why[0]:'');
+  if(status){if(status.textContent!==reason)status.textContent=reason;status.classList.toggle('danger',v.lv==='danger');}
+  var urgent=mapDialog.querySelector('.map-dialog-alert'),text=urgent&&urgent.querySelector('[data-map-alert-text]');
+  if(!urgent||!text)return;
+  var warnings=[];
+  if(S.safety.manned)warnings.push('유인기 진입 · 전 기체 즉시 착륙 · 공역 분리 유지');
+  var found=latestFound();
+  if(found&&num(S.ui.ackFound,0)<foundAlarmKey(found))warnings.push('미확인 발견 경보'+(found.zone?' ['+found.zone+']':'')+' · '+found.text);
+  var storage=$('systemAlert');
+  if(storage&&!storage.hidden&&storage.textContent)warnings.push(storage.textContent);
+  else if(!SAVE_STATUS.ok)warnings.push('저장 실패: '+(SAVE_STATUS.message||'즉시 JSON으로 내보내세요.'));
+  else if(!SAVE_STATUS.backupOk)warnings.push('자동 복구본 생성 실패: '+(SAVE_STATUS.backupMessage||'저장공간을 확인하세요.'));
+  var message=warnings.join('\n');
+  /* 1초 점검에서 변하지 않은 alert 영역과 버튼을 교체하지 않는다. */
+  if(text.textContent!==message)text.textContent=message;
+  urgent.hidden=!message;
+}
+function updateMapWorkspaceUi(host){
+  if(!host)return;
+  var tools=host.id==='mapWrap'?$('displayMapTools'):null;
+  if(tools&&!tools.firstElementChild)tools.innerHTML=mapToolsHtml('mapWrap',false);
+  var workspace=host.closest('[data-map-workspace]');if(!workspace)return;
+  var state=typeof mapViewState==='function'?mapViewState(host):{zoom:1};
+  var zoom=workspace.querySelector('[data-map-zoom]');if(zoom)zoom.textContent=Math.round(state.zoom*100)+'%';
+  workspace.querySelectorAll('[data-map-action]').forEach(function(b){
+    var action=b.dataset.mapAction;
+    if(action==='view'||action==='paint'){
+      var selected=mapEditMode===action&&!pinMode;
+      b.setAttribute('aria-pressed',String(selected));b.classList.toggle('primary',selected);
+      b.disabled=action==='paint'&&(!ownsEditorLock()||S.grid.spatialReview);
+    }
+    if(action==='expand'){b.textContent='지도 크게 보기';b.hidden=mapExpandedTarget===host.id;}
+    if(action==='zoom-out')b.disabled=state.zoom<=1;
+    if(action==='zoom-in')b.disabled=state.zoom>=16;
+  });
+  workspace.querySelectorAll('[data-map-layer]').forEach(function(el){
+    var key=el.dataset.mapLayer;if(key==='fill')el.value=Math.round(mapLayers.fill*100);else el.checked=mapLayers[key];
+  });
+  var fit=host.querySelector('.mapfit');
+  if(fit){
+    fit.classList.toggle('hide-grid',!mapLayers.grid);fit.classList.toggle('hide-by',!mapLayers.by);fit.classList.toggle('hide-radius',!mapLayers.radius);
+    fit.style.setProperty('--map-fill',String(mapLayers.fill));
+  }
+  var palette=workspace.querySelector('.map-palette-fold');if(palette){
+    palette.hidden=mapEditMode!=='paint'||!!pinMode;
+    palette.querySelector('summary').textContent='칠하기 설정 · '+(S.ui.paintS==null?'상태 그대로':CELL_ST[S.ui.paintS])+' / 담당 '+(S.ui.paintBy==null?'그대로':S.ui.paintBy||'없음');
+  }
+  var position=workspace.querySelector('[data-map-position]');
+  if(position){
+    var points=[];
+    [['pinLast','최종목격'],['pinFound','발견']].forEach(function(p){
+      var point=S.grid[p[0]];if(!point)return;
+      var coords=geoOK()?geoAt(point.x/100,point.y/100):null;
+      points.push(p[1]+' '+(coords?fmtLatLon(coords):'원본 '+point.x+'%, '+point.y+'%'));
+    });
+    var text=points.join(' · ')||(S.grid.hasMap?'사진 '+S.grid.mapW+'×'+S.grid.mapH+' · '+(geoOK()?'좌표 보정됨':'좌표 미보정'):'지도·사진 미적용');
+    if(S.grid.spatialReview)text='지도·표식 재확인 필요 · '+text;
+    if(position.textContent!==text)position.textContent=text;
+  }
+  updateMapDialogStatus();
+}
+function refreshMapWorkspaceUi(){
+  ['consMap','mapWrap'].forEach(function(id){updateMapWorkspaceUi($(id));});
+}
+function mountMapDialog(hostId,restore){
+  var host=$(hostId),workspace=host&&host.closest('[data-map-workspace]');if(!workspace)return;
+  if(mapDialog&&mapDialog.isConnected&&mapDialog.open)return;
+  mapExpandPlaceholder=document.createComment('map-workspace');workspace.before(mapExpandPlaceholder);
+  var dialog=document.createElement('dialog');dialog.className='map-dialog';dialog.setAttribute('aria-label','지도 크게 보기');
+  dialog.innerHTML='<div class="map-dialog-head"><h2>지도 크게 보기</h2><button type="button" class="btn" data-map-action="close">지도 닫기</button></div><div class="map-dialog-status" role="status"></div><div class="map-dialog-alert" hidden><div role="alert" data-map-alert-text></div><button type="button" class="btn" data-map-action="close">지도 닫고 전체 상태 확인</button></div>';
+  var parent=host.closest('#consoleRoot,#drawerIn')||$('board');parent.appendChild(dialog);dialog.appendChild(workspace);mapDialog=dialog;
+  dialog.addEventListener('cancel',function(ev){ev.preventDefault();if(pinMode)setPinMode(null);else closeMapWorkspace();});
+  dialog.showModal();
+  fitMapBox(host);updateMapWorkspaceUi(host);
+  if(!restore)dialog.querySelector('[data-map-action="close"]').focus();
+}
+function openMapWorkspace(hostId){
+  if(mapExpandedTarget===hostId){closeMapWorkspace();return;}
+  if(mapExpandedTarget)closeMapWorkspace();
+  if(typeof cancelMapInteraction==='function')cancelMapInteraction();
+  mapExpandBack=document.activeElement;mapExpandedTarget=hostId;mountMapDialog(hostId,false);
+}
+function closeMapWorkspace(){
+  if(typeof cancelMapInteraction==='function')cancelMapInteraction();
+  var hostId=mapExpandedTarget,dialog=mapDialog,workspace=dialog&&dialog.querySelector('[data-map-workspace]');
+  mapExpandedTarget='';mapDialog=null;
+  if(workspace&&mapExpandPlaceholder&&mapExpandPlaceholder.isConnected)mapExpandPlaceholder.replaceWith(workspace);
+  mapExpandPlaceholder=null;
+  if(dialog){if(dialog.open)dialog.close();dialog.remove();}
+  var host=$(hostId);if(host){fitMapBox(host);updateMapWorkspaceUi(host);}
+  var back=mapExpandBack;mapExpandBack=null;
+  if(back&&back.isConnected)back.focus({preventScroll:true});
+  else {var b=document.querySelector('[data-map-host="'+hostId+'"][data-map-action="expand"]');if(b)b.focus({preventScroll:true});}
+}
+document.addEventListener('mapviewchange',function(ev){updateMapWorkspaceUi(ev.target);});
+document.addEventListener('click',function(ev){
+  var b=ev.target.closest('[data-map-action]');if(!b)return;
+  var action=b.dataset.mapAction,host=$(b.dataset.mapHost||mapExpandedTarget||'consMap');
+  if(action==='close'){closeMapWorkspace();return;}
+  if(!host)return;
+  if(action==='expand'){openMapWorkspace(host.id);return;}
+  if(action==='view'||action==='paint'){
+    if(action==='paint'&&(!ensureEditor()||!ensureMapReviewed()))return;
+    if(action==='paint'){mapLayers.grid=true;}
+    setMapEditMode(action);refreshMapWorkspaceUi();return;
+  }
+  var view=mapViewState(host);
+  if(action==='fit'){resetMapView(host);return;}
+  if(action==='zoom-in'||action==='zoom-out'){setMapView(host,{zoom:clamp(view.zoom*(action==='zoom-in'?1.25:.8),1,16)});return;}
+  var step=Math.max(40,Math.min(host.clientWidth,host.clientHeight)*.25),patch={};
+  if(action==='pan-left')patch.x=view.x+step;if(action==='pan-right')patch.x=view.x-step;
+  if(action==='pan-up')patch.y=view.y+step;if(action==='pan-down')patch.y=view.y-step;
+  setMapView(host,patch);
+});
+document.addEventListener('input',function(ev){
+  var el=ev.target,key=el.getAttribute('data-map-layer');if(!key)return;
+  mapLayers[key]=key==='fill'?clamp(num(el.value,42),0,100)/100:el.checked;
+  if(key==='grid'&&!el.checked&&mapEditMode==='paint')setMapEditMode('view');
+  refreshMapWorkspaceUi();
+});
 function renderAll(){
   applyUi();
   if(!$('board').hidden){
@@ -3540,6 +3884,7 @@ function organizeConsole(root){
       +'<button class="btn" data-act="nav" data-sec="sec-subject">실종자 정보 입력</button></div>';
     cons.insertBefore(start,root.querySelector('#sec-quick'));
   }
+  if(mapExpandedTarget==='consMap')mountMapDialog('consMap',true);
 }
 function scrollToSection(root,target){
   for(var parent=target.parentElement;parent&&parent!==root;parent=parent.parentElement){
@@ -3587,6 +3932,7 @@ function stampConsoleFocus(root){
 }
 function renderConsole(root){
   if(!root) return;
+  if(typeof cancelMapInteraction==='function')cancelMapInteraction();
   if(consoleIdleTimer){ clearTimeout(consoleIdleTimer); consoleIdleTimer = null; }
   var scrollTop = root.scrollTop;
   var activeEl=document.activeElement,focusInside=!!(activeEl&&root.contains(activeEl));
@@ -3834,7 +4180,7 @@ function refreshVerdictHelp(){
 function refreshConsoleKpi(){
   var host = document.getElementById('ctKpi');
   if(host) host.innerHTML = consoleKpiCells();
-  refreshVerdictHelp();
+  refreshVerdictHelp();refreshMapWorkspaceUi();
 }
 
 function paintPalette(){
@@ -4142,12 +4488,18 @@ function consoleHtml2(){
     + '</div></div>';
 
   /* --- 수색구역 --- */
-  h += '<div class="sec" id="sec-grid"><h2>수색구역 · 지도 <span class="hint">칠할 것을 고르고 칸을 찍거나 쓸어내리세요</span></h2><div class="sec-b">'
+  h += '<div class="sec" id="sec-grid"><h2>수색구역 · 지도 <span class="hint">먼저 지도를 살펴보고, 기록할 때 칠하기 또는 핀 배치를 선택하세요</span></h2><div class="sec-b">'
     + '<div class="grid2">'
-      + '<div>'
-        + paintPalette()
+      + '<div class="map-workspace" id="consMapWorkspace" data-map-workspace="consMap">'
+        + mapToolsHtml('consMap',true)
+        + '<div class="map-review-notice" id="mapReviewNotice"'+(S.grid.spatialReview?'':' hidden')+'>'
+          +'<b>이전 지도·표식을 다시 확인하세요.</b> 이전 버전의 확대·이동 또는 좌표 보정 이력이 있는 자료입니다. 원본 보기에서 구역·핀·좌표를 대조한 뒤 편집을 시작하세요. '
+          +'<button class="btn" data-act="confirmmapreview">지도·표식 확인 완료</button></div>'
+        + '<details class="map-palette-fold" data-fold="map-palette"'+(window.matchMedia('(pointer:coarse)').matches?'':' open')+'><summary>칠하기 설정</summary>'+paintPalette()+'</details>'
         + '<div class="map-mode" id="mapModeStatus" role="status" aria-live="polite" hidden></div>'
         + '<div class="cons-map" id="consMap"></div>'
+        + '<div class="map-position" data-map-position="consMap"></div>'
+        + (!S.grid.hasMap?'<div class="map-empty-actions"><button class="btn primary" data-act="mapfile">지도·현장 사진 넣기</button><span>이미지를 끌어다 놓거나 붙여넣을 수도 있습니다. 지도 없이 격자를 사용할 때는 구역 칠하기를 선택하세요.</span></div>':'')
         + '<div class="row-tools">'
           + '<button class="btn sm" data-act="pin" data-p="last">최종목격 핀 배치</button>'
           + '<button class="btn sm" data-act="pin" data-p="found">발견 핀 배치</button>'
@@ -4183,13 +4535,9 @@ function consoleHtml2(){
           + '<span class="hint">적용 전에는 현재 격자 '+gridRows()+'행 × '+gridCols()+'열을 유지합니다.</span></div>'
         + '<div class="f2">'
           + fld('지도 가로 실거리(m)','grid.widthMeters','number','min="50" max="100000"')
-          + fld('지도 확대 %','grid.mapZoom','number','min="50" max="400" '+(geoOK()?'disabled':''))
+          + fld('사진 불투명도','grid.mapOpacity','number','step="0.05" min="0.1" max="1"')
         + '</div>'
-        + '<div class="f3">'
-          + fld('좌우 이동 %','grid.mapX','number','step="1" min="-200" max="200" '+(geoOK()?'disabled':''))
-          + fld('상하 이동 %','grid.mapY','number','step="1" min="-200" max="200" '+(geoOK()?'disabled':''))
-          + fld('지도 밝기','grid.mapOpacity','number','step="0.05" min="0.1" max="1"')
-        + '</div>'
+        + '<div class="note">확대·이동은 지도 위 도구를 사용하세요. 사진·격자·핀을 함께 보며 각 창의 보기만 바뀝니다.</div>'
         + '<div class="note">저장소 <b>'+esc(mapStoreLabel())+'</b> · 최대 가로 '+mapPxCap()+'px'
           + (idbBroken?' · IndexedDB를 쓸 수 없어 종전 한도로 동작합니다.'
                       :' · 정사영상을 넣을 수 있습니다.')+'</div>'
@@ -4493,6 +4841,12 @@ function bindConsole(root){
       return;
     }
     if(act==='eventpage'){eventHistory.page=intv(b.getAttribute('data-page'),0);renderEventHistory(root);return;}
+    if(act==='confirmmapreview'){
+      if(!ensureEditor())return;
+      if(!confirm('원본 지도에서 구역·핀·좌표 보정값을 실제 위치와 대조했나요? 잘못된 값은 직접 수정해야 하며 이 버튼은 좌표를 자동 보정하지 않습니다.'))return;
+      if(!saveRecoveryPoint('지도·표식 재확인 전')){mapMsg('복구본 저장에 실패해 재확인을 중단했습니다.','err');return;}
+      S.grid.spatialReview=false;commit();return;
+    }
     if(act==='nav'||act==='verdictnav'){
       var menu=root.querySelector('#mobileMore');if(menu)menu.hidden=true;
       var menuButton=root.querySelector('#btnMoreNav');if(menuButton)menuButton.setAttribute('aria-expanded','false');
@@ -4609,7 +4963,7 @@ function bindConsole(root){
     else if(act==='geoapply'){
       var gr = geoFromRefs(S.grid.ref1, S.grid.ref2);
       if(gr.err){ alert(gr.err); return; }
-      S.grid.geo = gr.geo;S.grid.mapZoom=100;S.grid.mapX=0;S.grid.mapY=0;commit();
+      S.grid.geo = gr.geo;commit();
       mapMsg('2점 보정을 적용했습니다 · 지도 가로 '+Math.round(mapWidthMeters())+'m','ok');
     }
     else if(act==='geoclear'){
@@ -4718,6 +5072,7 @@ function bindConsole(root){
       var act=el.getAttribute('data-act');
       var safe=act==='takecontrol'||act==='export'||act==='report'||act==='nav'||act==='verdictnav'||act==='eventpage'
         ||['eventSearch','eventTypeFilter','eventStatusFilter'].indexOf(el.id)>=0
+        ||el.hasAttribute('data-map-layer')||(el.hasAttribute('data-map-action')&&el.dataset.mapAction!=='paint')
         ||el.id==='btnOpenDisplay'||el.id==='btnCloseDrawer'||el.id==='btnMoreNav';
       if(!safe)el.disabled=true;
     });
@@ -4857,7 +5212,7 @@ function applyGeoFile(file,opSeq,opEpoch,fileSeq,targetMapId,targetMapVer){
       : parseWorldFile(fr.result,targetNatW,targetNatH);
     if(res.err){ mapMsg(res.err,'err'); return; }
     S.grid.geo = res.geo; S.grid.ref1 = null; S.grid.ref2 = null;
-    S.grid.mapZoom=100;S.grid.mapX=0;S.grid.mapY=0;commit();
+    commit();
     mapMsg('좌표를 적용했습니다 · '+geoSrcLabel()+' · 지도 가로 '
       + Math.round(mapWidthMeters()) + 'm', 'ok');
   };
@@ -5308,6 +5663,7 @@ function openDrawer(){
   setTimeout(function(){var b=$('drawerIn').querySelector('#btnCloseDrawer');if(b)b.focus();},0);
 }
 function closeDrawer(){
+  if(mapExpandedTarget==='consMap')closeMapWorkspace();
   $('drawer').hidden = true;
   $('drawerIn').innerHTML = '';
   var back=drawerLastFocus;drawerLastFocus=null;
@@ -5320,6 +5676,7 @@ $('drawer').addEventListener('click', function(ev){
 });
 
 document.addEventListener('keydown', function(ev){
+  if(ev.key==='Tab'&&mapExpandedTarget)return;
   if(ev.key==='Tab'&&!$('drawer').hidden){
     var fs=drawerFocusable();
     if(fs.length){
@@ -5332,12 +5689,17 @@ document.addEventListener('keydown', function(ev){
   var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((ev.target.tagName||''));
   if((ev.ctrlKey || ev.metaKey) && (ev.key === 'e' || ev.key === 'E')){
     ev.preventDefault();
-    if(MODE === 'display') toggleDrawer();
+    if(MODE === 'display'){if(mapExpandedTarget)closeMapWorkspace();toggleDrawer();}
     return;
   }
   if(ev.key==='Escape'&&pinMode){ev.preventDefault();setPinMode(null);return;}
+  if(ev.key==='Escape'&&mapExpandedTarget){ev.preventDefault();closeMapWorkspace();return;}
   if(ev.key === 'Escape' && !$('drawer').hidden){ closeDrawer(); return; }
   if(typing) return;
+  if(mapExpandedTarget&&(ev.key==='+'||ev.key==='='||ev.key==='-'||ev.key==='_')){
+    ev.preventDefault();var mapHost=$(mapExpandedTarget),mapView=mapViewState(mapHost);
+    setMapView(mapHost,{zoom:mapView.zoom*((ev.key==='+'||ev.key==='=')?1.25:.8)});return;
+  }
   /* 쓸다가 잘못 지나가는 경우가 가장 흔하다. 입력칸에 있을 때는 동작하지 않는다. */
   if((ev.ctrlKey || ev.metaKey) && (ev.key === 'z' || ev.key === 'Z')){
     if(lastSweep){ ev.preventDefault(); undoSweep(); }

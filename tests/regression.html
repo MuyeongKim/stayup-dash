@@ -46,6 +46,7 @@
 
 <script src="review-fixes.js"></script>
 <script src="ui-ux-fixes.js"></script>
+<script src="map-workspace.js"></script>
 <script>
 "use strict";
 var out = document.getElementById('out'), sum = document.getElementById('sum');
@@ -102,6 +103,8 @@ function cellRect(id){
 }
 /* iframe 내부 좌표로 포인터 이벤트를 만든다. elementFromPoint 도 내부 좌표를 쓴다. */
 function drag(ids){
+  /* Painting is now an explicit mode; the old sweep expectations stay intact. */
+  W.setMapEditMode('paint');
   var host = W.document.getElementById('consMap');
   var pts = ids.map(cellRect);
   var P = W.PointerEvent;
@@ -898,6 +901,7 @@ async function run(){
 
   await runReviewFixes();
   await runUiUxFixes();
+  await runMapWorkspace();
 
   /* ---------------- 마무리 ---------------- */
   var pass = results.filter(function(r){ return r.pass; }).length;
