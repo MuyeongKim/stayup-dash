@@ -6310,6 +6310,7 @@ function loadSample(){
 /* Photo candidates: import source data, preserve local response records. */
 var AI_MAX_ITEMS=5000, AI_MAX_BYTES=16*1024*1024, AI_IMAGE_PREFIX='ai-image-';
 var AI_REVIEWS={unreviewed:'미확인',person:'사람 맞음',false_positive:'오탐',hold:'보류'};
+var AI_RUN_STATUS={completed:'완료',partial:'부분 완료',failed:'실패',cancelled:'취소'};
 var AI_RESPONSES={waiting:'확인 대기',checking:'확인 중',notified:'지상팀 통보',done:'대응 완료'};
 var aiCache=Object.create(null),aiLoads=Object.create(null),aiStaging=Object.create(null),aiCacheGeneration=0;
 var aiMessage='',aiFilter='active',aiPage=0,aiResponseDrafts=Object.create(null);
@@ -6386,8 +6387,10 @@ function aiNormalizeState(raw){
   var normalizedRuns=raw.runs.map(function(r){
     if(!isPlainObject(r)||!aiUuid(r.id)||runs[r.id]||!Number.isSafeInteger(r.revision)||r.revision<1
        ||!aiText(r.signature,64)||!/^[a-f0-9]{64}$/.test(r.signature)||!aiDate(r.generatedAt,true)
-       ||!aiText(r.appVersion,40)||!aiText(r.status,16)||!Number.isSafeInteger(r.photoCount)||r.photoCount<0)aiFail('AI 작업 기록 오류');
-    runs[r.id]=true;return {id:r.id,revision:r.revision,signature:r.signature,generatedAt:r.generatedAt,appVersion:r.appVersion,status:r.status,photoCount:r.photoCount};
+       ||!aiText(r.appVersion,40)||!Object.prototype.hasOwnProperty.call(AI_RUN_STATUS,r.status)||!Number.isSafeInteger(r.photoCount)||r.photoCount<0)aiFail('AI 작업 기록 오류');
+    var completed=r.completedCount===undefined?null:r.completedCount,failed=r.failedCount===undefined?null:r.failedCount;
+    if(!(completed===null&&failed===null)&&(!Number.isSafeInteger(completed)||completed<0||!Number.isSafeInteger(failed)||failed<0||completed+failed!==r.photoCount))aiFail('AI 작업 성공·실패 수 오류');
+    runs[r.id]=true;return {id:r.id,revision:r.revision,signature:r.signature,generatedAt:r.generatedAt,appVersion:r.appVersion,status:r.status,photoCount:r.photoCount,completedCount:completed,failedCount:failed};
   });
   var candidates=raw.candidates.map(function(c){
     var v=aiCandidate(c),key=c.runId+'/'+v.id;
@@ -6496,7 +6499,7 @@ async function aiImportPackage(raw,confirmImport){
   }
   if(!aiGuard(seq,epoch,fileSeq,generation))aiFail('상황이 변경되어 가져오기를 중단했습니다.');
   var merged=aiMerge(pack,signature,thumbnails);
-  if(confirmImport!==false&&!confirm('현재 상황: '+(S.mission.title||'(상황명 미입력)')+'\n사진 후보 '+pack.candidates.length+'건 · 신규 '+merged.added+'건 · 갱신 '+merged.updated+'건\n기존 상황·대응 기록을 유지하며 추가/갱신할까요?'))return false;
+  if(confirmImport!==false&&!confirm('현재 상황: '+(S.mission.title||'(상황명 미입력)')+'\n원본 분석 '+AI_RUN_STATUS[pack.run.status]+' · 성공 '+pack.run.completedCount+'장 / 실패·미완료 '+pack.run.failedCount+'장\n사진 후보 '+pack.candidates.length+'건 · 신규 '+merged.added+'건 · 갱신 '+merged.updated+'건\n기존 상황·대응 기록을 유지하며 추가/갱신할까요?'))return false;
   mapGcGeneration++;
   var next=JSON.parse(JSON.stringify(S));next.ai=merged.state;
   var made=await aiStageAssets(next,images,seq,epoch,fileSeq);
@@ -6544,6 +6547,9 @@ function aiSectionHtml(){
     +[['active','확인할 후보'],['all','전체'],['unreviewed','미확인'],['person','사람 맞음'],['hold','보류'],['false_positive','오탐'],['withdrawn','원본에서 빠진 후보']].map(function(p){return '<option value="'+p[0]+'"'+(aiFilter===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+'</select></label></div>'
     +'<p class="note">상황 전체 복원과 별개로 후보만 추가·갱신합니다. 기존 지도·기체·수색 상태·대응 기록은 유지합니다. 발견 경보와 수색 완료는 자동 변경하지 않습니다.</p>'
     +'<p data-ai-status role="status" aria-live="polite">'+esc(aiMessage||('분석 작업 '+S.ai.runs.length+'개 · 보관 후보 '+items.length+'건 · 표시 '+filtered.length+'건'))+'</p>';
+  var incomplete=S.ai.runs.filter(function(r){return r.status!=='completed'||r.failedCount>0;}).length;
+  if(incomplete)html+='<p class="note">부분 완료·실패·취소를 포함한 분석 작업 '+incomplete+'개입니다. 후보가 없다는 표시만으로 전체 사진에 사람이 없다고 판단하지 마세요.</p>';
+  if(S.ai.runs.length)html+='<details><summary>원본 분석 작업 정보 ('+S.ai.runs.length+'개)</summary><ul>'+S.ai.runs.map(function(r){return '<li>'+esc(r.id.slice(0,8))+' · '+AI_RUN_STATUS[r.status]+' · 사진 '+r.photoCount+'장 · 성공 '+(r.completedCount===null?'미상':r.completedCount)+' / 실패·미완료 '+(r.failedCount===null?'미상':r.failedCount)+'</li>';}).join('')+'</ul></details>';
   filtered.slice(aiPage*20,aiPage*20+20).forEach(function(c){
     var key=aiKey(c),draft=aiResponseDrafts[key]||{note:c.responseNote,status:c.responseStatus};
     var time=c.capturedAt?(c.capturedAt.replace('T',' ')+(/[Z+-]\d\d:?\d\d$|Z$/.test(c.capturedAt)?'':' (시간대 미상)')):'촬영 시각 없음';

@@ -337,7 +337,7 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 ### 이번 업데이트
 
 - **사진 후보 연계 1단계(2026-10-18)** — AI-page V26.1018에서 내보낸 파일을 현재 상황에 추가·갱신합니다. 작업/후보 ID·리비전으로 중복·과거·충돌을 구분하며 기존 상황·지도·수색 상태·대응 기록을 유지합니다. AI 후보의 대응 상태·메모와 원본 판정을 분리하고 원본에서 빠진 후보도 보존합니다. 작은 이미지는 별도 블롭 저장소와 전체 JSON 백업·복구·삭제에 포함합니다.
-- **연계 검증** — 브라우저 **349/349 통과**(기존 315 + 연계 34), 기존 온라인 SDK 계약 검사 18개 통과. 실제 YOLO에서 내보낸 9개 후보 파일로 두 창 동기화·기존 상황 보존·리비전 갱신·대응 보존을 확인했고, 새 브라우저 저장소로 별도 PC 구성을 재현해 파일만으로 미리보기 9장을 읽었습니다. 물리적인 다른 PC·기관망·실제 지도 사업자 키 연결은 별도 인수시험입니다.
+- **연계 검증** — 브라우저 **350/350 통과**(기존 315 + 연계 35), 기존 온라인 SDK 계약 검사 18개 통과. 실제 YOLO에서 내보낸 9개 후보 파일로 두 창 동기화·기존 상황 보존·리비전 갱신·대응 보존을 확인했고, 새 브라우저 저장소로 별도 PC 구성을 재현해 파일만으로 미리보기 9장을 읽었습니다. 물리적인 다른 PC·기관망·실제 지도 사업자 키 연결은 별도 인수시험입니다.
 
 2026-10-18 선택형 네이버·구글 배경 지도를 추가했습니다.
 
@@ -482,7 +482,7 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 
 ### 회귀 검사로 고정한 항목
 
-회귀검사는 [tests/regression.html](./tests/regression.html)의 기존 130건과 모바일 핀 검사 16건, [tests/review-fixes.js](./tests/review-fixes.js)의 46건, [tests/ui-ux-fixes.js](./tests/ui-ux-fixes.js)의 30건, [tests/map-workspace.js](./tests/map-workspace.js)의 43건, [tests/online-maps.js](./tests/online-maps.js)의 온라인 지도 50건, [tests/ai-candidates.js](./tests/ai-candidates.js)의 사진 후보 연계 34건을 합쳐 **349건**입니다. 내부 함수·합성 입력·브라우저 저장소·계산된 레이아웃을 검사합니다. 실제 브라우저 UI에서 수행한 두 창 동기화와 화면 검토는 별도 확인이며, 물리 장비 인수시험을 대체하지 않습니다. 자세한 실행 방법은 [개발자 메모](#회귀-검사)를 참고하십시오.
+회귀검사는 [tests/regression.html](./tests/regression.html)의 기존 130건과 모바일 핀 검사 16건, [tests/review-fixes.js](./tests/review-fixes.js)의 46건, [tests/ui-ux-fixes.js](./tests/ui-ux-fixes.js)의 30건, [tests/map-workspace.js](./tests/map-workspace.js)의 43건, [tests/online-maps.js](./tests/online-maps.js)의 온라인 지도 50건, [tests/ai-candidates.js](./tests/ai-candidates.js)의 사진 후보 연계 35건을 합쳐 **350건**입니다. 내부 함수·합성 입력·브라우저 저장소·계산된 레이아웃을 검사합니다. 실제 브라우저 UI에서 수행한 두 창 동기화와 화면 검토는 별도 확인이며, 물리 장비 인수시험을 대체하지 않습니다. 자세한 실행 방법은 [개발자 메모](#회귀-검사)를 참고하십시오.
 
 ### 남은 인수시험
 
@@ -533,7 +533,7 @@ python3 -m http.server 8899 --bind 127.0.0.1
 
 ### 회귀 검사
 
-[tests/regression.html](./tests/regression.html)을 로컬 HTTP로 열면 앱을 iframe에 띄워 내부 함수·합성 입력·저장소·레이아웃 **349건**을 검사합니다. 같은 폴더의 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [ai-candidates.js](./tests/ai-candidates.js)와 fixtures 폴더도 필요합니다. 실제 파일 선택 권한, 물리 터치·스피커, 절전 복귀는 별도 인수시험 대상입니다.
+[tests/regression.html](./tests/regression.html)을 로컬 HTTP로 열면 앱을 iframe에 띄워 내부 함수·합성 입력·저장소·레이아웃 **350건**을 검사합니다. 같은 폴더의 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [ai-candidates.js](./tests/ai-candidates.js)와 fixtures 폴더도 필요합니다. 실제 파일 선택 권한, 물리 터치·스피커, 절전 복귀는 별도 인수시험 대상입니다.
 
 ```bash
 python3 -m http.server 8899 --bind 127.0.0.1

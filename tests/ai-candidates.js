@@ -4,6 +4,7 @@ async function runAICandidates(){
   ok('AI 후보 가져오기 구현',typeof W.aiImportPackage==='function');
   if(typeof W.aiImportPackage!=='function')return;
   var fixture=await (await fetch('fixtures/stayup-photo-candidates-v1.json')).json();
+  fixture.run.status='partial';fixture.run.photoCount=3;fixture.run.failedCount=1;
   function clone(v){return W.JSON.parse(JSON.stringify(v));}
   function stable(v){
     if(Array.isArray(v))return '['+v.map(stable).join(',')+']';
@@ -14,6 +15,7 @@ async function runAICandidates(){
   await W.loadSample();await wait(250);W.S.weather.auto=false;W.commit();
   var untouched=JSON.stringify({mission:W.S.mission,grid:W.S.grid,drones:W.S.drones,crew:W.S.crew,safety:W.S.safety}),oldEvents=clone(W.S.events);
   await W.aiImportPackage(clone(fixture),false);
+  ok('부분 완료와 원본 처리 성공·실패 수를 보존·표시',W.S.ai.runs[0].completedCount===2&&W.S.ai.runs[0].failedCount===1&&W.document.querySelector('#sec-ai').textContent.includes('실패·미완료 1'));
   ok('후보 추가는 기존 상황·지도·기체·인원·안전 상태를 보존',untouched===JSON.stringify({mission:W.S.mission,grid:W.S.grid,drones:W.S.drones,crew:W.S.crew,safety:W.S.safety}));
   ok('기존 대응 타임라인을 유지하고 AI 유형으로 요약 1건 추가',JSON.stringify(W.S.events.slice(0,oldEvents.length))===JSON.stringify(oldEvents)&&W.S.events.length===oldEvents.length+1&&W.S.events.at(-1).type==='ai'&&W.latestFound()===null);
   ok('이미지는 별도 블롭 저장소에 보관',W.S.ai.candidates.length===2&&!JSON.stringify(W.S.ai).includes('data:image')&&(await W.mapBlobGet(W.S.ai.candidates[0].thumbnailId)).startsWith('data:image/jpeg'));
