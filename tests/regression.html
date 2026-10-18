@@ -49,6 +49,7 @@
 <script src="map-workspace.js"></script>
 <script src="online-maps.js"></script>
 <script src="ai-candidates.js"></script>
+<script src="ai-folder.js"></script>
 <script src="offline-maps.js"></script>
 <script>
 "use strict";
@@ -979,6 +980,7 @@ async function run(){
   await runOfflineMaps();
   await runMobileMapPins();
   await runAICandidates();
+  await runAIFolder();
 
   /* ---------------- 마무리 ---------------- */
   var pass = results.filter(function(r){ return r.pass; }).length;

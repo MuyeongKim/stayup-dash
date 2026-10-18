@@ -80,7 +80,7 @@ flowchart LR
 - 조작 패널과 표출 화면은 **동일 PC·동일 브라우저 저장영역**을 사용합니다.
 - 창이 직접 연결돼 있으면 `postMessage`, 연결이 끊기면 `localStorage` 폴링으로 상태를 따라갑니다.
 - 서버, 로그인, 클라우드 동기화, 기관 간 네트워크 공유는 제공하지 않습니다.
-- AI-page와는 `stayup-ai-candidates.json` 파일로 연결합니다. 같은 PC나 다른 PC에서 **AI 후보 불러오기** 또는 후보 JSON 한 개를 끌어다 놓아 추가/갱신합니다. 기존 **JSON 불러오기**는 상황 전체 복원용입니다. 반복 파일·과거/충돌 갱신을 구분하고 기존 상황·대응 기록을 보존합니다. [공통 형식·검증 기록](./docs/ai-photo-bridge.md)을 참고하세요.
+- AI-page와는 `stayup-ai-candidates.json` 파일로 연결합니다. 같은 PC에서는 양쪽의 **자동 저장/자동 읽기 폴더 연결**로 작업별 후보 파일을 약 2초 간격으로 갱신할 수 있습니다. 같은 PC나 다른 PC에서 **AI 후보 불러오기** 또는 후보 JSON 한 개를 끌어다 놓아 추가/갱신합니다. 기존 **JSON 불러오기**는 상황 전체 복원용입니다. 반복 파일·과거/충돌 갱신을 구분하고 기존 상황·대응 기록을 보존합니다. [공통 형식·검증 기록](./docs/ai-photo-bridge.md)을 참고하세요.
 - 후보는 사진 촬영 GPS이며 고유 인원이나 사람의 정확한 좌표가 아닙니다. GPS 없음·지도 미보정·지도 범위 밖은 목록으로 유지합니다. 원본 판정과 상황판의 대응 상태·메모를 분리하고, 원본에서 빠진 후보도 대응 이력을 보존합니다. 연계 버전으로 조작·표출 창을 모두 다시 여세요.
 - 자동 기상을 켜면 위·경도가 Open-Meteo 요청에 포함됩니다.
 - 온라인 지도를 켜면 해당 지도 사업자의 SDK와 지도 데이터를 요청합니다. 지도 조회 위치·접속 정보·인증키 등이 사업자에게 전달되므로, 외부 연결을 사용할 수 있는 환경에서 선택합니다. 상황 기록을 서버에 공유하는 기능은 아닙니다.
@@ -366,6 +366,12 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 
 ### 이번 업데이트
 
+2026-10-18 같은 PC의 사진 후보 폴더 자동 연계를 추가했습니다. **AI 후보 → 자동 읽기 폴더 연결**에서 AI-page의 자동 저장 폴더를 선택·확인하면 기존 상황·대응 기록을 유지하며 추가/갱신합니다. 수동 불러오기도 유지합니다. 연결은 현재 창·상황에만 유효하며 새로고침·상황 교체·수동 가져오기·권한/편집권 상실 후 다시 선택합니다. 파일 삭제는 기존 기록을 삭제하지 않습니다. 자세한 제한·오류 처리·검증은 [연계 문서](docs/ai-photo-bridge.md)를 참고하세요.
+
+검증: 전체 브라우저 **399/399 통과**(기존 375 + 폴더 24), 실제 OS 디렉터리 핸들 검사 로컬 HTTP·file:// 각각 11/11 통과, 온라인 SDK 18·지역 지도 엔진 18·오프라인 재시작 11개 통과. 실제 macOS 탐지 GUI와 Chrome을 동시에 실행해 같은 폴더로 후보 9개를 자동 반영하고 판정 리비전 1→2 및 대응 메모 보존을 확인했습니다. OS 폴더 선택창·Windows EXE·물리 캡처보드·기관망 인수시험은 별도입니다.
+
+### 이전 업데이트 (v1.2.10–v1.2.11)
+
 2026-10-18 수색 범위의 지역 지도를 미리 저장하고 통신이 끊긴 뒤 이어 쓰는 기능을 추가했습니다.
 
 - **수색 범위 미리 저장** — Protomaps·OpenStreetMap 기반 지도를 범위·세부 수준에 맞춰 저장합니다. 진행률·취소·완료 검증을 제공하며 실패한 저장으로 기존 지도를 바꾸지 않습니다. 네이버·구글 타일을 저장하는 기능은 아닙니다.
@@ -524,7 +530,7 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 
 ### 회귀 검사로 고정한 항목
 
-회귀검사는 [tests/regression.html](./tests/regression.html)의 기본 동작·모바일 핀 검사와 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [offline-maps.js](./tests/offline-maps.js), [ai-candidates.js](./tests/ai-candidates.js)를 함께 실행하며 현재 **375건**입니다. 내부 함수·합성 입력·브라우저 저장소·계산된 레이아웃, 저장 지도 전환·핀·구역 보존·실패 보호를 검사합니다. 실제 브라우저 UI에서 수행한 두 창 동기화와 화면 검토는 별도 확인이며, 물리 장비 인수시험을 대체하지 않습니다. 자세한 실행 방법은 [개발자 메모](#회귀-검사)를 참고하십시오.
+회귀검사는 [tests/regression.html](./tests/regression.html)의 기본 동작·모바일 핀 검사와 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [offline-maps.js](./tests/offline-maps.js), [ai-candidates.js](./tests/ai-candidates.js), [ai-folder.js](./tests/ai-folder.js)를 함께 실행하며 현재 **399건**입니다. 내부 함수·합성 입력·브라우저 저장소·계산된 레이아웃, 저장 지도 전환·핀·구역 보존·실패 보호를 검사합니다. 실제 브라우저 UI에서 수행한 두 창 동기화와 화면 검토는 별도 확인이며, 물리 장비 인수시험을 대체하지 않습니다. 자세한 실행 방법은 [개발자 메모](#회귀-검사)를 참고하십시오.
 
 ### 남은 인수시험
 
@@ -575,6 +581,13 @@ python3 -m http.server 8899 --bind 127.0.0.1
 
 브라우저에서 `http://127.0.0.1:8899/stayup-dash.html`을 엽니다. 오프라인 지역 지도는 HTTPS 또는 `localhost`·`127.0.0.1`에서 앱 준비까지 마쳐야 새로고침·재시작을 지원합니다. 다른 PC의 일반 HTTP 주소와 `file://`에서는 서비스 워커를 준비할 수 없습니다. 로컬 서버는 같은 주소·포트로 유지하세요. 주소·포트·브라우저 프로필을 바꾸면 저장영역이 달라지므로 상황 JSON과 지역 지도 파일을 각각 내보내 가져와야 합니다.
 
+사진 후보 실제 디스크 폴더 검사는 다음 명령으로 실행합니다. 디렉터리 드롭으로 실제 읽기 핸들을 얻으며 OS 선택창의 반환값만 대체합니다. 파일 읽기·원자 교체·중복 방지·대응 보존·수동 불러오기를 확인합니다.
+
+```bash
+node tests/ai-folder-browser.mjs --modules /absolute/path/to/node_modules
+node tests/ai-folder-browser.mjs --modules /absolute/path/to/node_modules --file
+```
+
 지역 지도 엔진은 [offline-map-engine.js](./offline-map-engine.js), 로컬 표시 도구와 라이선스는 [vendor](./vendor/README.md)에 있습니다. 저장 지도는 별도 IndexedDB에 보관하고, [service-worker.js](./service-worker.js)는 검증된 앱 파일만 캐시합니다. 온라인 사업자의 SDK·지도 요청은 캐시하지 않습니다. WebGL을 사용할 수 없는 브라우저에서는 지역 지도가 표시되지 않으므로 대상 PC에서 오프라인 재시작까지 확인하세요.
 
 검증 대상 파일은 `.gitattributes`로 LF 줄바꿈을 유지해 Windows의 Git 자동 줄바꿈 변환에도 같은 해시를 사용합니다.
@@ -588,7 +601,7 @@ node scripts/build-offline-shell.mjs --check
 
 ### 회귀 검사
 
-[tests/regression.html](./tests/regression.html)을 로컬 HTTP로 열면 앱을 iframe에 띄워 내부 함수·합성 입력·저장소·레이아웃 **375건**을 검사합니다. 같은 폴더의 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [offline-maps.js](./tests/offline-maps.js), [ai-candidates.js](./tests/ai-candidates.js)와 fixtures 폴더도 필요합니다. 결과 화면의 전체 통과 건수와 실패 목록을 확인하세요. 실제 파일 선택 권한, 물리 터치·스피커, 절전 복귀는 별도 인수시험 대상입니다.
+[tests/regression.html](./tests/regression.html)을 로컬 HTTP로 열면 앱을 iframe에 띄워 내부 함수·합성 입력·저장소·레이아웃 **399건**을 검사합니다. 같은 폴더의 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [offline-maps.js](./tests/offline-maps.js), [ai-candidates.js](./tests/ai-candidates.js), [ai-folder.js](./tests/ai-folder.js)와 fixtures 폴더도 필요합니다. 결과 화면의 전체 통과 건수와 실패 목록을 확인하세요. 실제 파일 선택 권한, 물리 터치·스피커, 절전 복귀는 별도 인수시험 대상입니다.
 
 ```bash
 python3 -m http.server 8899 --bind 127.0.0.1

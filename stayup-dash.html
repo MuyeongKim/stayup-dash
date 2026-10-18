@@ -1066,7 +1066,7 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .ai-summary[hidden]{display:none}
 .ai-detail{max-width:min(90vw,600px);max-height:85vh;overflow:auto;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:20px}
 .ai-detail::backdrop{background:#000b}.ai-detail img{display:block;max-width:100%;max-height:45vh;margin:12px auto}.ai-detail img[hidden]{display:none}
-#sec-ai [data-ai-status]{overflow-wrap:anywhere}#sec-ai .row-tools{flex-wrap:wrap}
+#sec-ai [data-ai-status],#sec-ai [data-ai-folder-status]{overflow-wrap:anywhere}#sec-ai .row-tools{flex-wrap:wrap}
 @media(max-width:600px){.ai-candidate .row-tools>*{max-width:100%}.ai-response-note{flex-basis:100%}}
 
 </style>
@@ -1934,6 +1934,7 @@ function gcMapBlobs(){
   }, function(){return false;});
 }
 function restoreRecovery(choiceKey){
+  aiFolderStop('복구를 시작해 폴더 연결을 해제했습니다.');
   var r,opSeq=stateLifecycleSeq,opEpoch=SESSION_EPOCH,fileSeq=++fileMutationSeq;
   try{
     var choices=recoveryCandidates(),chosen=null;
@@ -5958,6 +5959,7 @@ function bindConsole(root){
     var f = imp.files && imp.files[0]; if(!f) return;
     imp.value='';
     if(!ensureEditor())return;
+    aiFolderStop('상황 JSON 불러오기를 시작해 폴더 연결을 해제했습니다.');
     var opSeq=stateLifecycleSeq,opEpoch=SESSION_EPOCH,fileSeq=++fileMutationSeq;
     if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))return;
     if(f.size>MAX_IMPORT_BYTES){alert('가져오기 파일이 '+Math.round(MAX_IMPORT_BYTES/1048576)+'MB 한도를 초과합니다. 원본을 별도 보관하고 지도를 축소하세요.');return;}
@@ -6104,6 +6106,7 @@ function parseKmlOverlay(text){
 }
 function isGeoFileName(name){ return /\.(jgw|tfw|pgw|wld|kml)$/i.test(String(name||'')); }
 function applyGeoFile(file,opSeq,opEpoch,fileSeq,targetMapId,targetMapVer){
+  aiFolderStop('좌표 파일 불러오기를 시작해 폴더 연결을 해제했습니다.');
   if(opSeq===undefined)opSeq=stateLifecycleSeq;
   if(opEpoch===undefined)opEpoch=SESSION_EPOCH;
   if(fileSeq===undefined)fileSeq=++fileMutationSeq;
@@ -6137,6 +6140,7 @@ function applyGeoFile(file,opSeq,opEpoch,fileSeq,targetMapId,targetMapVer){
    이미지 -> 최대폭 1600px JPEG 로 축소 (localStorage 용량 확보)
    -------------------------------------------------------------------------- */
 function fileToMap(file, geoFile){
+  aiFolderStop('지도 불러오기를 시작해 폴더 연결을 해제했습니다.');
   var opSeq=stateLifecycleSeq,opEpoch=SESSION_EPOCH,fileSeq=++fileMutationSeq;
   if(!ensureEditor())return;
   if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))return;
@@ -6310,7 +6314,8 @@ var autoSaveHandle = null;    /* 세션 한정. 새로고침하면 다시 지정
 var autoSaveAt = 0, autoSaveErr = '', autoSaveBusy = false, lastAutoSavedRev = -1;
 var autoSavedMapVer = -1;     /* 지도를 마지막으로 보관에 포함한 판 번호 */
 var autoSaveGeneration=0;
-function resetAutoSaveSession(){
+function resetAutoSaveSession(preserveAIFolder){
+  if(!preserveAIFolder&&typeof aiFolderStop==='function')aiFolderStop('상황이 교체되어 폴더 연결을 해제했습니다. 다시 연결하세요.',false);
   /* 다른 상황의 기록을 이전 출동의 지정 파일에 덮지 않는다. 진행 중 쓰기는
      다음 비동기 경계에서 중단하고, 그 작업이 끝날 때까지 새 쓰기를 기다린다. */
   autoSaveGeneration++;autoSaveHandle=null;autoSaveAt=0;autoSaveErr='';lastAutoSavedRev=-1;autoSavedMapVer=-1;
@@ -6346,7 +6351,7 @@ function pickAutoSaveFile(){
     types:[{description:'STAY UP 상황 데이터',accept:{'application/json':['.json']}}]
   }).then(function(h){
     if(pickerGeneration!==autoSaveGeneration||!ownsEditorLock())return;
-    resetAutoSaveSession();
+    resetAutoSaveSession(true); /* 백업 파일만 바꿀 때 현재 상황의 후보 연결은 유지 */
     autoSaveHandle=h; autoSaveErr=''; lastAutoSavedRev=-1; autoSaveAt=0;
     autoSaveTick(); refreshAutoSavePill();
     alert('보관 파일을 지정했습니다. 이후 변경은 이 파일에 자동으로 덮어씁니다.\n창을 새로고침하면 다시 지정해야 합니다.');
@@ -6495,6 +6500,7 @@ function copyReport(){
   }
 }
 function loadSample(){
+  aiFolderStop('상황 교체를 시작해 폴더 연결을 해제했습니다.');
   var now = new Date(),opSeq=stateLifecycleSeq,opEpoch=SESSION_EPOCH,fileSeq=++fileMutationSeq;
   function lt(offsetMin){ return localDateTime(new Date(now.getTime() + offsetMin*60000)); }
   var s = defaultState();
@@ -6745,21 +6751,23 @@ function aiMerge(pack,signature,thumbnails){
   state.runs.push(Object.assign({},pack.run,{signature:signature,generatedAt:pack.generatedAt,appVersion:pack.appVersion}));
   return {state:aiNormalizeState(state),unchanged:false,added:added,updated:pack.candidates.length-added};
 }
-async function aiImportPackage(raw,confirmImport){
+async function aiImportPackage(raw,confirmImport,operationCurrent){
+  function current(){return !operationCurrent||operationCurrent();}
+  if(!current())aiFail('폴더 연결이 변경되어 가져오기를 중단했습니다.');
   if(!ensureEditor())return false;
   var seq=stateLifecycleSeq,epoch=SESSION_EPOCH,fileSeq=++fileMutationSeq,generation=aiCacheGeneration;
   var pack=aiPackage(raw),signature=await aiHash(aiSignature(pack)),images=Object.create(null),thumbnails=Object.create(null);
   for(var c of pack.candidates){
     var id=c.thumbnail===null?null:AI_IMAGE_PREFIX+await aiHash(c.thumbnail);thumbnails[c.id]=id;if(id)images[id]=c.thumbnail;
   }
-  if(!aiGuard(seq,epoch,fileSeq,generation))aiFail('상황이 변경되어 가져오기를 중단했습니다.');
+  if(!aiGuard(seq,epoch,fileSeq,generation)||!current())aiFail('상황이 변경되어 가져오기를 중단했습니다.');
   var merged=aiMerge(pack,signature,thumbnails);
   if(confirmImport!==false&&!confirm('현재 상황: '+(S.mission.title||'(상황명 미입력)')+'\n원본 분석 '+AI_RUN_STATUS[pack.run.status]+' · 성공 '+pack.run.completedCount+'장 / 실패·미완료 '+pack.run.failedCount+'장\n사진 후보 '+pack.candidates.length+'건 · 신규 '+merged.added+'건 · 갱신 '+merged.updated+'건\n기존 상황·대응 기록을 유지하며 추가/갱신할까요?'))return false;
   mapGcGeneration++;
   var next=JSON.parse(JSON.stringify(S));next.ai=merged.state;
   var made=await aiStageAssets(next,images,seq,epoch,fileSeq);
   try{
-  if(!aiGuard(seq,epoch,fileSeq,generation)){await aiDiscardAssets(made);aiFail('상황이 변경되어 가져오기를 중단했습니다.');}
+  if(!aiGuard(seq,epoch,fileSeq,generation)||!current()){await aiDiscardAssets(made);aiFail('상황이 변경되어 가져오기를 중단했습니다.');}
   // Re-merge against the latest state after asynchronous image writes so notes
   // entered meanwhile are retained too.
   merged=aiMerge(pack,signature,thumbnails);
@@ -6773,6 +6781,106 @@ async function aiImportPackage(raw,confirmImport){
   aiRenderAll();gcMapBlobs();return true;
   }finally{made.release();}
 }
+
+/* Only a user-selected, read-only directory in this page session is polled.
+   Handles never enter S, localStorage, IndexedDB, backups or peer messages. */
+var aiFolder={session:null,message:'자동 읽기 연결 안 됨 · 수동 불러오기를 사용할 수 있습니다.'};
+var AI_FOLDER_MS=2000,AI_FOLDER_BYTES=64*1024*1024;
+function aiFolderRefresh(){
+  document.querySelectorAll('[data-ai-folder-status]').forEach(function(el){el.textContent=aiFolder.message;});
+  document.querySelectorAll('[data-ai-action="folder-stop"]').forEach(function(el){el.disabled=!aiFolder.session;});
+}
+function aiFolderStop(message,refresh){
+  if(!aiFolder)return;
+  if(aiFolder.session)clearTimeout(aiFolder.session.timer);
+  aiFolder.session=null;
+  aiFolder.message=message||'폴더 연결을 해제했습니다. 기존 후보·대응 기록은 유지됩니다.';
+  if(refresh!==false)aiFolderRefresh();
+}
+function aiFolderCurrent(session){
+  return aiFolder.session===session&&lifecycleCurrent(session.seq,session.epoch)&&ownsEditorLock();
+}
+async function aiFolderConnect(){
+  if(!ensureEditor())return false;
+  if(typeof window.showDirectoryPicker!=='function'||!window.isSecureContext){
+    aiFolder.message='폴더 자동 읽기는 Chrome·Edge의 파일 직접 실행 또는 HTTPS·localhost에서 사용하세요. 수동 불러오기는 계속 사용할 수 있습니다.';aiFolderRefresh();return false;
+  }
+  aiFolderStop('폴더 선택 중…');
+  var seq=stateLifecycleSeq,epoch=SESSION_EPOCH,fileSeq=fileMutationSeq;
+  // Token also prevents an older picker from replacing a newer connection.
+  var token={seq:seq,epoch:epoch};aiFolder.session=token;
+  try{
+    var handle=await window.showDirectoryPicker({id:'stayup-ai-candidates',mode:'read'});
+    if(!aiFolderCurrent(token)||!fileMutationCurrent(fileSeq))return false;
+    if(!confirm('현재 상황: '+(S.mission.title||'(상황명 미입력)')+'\n폴더: '+handle.name+'\n이 폴더 바로 아래의 AI 사진 후보 파일을 약 2초 간격으로 읽어 추가·갱신합니다. 기존 파일도 포함하며 대응 기록은 유지합니다.\n현재 상황에 자동 연결할까요?')){aiFolderStop('폴더 연결을 취소했습니다.');return false;}
+    token.handle=handle;token.seen=Object.create(null);token.busy=false;
+    aiFolder.message='폴더 연결 · '+handle.name+' · 최초 확인 중…';aiFolderRefresh();
+    await aiFolderPoll();return aiFolder.session===token;
+  }catch(error){
+    if(aiFolder.session===token)aiFolderStop(error.name==='AbortError'?'폴더 선택을 취소했습니다.':'폴더 연결 실패: '+error.message+' · 수동 불러오기를 사용할 수 있습니다.');
+    return false;
+  }finally{
+    if(aiFolder.session===token&&!token.handle)aiFolderStop('상황이 변경되어 폴더 연결을 취소했습니다.');
+  }
+}
+async function aiFolderPoll(){
+  var session=aiFolder.session;
+  if(!session||!session.handle||session.busy)return;
+  if(!aiFolderCurrent(session)){aiFolderStop('편집권 또는 상황이 변경되어 폴더 연결을 해제했습니다.');return;}
+  clearTimeout(session.timer);session.busy=true;
+  var errors=[],changed=0,files=[],bytes=0,entries=0,matched=0;
+  function current(){return aiFolderCurrent(session);}
+  try{
+    if(await session.handle.queryPermission({mode:'read'})!=='granted'){
+      if(current())aiFolderStop('폴더 읽기 권한이 없어 연결을 해제했습니다. 다시 연결하거나 수동 불러오기를 사용하세요.');return;
+    }
+    for await(var entry of session.handle.entries()){
+      if(!current())return;
+      if(++entries>2000)throw new Error('폴더 항목이 2,000개를 넘습니다. 후보 전용 폴더를 선택하세요.');
+      if(entry[1].kind!=='file'||!/^stayup-ai-candidates(?:-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?\.json$/.test(entry[0]))continue;
+      if(++matched>500)throw new Error('후보 파일이 500개를 넘습니다. 폴더를 나누어 연결하세요.');
+      try{
+        var file=await entry[1].getFile();bytes+=file.size;
+        if(file.size>AI_MAX_BYTES)throw new Error('개별 파일 16 MiB 초과');
+        files.push({name:entry[0],file:file});
+      }catch(error){errors.push(entry[0]+': '+error.message);}
+    }
+    if(bytes>AI_FOLDER_BYTES)throw new Error('후보 파일 합계가 64 MiB를 넘습니다. 폴더를 나누어 연결하세요.');
+    files.sort(function(a,b){return a.name.localeCompare(b.name);});
+    for(var item of files){
+      if(!current())return;
+      var readSeq=fileMutationSeq;
+      try{
+        var text=await item.file.text(),hash=await aiHash(text);
+        if(!current()||!fileMutationCurrent(readSeq))return;
+        if(session.seen[item.name]===hash)continue;
+        var raw=JSON.parse(text);
+        // Bind generated names to their run; a renamed package is an error.
+        if(item.name!=='stayup-ai-candidates.json'&&item.name!=='stayup-ai-candidates-'+(raw.run||{}).id+'.json')throw new Error('파일명과 작업 ID 불일치');
+        var before=S.meta.revision;
+        if(!await aiImportPackage(raw,false,current))throw new Error('저장하지 못했습니다. 저장 상태를 확인하세요.');
+        if(!current())return;
+        session.seen[item.name]=hash;if(S.meta.revision!==before)changed++;
+      }catch(error){if(!current())return;errors.push(item.name+': '+error.message);}
+    }
+    if(current()){
+      // Forget removed files so restoring a package rechecks its current revision.
+      Object.keys(session.seen).forEach(function(name){if(!files.some(function(f){return f.name===name;}))delete session.seen[name];});
+      aiFolder.message='자동 읽기 · '+session.handle.name+' · '+new Date().toLocaleTimeString('ko-KR')+' 확인 · 파일 '+files.length+'개 · 반영 '+changed+'개 · 오류 '+errors.length
+        +(errors.length?' · '+errors.slice(0,3).join(' / '):'')+' · 약 2초 간격 (백그라운드에서는 지연될 수 있음)';
+      aiFolderRefresh();
+    }
+  }catch(error){
+    if(current())aiFolderStop('폴더 읽기 중단: '+error.message+' · 기존 기록은 유지됩니다. 다시 연결하세요.');
+  }finally{
+    session.busy=false;
+    if(aiFolder.session===session){
+      if(!current())aiFolderStop('편집권 또는 상황이 변경되어 폴더 연결을 해제했습니다.');
+      else session.timer=setTimeout(aiFolderPoll,AI_FOLDER_MS);
+    }
+  }
+}
+window.addEventListener('pagehide',function(){aiFolderStop(undefined,false);});
 
 function aiKey(c){return c.runId+'/'+c.id;}
 function aiLocation(c){
@@ -6798,10 +6906,13 @@ function aiSectionHtml(){
   var html='<h2>AI 사진 후보 <span class="hint">고유 인원 아님 · 사진 GPS는 촬영 위치</span></h2>'
     +'<div class="row-tools"><button type="button" class="btn primary" data-ai-action="import"'+(!ownsEditorLock()?' disabled':'')+'>AI 후보 불러오기</button>'
     +'<input type="file" data-ai-file accept=".json,application/json" hidden>'
+    +'<button type="button" class="btn" data-ai-action="folder"'+(!ownsEditorLock()?' disabled':'')+'>자동 읽기 폴더 연결</button>'
+    +'<button type="button" class="btn" data-ai-action="folder-stop"'+(!aiFolder.session?' disabled':'')+'>연결 해제</button>'
     +'<label>표시 <select data-ai-filter aria-label="AI 후보 표시 필터">'
     +[['active','확인할 후보'],['all','전체'],['unreviewed','미확인'],['person','사람 맞음'],['hold','보류'],['false_positive','오탐'],['withdrawn','원본에서 빠진 후보']].map(function(p){return '<option value="'+p[0]+'"'+(aiFilter===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+'</select></label></div>'
     +'<p class="note">상황 전체 복원과 별개로 후보만 추가·갱신합니다. 기존 지도·기체·수색 상태·대응 기록은 유지합니다. 발견 경보와 수색 완료는 자동 변경하지 않습니다.</p>'
     +'<p data-ai-status role="status" aria-live="polite">'+esc(aiMessage||('분석 작업 '+S.ai.runs.length+'개 · 보관 후보 '+items.length+'건 · 표시 '+filtered.length+'건'))+'</p>';
+  html+='<p data-ai-folder-status class="note" role="status" aria-live="polite">'+esc(aiFolder.message)+'</p>';
   var incomplete=S.ai.runs.filter(function(r){return r.status!=='completed'||r.failedCount>0;}).length;
   if(incomplete)html+='<p class="note">부분 완료·실패·취소를 포함한 분석 작업 '+incomplete+'개입니다. 후보가 없다는 표시만으로 전체 사진에 사람이 없다고 판단하지 마세요.</p>';
   if(S.ai.runs.length)html+='<details><summary>원본 분석 작업 정보 ('+S.ai.runs.length+'개)</summary><ul>'+S.ai.runs.map(function(r){return '<li>'+esc(r.id.slice(0,8))+' · '+AI_RUN_STATUS[r.status]+' · 사진 '+r.photoCount+'장 · 성공 '+(r.completedCount===null?'미상':r.completedCount)+' / 실패·미완료 '+(r.failedCount===null?'미상':r.failedCount)+'</li>';}).join('')+'</ul></details>';
@@ -6902,6 +7013,7 @@ document.addEventListener('input',function(e){
 });
 function aiReadFile(file){
   if(!file||!ensureEditor())return;
+  aiFolderStop('수동 불러오기를 시작해 자동 폴더 연결을 해제했습니다.');
   if(file.size>AI_MAX_BYTES){aiMessage='AI 후보 파일은 16 MiB까지 읽습니다.';aiRenderAll();return;}
   var seq=stateLifecycleSeq,epoch=SESSION_EPOCH,fileSeq=++fileMutationSeq;
   return file.text().then(function(text){
@@ -6918,6 +7030,8 @@ document.addEventListener('click',function(e){
   e.stopPropagation();var action=button.dataset.aiAction;
   try{
     if(action==='import')button.closest('#sec-ai').querySelector('[data-ai-file]').click();
+    if(action==='folder')aiFolderConnect();
+    if(action==='folder-stop')aiFolderStop();
     if(action==='section'){var root=button.closest('#consoleRoot,#drawerIn'),section=root.querySelector('#sec-ai'),bar=root.querySelector('.cons-top');if(bar)section.style.scrollMarginTop=(bar.getBoundingClientRect().height+12)+'px';section.scrollIntoView({block:'start'});}
     if(action==='detail')aiShowDetail(button.dataset.aiKey);
     if(action==='response')aiSaveResponse(button.dataset.aiKey);
@@ -6944,6 +7058,7 @@ function aiValidateBackup(raw){
   }
 }
 async function applyStateWithMap(nextState,nextMap,opSeq,opEpoch,fileSeq){
+  aiFolderStop('상황 교체를 시작해 폴더 연결을 해제했습니다.');
   if(opSeq===undefined)opSeq=stateLifecycleSeq;if(opEpoch===undefined)opEpoch=SESSION_EPOCH;
   var state={ai:aiNormalizeState(nextState&&nextState.ai)},generation=aiCacheGeneration;
   if(!aiImageIds(state).length){
