@@ -29,10 +29,11 @@ for ((attempt=1; attempt<=max_attempts; attempt++)); do
   fi
 
   node scripts/version.mjs check
+  node scripts/build-offline-shell.mjs --check
   node -e "const fs=require('fs');const s=fs.readFileSync('stayup-dash.html','utf8');const m=s.match(/<script>([\s\S]*?)<\/script>/);if(!m)throw Error('script missing');new Function(m[1]);console.log('inline script syntax: OK')"
   git diff --check
 
-  git add VERSION stayup-dash.html
+  git add VERSION stayup-dash.html service-worker.js offline-shell.json
   git commit -m "앱 버전 v${next_version} 자동 업데이트" -m "기준 커밋: ${base_sha}"
   git tag -a "v${next_version}" -m "STAY UP v${next_version} 자동 버전"
 

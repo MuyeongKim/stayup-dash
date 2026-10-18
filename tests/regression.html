@@ -49,6 +49,7 @@
 <script src="map-workspace.js"></script>
 <script src="online-maps.js"></script>
 <script src="ai-candidates.js"></script>
+<script src="offline-maps.js"></script>
 <script>
 "use strict";
 var out = document.getElementById('out'), sum = document.getElementById('sum');
@@ -975,6 +976,7 @@ async function run(){
   await runUiUxFixes();
   await runMapWorkspace();
   await runOnlineMaps();
+  await runOfflineMaps();
   await runMobileMapPins();
   await runAICandidates();
 

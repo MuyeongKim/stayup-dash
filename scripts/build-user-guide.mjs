@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 
-// Documentation-only tooling. The standalone app does not load these packages.
+// Documentation-only tooling. The app does not load these document-generation packages.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const options = process.argv.slice(2);
 const option = name => options.includes(name) ? options[options.indexOf(name) + 1] : undefined;
@@ -36,6 +36,8 @@ async function renderMarkdown(markdown) {
   }
   html = html.replace(/<p>(<img\b[^>]+>)<\/p>\s*<p><em>([\s\S]*?)<\/em><\/p>/g,
     '<figure class="guide-figure">$1<figcaption>$2</figcaption></figure>');
+  html = html.replace(/<table>[\s\S]*?<\/table>/g, table =>
+    (table.match(/<tr>/g) || []).length <= 10 ? table.replace('<table>', '<table class="compact-table">') : table);
   return html.replaceAll('href="./README.md', 'href="https://github.com/MuyeongKim/stayup-dash/blob/main/README.md');
 }
 
@@ -44,7 +46,7 @@ const chapterHtml = await Promise.all(chapters.map(async chapter =>
   `<section class="sheet chapter" id="${chapter.id}"><p class="eyebrow">STAY UP · 사용 안내</p><h2>${escape(chapter.title)}</h2>${await renderMarkdown(chapter.markdown)}</section>`));
 const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>STAY UP 사용설명서</title><meta name="description" content="실제 지도 화면 예시로 따라하는 STAY UP 사용설명서. 가상 상황, 좌표 미보정 및 사용 제약 안내 포함.">
+<title>STAY UP 사용설명서</title><meta name="description" content="STAY UP 사용설명서. 지역 지도 미리 저장, 인터넷 끊김 후 핀·구역 유지, 온라인 지도 연결과 상황·지도 백업 안내.">
 <style>
 :root{color-scheme:light;--ink:#152534;--muted:#506576;--line:#d5dfe6;--orange:#c44909}
 *{box-sizing:border-box}html{scroll-padding-top:85px}body{margin:0;background:#eef2f5;color:var(--ink);font:16px/1.75 'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;word-break:keep-all;overflow-wrap:anywhere}
@@ -56,10 +58,11 @@ blockquote{margin:18px 0;padding:12px 16px;border-left:4px solid #de681f;backgro
 .guide-figure{margin:20px 0}.guide-figure img{display:block;width:100%;height:auto;border-radius:6px}.guide-figure figcaption{margin-top:9px;font-size:13px;line-height:1.65;color:var(--muted)}.page-toc{display:grid;gap:7px;margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}.page-toc a{font-size:14px}.mobile-toc{display:none}.screen-footer{font-size:12px;color:var(--muted)}
 @media(max-width:760px){.layout{display:block;margin-top:14px;padding:0 12px}.toc{display:none}.mobile-toc{display:block;background:white;border:1px solid var(--line);padding:14px 18px;border-radius:10px;margin-bottom:14px}.mobile-toc summary{font-weight:800;cursor:pointer}.mobile-toc a{display:block;padding:9px 0;font-size:14px}.sheet{padding:24px 20px;border-radius:10px}h1{font-size:29px}h2{font-size:23px}body{font-size:15px}.toolbar{position:relative;padding:12px 16px;gap:8px}.toolbar a,.toolbar button{font-size:12px;padding:8px 10px}td,th{padding:8px}table{font-size:13px}html{scroll-padding-top:12px}}
 @page{size:A4;margin:15mm 16mm 18mm}
+@media print{.compact-table{break-inside:avoid}}
 @media print{body{background:white;font-size:11pt;line-height:1.62;color:#142331;-webkit-print-color-adjust:exact;print-color-adjust:exact}.toolbar,.toc,.mobile-toc,.screen-footer{display:none!important}.layout{display:block;max-width:none;margin:0;padding:0}.sheet{padding:0;margin:0;border:0;border-radius:0;box-shadow:none;break-before:page}.cover{break-before:auto}.eyebrow{font-size:9pt}h1{font-size:31pt;margin-bottom:20pt}h2{font-size:21pt;line-height:1.3;margin:0 0 16pt;padding-bottom:10pt}h3{font-size:13pt;margin-top:18pt}p{margin:9pt 0}ol,ul{margin:10pt 0;padding-left:1.6em}li{margin:6pt 0;break-inside:avoid}table{font-size:9.2pt;line-height:1.5;margin:12pt 0}td,th{padding:5pt 7pt}tr{break-inside:avoid}thead{display:table-header-group}blockquote{font-size:10pt;padding:9pt 12pt;margin:13pt 0}.guide-figure{margin:13pt 0;break-inside:avoid}.guide-figure img{max-height:104mm;object-fit:contain;object-position:left center}.guide-figure figcaption{font-size:9pt;line-height:1.5;margin-top:6pt}.page-toc{gap:7pt;margin-top:24pt;padding-top:16pt}.page-toc a{font-size:11pt;text-decoration:none}.meta{font-size:9pt}h2,h3{break-after:avoid}.chapter p{orphans:3;widows:3}a{color:#075987}}
 </style></head><body>
 <header class="toolbar"><b>STAY UP · 사용설명서</b><a href="STAY-UP-사용설명서.pdf" download>PDF 다운로드</a><button type="button" id="printGuide">인쇄하기</button><a href="../stayup-dash.html">상황판 열기</a></header>
-<div class="layout"><aside class="toc" aria-label="사용설명서 목차"><p>필요한 순서로 보기</p>${toc}<p class="meta">2026.10.18 개정<br>실제 지도 · 가상 상황 예시</p></aside>
+<div class="layout"><aside class="toc" aria-label="사용설명서 목차"><p>필요한 순서로 보기</p>${toc}<p class="meta">2026.10.18 개정<br>지역 지도 오프라인 준비 안내</p></aside>
 <main><details class="mobile-toc"><summary>목차 열기</summary>${toc}</details>
 <section class="sheet cover"><p class="eyebrow">START HERE · USER GUIDE</p><h1>처음부터 따라하는<br>STAY UP 사용설명서</h1>${await renderMarkdown(intro)}<nav class="page-toc" aria-label="인쇄용 목차">${toc}</nav></section>
 ${chapterHtml.join('\n')}

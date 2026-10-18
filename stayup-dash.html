@@ -984,8 +984,22 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .online-settings{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border2)}
 .online-settings .settings-fold{padding:10px;margin-top:10px}
 .online-settings .f{margin-top:8px}
+.offline-settings{margin:12px 0;padding:14px;border:1px solid var(--border2);border-radius:6px}
+.offline-settings h3{margin:0 0 8px;font-size:15px}
+.offline-settings .offline-status{font-size:13px;line-height:1.6;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere}
+.offline-map-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:13px/1.5 system-ui,sans-serif;padding:8px 10px;border-left:3px solid var(--info);background:var(--surface2);margin-top:8px}
+.offline-map-status[hidden]{display:none}
+.offline-map-status span{flex:1 1 220px}
+.offline-settings select{max-width:100%}
+.offline-active .gcell{color:#203344;border-color:rgba(32,51,68,.45);text-shadow:0 1px 2px rgba(255,255,255,.75)}
+.offline-active .gcell.s2{color:#123d23;border-color:#15803d}
+.offline-active .gcell.s1{color:#594412;border-color:#8a6711}
+.offline-active .gcell.s3{color:#641e23;border-color:#b62835}
+.online-map .maplibregl-ctrl-attrib{font:11px/18px system-ui,sans-serif}
+
 .online-settings a{color:var(--info);text-underline-offset:3px}
 .online-map{position:absolute;inset:0;z-index:0;color:#152534}
+.cons-map .online-map,.mapwrap .online-map{position:absolute;inset:0;width:100%;height:100%}
 .online-overlays{position:absolute;inset:0 0 30px;overflow:hidden;pointer-events:auto;z-index:1}
 .online-overlays[hidden]{display:none}
 .online-active .mapfit{left:0;top:0}
@@ -1177,6 +1191,7 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 <div id="consoleRoot" hidden></div>
 <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="STAY UP 조작 패널" hidden><div class="drawer-in" id="drawerIn"></div></div>
 
+<script src="offline-map-engine.js"></script>
 <script>
 "use strict";
 /* ==========================================================================
@@ -1249,7 +1264,7 @@ function defaultState(){
     drones:[], crew:[],
     batteries:{ ready:0, charging:0, empty:0, generator:false, avgFlightMin:25, concurrent:2 },
     grid:{
-      source:'image', mapType:'roadmap', rows:5, cols:6, cells:{}, generation:uid(), mapVer:0, mapId:null, hasMap:false, mapW:0, mapH:0, mapKB:0,
+      source:'image', mapType:'roadmap', offlineId:'', rows:5, cols:6, cells:{}, generation:uid(), mapVer:0, mapId:null, hasMap:false, mapW:0, mapH:0, mapKB:0,
       mapZoom:100, mapX:0, mapY:0, viewportVersion:1, spatialReview:false, mapOpacity:0.85, widthMeters:2000,
       /* geo: 지도 네 변의 위경도. 있으면 격자·핀에 실제 좌표가 생기고
          가로 실거리도 손입력이 아니라 계산값을 쓴다. 없으면 종전과 같이 픽셀 좌표계. */
@@ -1673,7 +1688,8 @@ function migrate(raw){
   d.batteries.concurrent=sanInt(b.concurrent,1,50,2);
 
   var g = isPlainObject(raw.grid) ? raw.grid : {};
-  d.grid.source=['naver','google'].indexOf(g.source)>=0?g.source:'image';
+  d.grid.offlineId=sanText(g.offlineId,128);
+  d.grid.source=['naver','google','offline'].indexOf(g.source)>=0?g.source:'image';
   d.grid.mapType=g.mapType==='satellite'?'satellite':'roadmap';
   d.grid.rows=sanInt(g.rows,1,12,5); d.grid.cols=sanInt(g.cols,1,12,6); d.grid.cells={};
   d.grid.generation=/^[a-z0-9_-]{3,100}$/i.test(String(g.generation||''))?String(g.generation):'legacy-grid';
@@ -1981,7 +1997,7 @@ function purgeIncidentData(){
     localStorage.setItem(PURGE_LOCKKEY,JSON.stringify({epoch:SESSION_EPOCH,owner:TAB_ID,at:Date.now(),localOk:true}));
   }catch(e){localPurgeError=e&&e.message?e.message:String(e);setSaveStatus(false,localPurgeError);}
   function reopenAfterPurge(){acquireEditorLock();renderAll();}
-  return mapBlobClear().then(function(){
+  return Promise.all([mapBlobClear(),purgeOfflineMaps()]).then(function(){
     if(!localPurgeOk){
       setSaveStatus(false,localPurgeError||'브라우저 상태 삭제 확인 실패');
       alert('지도 저장소는 비웠지만 일부 상황 데이터 삭제를 확인하지 못했습니다. 브라우저 사이트 데이터에서 STAY UP 저장공간을 직접 삭제하세요.');
@@ -2314,7 +2330,7 @@ function commitMap(dataUrl,meta,newId,opSeq,opEpoch,fileSeq){
        좌표 보정을 유지하고, 그 외에는 화면 변환까지 원점으로 되돌린다. */
     if(!sameImage){
       resetSpatialGrid(candidate,true);
-      candidate.grid.geo=null; candidate.grid.ref1=null; candidate.grid.ref2=null;
+      candidate.grid.geo=null; candidate.grid.ref1=null; candidate.grid.ref2=null;candidate.grid.offlineId='';
       candidate.grid.mapZoom=100;candidate.grid.mapX=0;candidate.grid.mapY=0;
     }
     candidate.grid.mapKB=dataUrl?Math.round(dataUrl.length/1024):0; touchState(candidate);
@@ -3167,8 +3183,8 @@ var onlineSDK = (function () {
 /* 온라인 배경은 선택한 경우에만 SDK를 불러온다. 출동 데이터와 인증 설정은 분리한다. */
 var ONLINE_KEYS_KEY='stayup.onlineKeys.v1';
 var onlineHosts=Object.create(null);
-function isOnlineMap(){return S.grid.source==='naver'||S.grid.source==='google';}
-function onlineSourceName(source){return {image:'사진·오프라인',naver:'네이버지도',google:'구글지도'}[source]||'사진·오프라인';}
+function isOnlineMap(){return ['naver','google','offline'].indexOf(S.grid.source)>=0;}
+function onlineSourceName(source){return {image:'사진·오프라인',naver:'네이버지도',google:'구글지도',offline:'저장한 지역 지도'}[source]||'사진·오프라인';}
 function getOnlineKeys(){
   try{var value=JSON.parse(localStorage.getItem(ONLINE_KEYS_KEY)||'{}');return {naver:typeof value.naver==='string'?value.naver:'',google:typeof value.google==='string'?value.google:''};}
   catch(ignore){return {naver:'',google:''};}
@@ -3194,14 +3210,14 @@ function onlineEnvironmentError(source){
   return '';
 }
 function applyMapSource(source,type){
-  if(!ensureEditor()||['image','naver','google'].indexOf(source)<0)return false;
+  if(!ensureEditor()||['image','naver','google','offline'].indexOf(source)<0)return false;
   if(source!=='image'){
     var error=!geoOK()?'기존 사진의 좌표를 먼저 보정하거나 새 수색 범위를 만드세요. 좌표 없는 표식을 온라인 지도에 옮길 수 없습니다.':onlineGeoError(S.grid.geo);
-    error=error||onlineEnvironmentError(source);
+    error=error||(source==='offline'?(!selectedOfflinePack()?'현재 수색 범위를 포함하는 저장 지도를 먼저 선택하거나 내려받으세요.':''):onlineEnvironmentError(source));
     if(error){mapMsg(error,'warn');return false;}
   }
   cancelMapInteraction();pinMode=null;mapEditMode='view';
-  S.grid.source=source;S.grid.mapType=type==='satellite'?'satellite':'roadmap';
+  offlineFallback=false;S.grid.source=source;S.grid.mapType=source!=='offline'&&type==='satellite'?'satellite':'roadmap';
   if(!commit())return false;
   mapMsg(onlineSourceName(source)+' 배경을 선택했습니다. 수색 범위·핀·기록은 유지됩니다.','ok');return true;
 }
@@ -3209,15 +3225,15 @@ function createOnlineArea(lat,lon,widthKm,source,type){
   if(!ensureEditor())return false;
   lat=Number(lat);lon=Number(lon);widthKm=Number(widthKm);
   if(!isFinite(lat)||!isFinite(lon)||!isFinite(widthKm)||Math.abs(lat)>84||Math.abs(lon)>180||widthKm<.1||widthKm>100){mapMsg('중심 위도(-84~84), 경도(-180~180), 가로 범위(0.1~100km)를 확인하세요.','err');return false;}
-  if(source!=='naver'&&source!=='google'){mapMsg('새 수색 범위에 사용할 네이버지도 또는 구글지도를 먼저 선택하세요.','warn');return false;}
-  var environmentError=onlineEnvironmentError(source);if(environmentError){mapMsg(environmentError,'warn');return false;}
+  if(source!=='naver'&&source!=='google'&&source!=='offline'){mapMsg('새 수색 범위에 사용할 네이버·구글 또는 저장한 지역 지도를 먼저 선택하세요.','warn');return false;}
+  var environmentError=source==='offline'?offlineRequirements():onlineEnvironmentError(source);if(environmentError){mapMsg(environmentError,'warn');return false;}
   var dx=widthKm*1000/(MPD_LAT*Math.cos(lat*RAD))/2,dy=widthKm*1000*.625/MPD_LAT/2;
   var geo={north:lat+dy,south:lat-dy,west:lon-dx,east:lon+dx,src:'online',at:Date.now()},error=onlineGeoError(geo);
   if(error){mapMsg(error,'err');return false;}
   if(!confirm('중심 '+lat.toFixed(5)+', '+lon.toFixed(5)+' / 가로 '+widthKm+'km로 새 수색 범위를 만들까요?\n기존 사진·구역 상태·담당·핀·좌표 보정과 기체 담당구역을 초기화합니다. 기존 기록은 남고, 작업 전 상태는 복구본에 보관합니다.'))return false;
   if(!saveRecoveryPoint('온라인 수색 범위 변경 전')){mapMsg('복구본을 만들 수 없어 수색 범위 변경을 중단했습니다.','err');return false;}
   var next=migrate(S);resetSpatialGrid(next,true);
-  Object.assign(next.grid,{source:source,mapType:type==='satellite'?'satellite':(type==='roadmap'?'roadmap':next.grid.mapType),geo:geo,ref1:null,ref2:null,mapId:null,hasMap:false,mapW:0,mapH:0,mapNatW:0,mapNatH:0,mapKB:0,mapVer:next.grid.mapVer+1});
+  Object.assign(next.grid,{source:source,offlineId:'',mapType:source==='offline'?'roadmap':type==='satellite'?'satellite':(type==='roadmap'?'roadmap':next.grid.mapType),geo:geo,ref1:null,ref2:null,mapId:null,hasMap:false,mapW:0,mapH:0,mapNatW:0,mapNatH:0,mapKB:0,mapVer:next.grid.mapVer+1});
   touchState(next);if(!persistCandidate(next))return false;
   cancelMapInteraction();fileMutationSeq++;S=next;MAPDATA=null;mapIdLoaded=null;mapVerLoaded=S.grid.mapVer;lastSeenUpdated=S.meta.updated;
   pinMode=null;mapEditMode='view';lastSweep=null;gridDimensionsDraft=null;
@@ -3228,10 +3244,10 @@ function onlineMapPanel(){
   var keys=getOnlineKeys(),center=geoOK()?geoAt(.5,.5):{lat:S.mission.lat,lon:S.mission.lon};
   function field(id,label,value,attrs){return '<label class="f"><span>'+label+'</span><input id="'+id+'" value="'+esc(value==null?'':value)+'" '+attrs+'></label>';}
   return '<div class="online-settings"><div class="f2"><label class="f"><span>배경 지도</span><select id="mapSourceSelect">'
-    +['image','naver','google'].map(function(s){return '<option value="'+s+'"'+((S.grid.source||'image')===s?' selected':'')+'>'+onlineSourceName(s)+'</option>';}).join('')
+    +['image','naver','google','offline'].map(function(s){return '<option value="'+s+'"'+((S.grid.source||'image')===s?' selected':'')+'>'+onlineSourceName(s)+'</option>';}).join('')
     +'</select></label><label class="f"><span>지도 종류</span><select id="mapTypeSelect"><option value="roadmap">일반지도</option><option value="satellite"'+(S.grid.mapType==='satellite'?' selected':'')+'>위성지도</option></select></label></div>'
     +'<div class="row-tools"><button type="button" class="btn primary" data-online-action="source">배경 적용</button></div>'
-    +'<p class="note">좌표가 있는 사진은 같은 구역·핀을 유지하며 전환합니다. 지도 이동은 수색 범위를 바꾸지 않습니다.</p>'
+    +'<p class="note">좌표가 있는 사진은 같은 구역·핀을 유지하며 전환합니다. 지도 이동은 수색 범위를 바꾸지 않습니다.</p>'+offlineMapPanel()
     +'<details class="settings-fold" data-fold="online-keys"><summary>온라인 지도 연결 설정</summary>'
     +field('naverMapKey','NAVER Client ID (ncpKeyId)','','type="password" autocomplete="off" spellcheck="false" placeholder="'+(keys.naver?'저장됨 · 변경할 때만 입력':'웹 지도용 Client ID 입력')+'"')
     +field('googleMapKey','Google Maps API 키','','type="password" autocomplete="off" spellcheck="false" placeholder="'+(keys.google?'저장됨 · 변경할 때만 입력':'Maps JavaScript API 키 입력')+'"')
@@ -3248,7 +3264,7 @@ function destroyOnlineHost(id){
   var rec=onlineHosts[id];if(!rec)return;
   delete onlineHosts[id];rec.cancelled=true;if(rec.adapter)rec.adapter.destroy();rec.element.remove();
 }
-function onlineMapReady(host){var r=host&&onlineHosts[host.id];return !!(r&&r.host===host&&r.adapter&&!r.error&&!r.fitting&&navigator.onLine!==false);}
+function onlineMapReady(host){var r=host&&onlineHosts[host.id];return !!(r&&r.host===host&&r.adapter&&!r.error&&!r.fitting&&(r.source==='offline'||navigator.onLine!==false));}
 function onlineNotice(rec,message){
   if(!rec.host||!rec.host.isConnected)return;
   var status=rec.host.querySelector('.online-status');if(status){status.hidden=!message;status.querySelector('span').textContent=message;}
@@ -3257,27 +3273,40 @@ function onlineNotice(rec,message){
 }
 function failOnlineMap(rec,message){
   if(onlineHosts[rec.host.id]!==rec)return;
+  if(rec.source!=='offline'&&activateOfflineFallback(message))return;
   rec.error=message;cancelMapInteraction();mapEditMode='view';pinMode=null;onlineNotice(rec,message);updatePinModeUi();
 }
 function mountOnlineMap(host){
-  var identity=mapIdentity(),rec=onlineHosts[host.id];
-  if(rec&&rec.identity!==identity){destroyOnlineHost(host.id);rec=null;}
-  if(rec){rec.host=host;host.prepend(rec.element);if(rec.adapter){rec.adapter.resize();drawOnlineMap(rec);}onlineNotice(rec,rec.error||(!rec.adapter?'온라인 지도 연결 중…':rec.fitting?'수색 범위에 맞추는 중…':''));return;}
-  var element=document.createElement('div');element.className='online-map';element.setAttribute('aria-label',onlineSourceName(S.grid.source)+' 배경');host.prepend(element);
-  rec=onlineHosts[host.id]={host:host,element:element,identity:identity,source:S.grid.source,adapter:null,error:'',x:0,y:0,zoom:1};
+  var source=effectiveMapSource(),identity=mapIdentity(),rec=onlineHosts[host.id],camera=null;
+  if(rec&&rec.identity!==identity){
+    if(rec.adapter&&rec.scope===offlineScopeKey())camera={center:rec.adapter.getCenter(),zoom:rec.adapter.getZoom(),baseZoom:rec.baseZoom,scale:rec.zoom};
+    destroyOnlineHost(host.id);rec=null;
+  }
+  if(rec){rec.host=host;host.prepend(rec.element);if(rec.adapter){rec.adapter.resize();drawOnlineMap(rec);}onlineNotice(rec,rec.error||(!rec.adapter?'지도 준비 중…':rec.fitting?'수색 범위에 맞추는 중…':''));return;}
+  var element=document.createElement('div');element.className='online-map';element.setAttribute('aria-label',onlineSourceName(source)+' 배경');host.prepend(element);
+  rec=onlineHosts[host.id]={host:host,element:element,identity:identity,scope:offlineScopeKey(),source:source,adapter:null,error:'',x:0,y:0,zoom:1};
   var error=!geoOK()?'좌표가 없습니다. 사진 좌표를 보정하거나 새 수색 범위를 만드세요.':onlineGeoError(S.grid.geo);
-  error=error||onlineEnvironmentError(rec.source);
+  error=error||(rec.source==='offline'?(!selectedOfflinePack()?'현재 범위의 저장 지도가 없습니다. 지도·격자 설정에서 미리 저장하거나 지도 파일을 가져오세요.':''):onlineEnvironmentError(rec.source));
   if(error){failOnlineMap(rec,error);return;}
-  onlineNotice(rec,'온라인 지도 연결 중…');
+  onlineNotice(rec,'지도 준비 중…');
   var options={geo:Object.assign({},S.grid.geo),type:S.grid.mapType};
-  onlineSDK.load(rec.source,getOnlineKeys()[rec.source]).then(function(){
+  if(camera&&camera.center&&isFinite(camera.zoom)){options.center=camera.center;options.zoom=camera.zoom;}
+  var prepare=rec.source==='offline'?offlineEngine().init():onlineSDK.load(rec.source,getOnlineKeys()[rec.source]);
+  prepare.then(function(){
     if(rec.cancelled)return null;
-    return onlineSDK.create(rec.source,element,options,function(){if(rec.adapter&&!rec.cancelled)drawOnlineMap(rec);},function(message){if(!rec.cancelled)failOnlineMap(rec,message);});
+    var draw=function(){if(rec.adapter&&!rec.cancelled)drawOnlineMap(rec);};
+    var fail=function(message){if(!rec.cancelled)failOnlineMap(rec,message);};
+    if(rec.source==='offline')return offlineEngine().createMap(element,{packId:S.grid.offlineId,bounds:options.geo,center:options.center,zoom:options.zoom},draw,fail);
+    return onlineSDK.create(rec.source,element,options,draw,fail);
   }).then(function(adapter){
     if(!adapter)return;
     if(rec.cancelled||onlineHosts[host.id]!==rec){adapter.destroy();return;}
     rec.adapter=adapter;rec.baseZoom=adapter.getZoom();
     if(rec.error)return;
+    if(camera&&camera.center&&isFinite(camera.baseZoom)&&isFinite(camera.scale)){
+      var restoredView=mapViewState(rec.host);rec.baseZoom=camera.baseZoom;restoredView.zoom=rec.zoom=clamp(camera.scale,1,mapMaxZoom(rec.host));
+      restoredView.x=rec.x=0;restoredView.y=rec.y=0;
+    }
     fitOnlineMap(rec.host);onlineNotice(rec,'');syncMapInteractionUi(rec.host);
   }).catch(function(error){if(!rec.cancelled)failOnlineMap(rec,error&&error.message||'온라인 지도를 불러오지 못했습니다. 키·등록 URL·결제·인터넷 연결을 확인한 뒤 다시 시도하세요.');});
 }
@@ -3348,15 +3377,240 @@ document.addEventListener('click',function(ev){
     createOnlineArea(lat,lon,root.querySelector('#onlineWidth').value,root.querySelector('#mapSourceSelect').value,root.querySelector('#mapTypeSelect').value);
   }
 });
-window.addEventListener('offline',function(){Object.keys(onlineHosts).forEach(function(id){failOnlineMap(onlineHosts[id],'인터넷 연결이 끊겼습니다. 다시 연결 후 재시도하거나 사진·오프라인을 선택하세요.');});});
+
 window.addEventListener('storage',function(ev){if(ev.key===ONLINE_KEYS_KEY){Object.keys(onlineHosts).forEach(destroyOnlineHost);renderGridAll();}});
+
+/* 지역 지도는 출동 기록과 별도 보관한다. 자동 전환은 창의 보기만 바꾼다. */
+var OFFLINE_CATALOG_KEY='stayup.offline.catalog.v1';
+var offlinePacks=[],offlineCatalogLoaded=false,offlineCatalogError='',offlineFallback=false,offlineFallbackScope='';
+var offlineJob=null,offlineMessage='',offlineLevel=14;
+var offlineShell={ready:false,waiting:false,build:'',message:''};
+function offlineEngine(){return window.STAYUP_OFFLINE||null;}
+function offlineScopeKey(){return [SESSION_EPOCH,stateLifecycleSeq,S.grid.generation,JSON.stringify(S.grid.geo)].join('|');}
+function offlineCovers(pack,geo){
+  var b=pack&&pack.bbox;
+  return !!(b&&b.length===4&&geo&&b[0]<=geo.west+1e-9&&b[1]<=geo.south+1e-9&&b[2]>=geo.east-1e-9&&b[3]>=geo.north-1e-9);
+}
+function selectedOfflinePack(){
+  return offlinePacks.find(function(p){return p.id===S.grid.offlineId&&offlineCovers(p,S.grid.geo);})||null;
+}
+function effectiveMapSource(){
+  var source=S.grid.source||'image';
+  if((source==='naver'||source==='google')&&selectedOfflinePack()){
+    if(navigator.onLine===false){offlineFallback=true;offlineFallbackScope=offlineScopeKey();}
+    if(offlineFallback&&offlineFallbackScope===offlineScopeKey())return 'offline';
+  }
+  return source;
+}
+function offlineDate(pack){var raw=pack&&(pack.sourceDate||(pack.source&&pack.source.date));if(!raw)return '기준일 미상';var date=/^\d{4}-\d{2}-\d{2}/.test(raw)?raw.slice(0,10):raw;return pack.source&&pack.source.dateKind==='archive'?'파일 날짜 '+date:date;}
+function offlineBytes(bytes){return (Math.max(0,num(bytes,0))/1048576).toFixed(1)+' MB';}
+function offlineRequirements(){
+  if(!/^https?:$/.test(location.protocol)||!window.isSecureContext)return '지역 지도 저장은 HTTPS 또는 localhost에서 폴더 전체를 열어 사용하세요. 사진 지도는 파일 직접 실행을 계속 지원합니다.';
+  if(!offlineEngine())return '오프라인 지도 구성 파일이 없습니다. 배포 폴더의 offline-map-engine.js와 vendor 폴더를 함께 준비하세요.';
+  if(!window.indexedDB||!window.crypto||!crypto.subtle)return '이 브라우저에서 지도 저장·무결성 검사를 지원하지 않습니다. 최신 Chrome 또는 Edge를 사용하세요.';
+  return '';
+}
+function signalOfflineCatalog(){try{localStorage.setItem(OFFLINE_CATALOG_KEY,Date.now()+'-'+uid());}catch(ignore){}}
+function offlineStatus(message){offlineMessage=message||'';updateOfflineUi();}
+function offlineWorkspaceText(){
+  var pack=selectedOfflinePack();
+  if(effectiveMapSource()==='offline'){
+    if(!pack)return offlineCatalogLoaded?'연결된 지역 지도 없음 · 지도·격자 설정에서 저장하거나 지도 파일을 가져오세요.':'저장한 지역 지도를 확인하는 중…';
+    return (S.grid.source==='offline'?'저장한 지역 지도 사용':'연결 장애 · 저장한 지역 지도로 전환')+' · 자료 '+offlineDate(pack)+' · 상세 단계 '+pack.maxZoom+' · 저장 범위 안에서 사용';
+  }
+  return pack?'오프라인 대비 지도 연결됨 · 자료 '+offlineDate(pack)+(offlineShell.ready?' · 앱 재시작 준비 완료':' · 앱 오프라인 준비 상태 확인 필요'):'';
+}
+function updateOfflineUi(){
+  document.querySelectorAll('[data-offline-status]').forEach(function(el){el.textContent=offlineMessage||offlineCatalogError||'';});
+  document.querySelectorAll('[data-offline-shell-status]').forEach(function(el){el.textContent=offlineShell.message||(offlineShell.ready?'앱 오프라인 준비 완료':'앱 재시작을 위한 오프라인 준비가 필요합니다.');});
+  document.querySelectorAll('[data-offline-busy]').forEach(function(el){el.disabled=!!offlineJob;});
+  document.querySelectorAll('[data-offline-action="cancel"]').forEach(function(el){el.hidden=!offlineJob;});
+  document.querySelectorAll('[data-offline-map-status]').forEach(function(el){
+    var text=offlineWorkspaceText(),span=el.querySelector('span');span.textContent=text;el.hidden=!text;
+    var button=el.querySelector('button');button.hidden=!(effectiveMapSource()==='offline'&&S.grid.source!=='offline');
+    button.disabled=navigator.onLine===false;
+  });
+  document.querySelectorAll('[data-offline-pack-select]').forEach(function(el){
+    var old=el.value||S.grid.offlineId||'';
+    var html='<option value="">저장한 지도 선택</option>'+offlinePacks.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(offlineDate(p)+' · '+offlineBytes(p.bytes)+' · 단계 '+p.maxZoom+(offlineCovers(p,S.grid.geo)?' · 현재 범위 포함':' · 다른 범위'))+'</option>';}).join('');
+    if(el.innerHTML!==html){el.innerHTML=html;el.value=old;}
+  });
+  var estimate=document.getElementById('offlineEstimate');
+  if(estimate){
+    var text='현재 지도 좌표 범위를 먼저 설정하세요.';
+    if(geoOK()){
+      text='현재 수색 범위 가로 약 '+Math.round(mapWidthMeters())+'m · 위경도 고정';
+      var engine=offlineEngine();if(engine&&engine.estimate)try{var e=engine.estimate({bbox:[S.grid.geo.west,S.grid.geo.south,S.grid.geo.east,S.grid.geo.north],maxZoom:offlineLevel});if(e&&e.tileCount!==undefined)text+=' · '+e.tileCount+'개 타일';}catch(error){text=error.message;}
+    }
+    estimate.textContent=text;
+  }
+}
+function offlineMapPanel(){
+  return '<section class="offline-settings" aria-label="오프라인 지역 지도"><h3>오프라인 지역 지도</h3>'
+    +'<p class="note">현재 수색 범위의 일반 지도를 미리 저장합니다. 핀·칠한 구역·담당·기록을 유지하며, 통신이 끊기면 저장한 지도로 전환합니다. 오프라인 배경은 Protomaps / OpenStreetMap이며 네이버·구글·위성 지도와 다릅니다.</p>'
+    +'<p id="offlineEstimate" class="note"></p><p class="note">지도당 최대 4,096개 타일·100 MB, 보관함 최대 12개입니다. 정확한 용량은 다운로드 중 확인합니다.</p>'
+    +'<label class="f"><span>저장 세부 수준</span><select id="offlineLevel" data-offline-busy>'
+    +[[12,'넓은 지역 · 단계 12'],[14,'기본 · 단계 14'],[15,'상세 · 단계 15']].map(function(a){return '<option value="'+a[0]+'"'+(offlineLevel===a[0]?' selected':'')+'>'+a[1]+'</option>';}).join('')+'</select></label>'
+    +'<div class="row-tools"><button type="button" class="btn primary" data-offline-action="save" data-offline-busy>이 수색 범위 미리 저장</button><button type="button" class="btn" data-offline-action="cancel" hidden>저장 취소</button><button type="button" class="btn" data-offline-action="shell" data-offline-busy>앱 오프라인 준비</button></div>'
+    +'<p class="offline-status" data-offline-status role="status" aria-live="polite"></p><p class="note" data-offline-shell-status></p>'
+    +'<label class="f"><span>저장한 지역 지도</span><select data-offline-pack-select data-offline-busy></select></label>'
+    +'<div class="row-tools"><button type="button" class="btn" data-offline-action="use" data-offline-busy>저장 지도 사용</button><button type="button" class="btn" data-offline-action="export" data-offline-busy>지도 파일 내보내기</button><button type="button" class="btn" data-offline-action="import" data-offline-busy>지도 파일 가져오기</button><button type="button" class="btn danger" data-offline-action="delete" data-offline-busy>선택 지도 삭제</button></div>'
+    +'<input type="file" id="offlinePackFile" accept=".stayup-map,.json,application/json" hidden>'
+    +'<p class="note">일반 상황 JSON에는 지역 지도 본체가 포함되지 않습니다. 다른 PC로 옮길 때는 상황 JSON과 지도 파일을 함께 보관하세요. 저장 범위 밖이나 저장 단계보다 세밀한 새 지도 정보는 제공하지 않습니다.</p></section>';
+}
+function offlineWorkerRequest(worker,type,extra){
+  return new Promise(function(resolve,reject){
+    if(!worker){reject(new Error('오프라인 앱 관리자를 찾을 수 없습니다.'));return;}
+    var channel=new MessageChannel(),timer=setTimeout(function(){channel.port1.close();reject(new Error('앱 오프라인 준비 응답 시간이 초과됐습니다.'));},type==='PREPARE_SHELL'?60000:3000);
+    channel.port1.onmessage=function(ev){clearTimeout(timer);channel.port1.close();resolve(ev.data||{});};
+    worker.postMessage(Object.assign({type:type},extra||{}),[channel.port2]);
+  });
+}
+async function prepareOfflineShell(){
+  var error=offlineRequirements();if(error)throw new Error(error);
+  if(!navigator.serviceWorker)throw new Error('이 브라우저에서 오프라인 앱 준비를 지원하지 않습니다.');
+  offlineShell.message='앱 파일 저장·검증 중…';updateOfflineUi();
+  var response=await fetch('offline-shell.json',{cache:'no-store'});if(!response.ok)throw new Error('앱 구성 목록을 읽지 못했습니다. 배포 폴더 전체를 확인하세요.');
+  var manifest=await response.json();if(!manifest.build)throw new Error('오프라인 앱 구성 목록이 올바르지 않습니다.');
+  var reg=await navigator.serviceWorker.register('service-worker.js',{scope:'./',updateViaCache:'none'});
+  await reg.update();
+  var worker=null;
+  for(var attempt=0;attempt<40&&!worker;attempt++){
+    var candidates=[reg.installing,reg.waiting,reg.active].filter(Boolean);
+    for(var i=0;i<candidates.length;i++)try{var status=await offlineWorkerRequest(candidates[i],'SHELL_STATUS');if(status.build===manifest.build){worker=candidates[i];break;}}catch(ignore){}
+    if(!worker)await new Promise(function(resolve){setTimeout(resolve,250);});
+  }
+  if(!worker)throw new Error('현재 버전의 오프라인 앱 준비를 시작하지 못했습니다. 새로고침 후 다시 시도하세요.');
+  var result=await offlineWorkerRequest(worker,'PREPARE_SHELL',{expectedBuild:manifest.build});
+  if(!result.ready||result.build!==manifest.build)throw new Error(result.error||'앱 파일 저장 검증에 실패했습니다.');
+  offlineShell={ready:worker===reg.active,waiting:worker!==reg.active,build:manifest.build,message:worker===reg.active?'앱 오프라인 준비 완료 · 같은 주소에서 다시 열 수 있습니다.':'새 앱 파일 저장 완료 · 모든 상황판 창을 닫고 같은 주소로 다시 열어 준비 상태를 확인하세요.'};
+  updateOfflineUi();return offlineShell;
+}
+async function checkOfflineShell(){
+  if(!navigator.serviceWorker||!/^https?:$/.test(location.protocol))return;
+  try{
+    var reg=await navigator.serviceWorker.getRegistration('./');if(!reg||!reg.active)return;
+    var status=await offlineWorkerRequest(reg.active,'SHELL_STATUS');
+    var res=await fetch('offline-shell.json',{cache:'no-store'});var manifest=res.ok?await res.json():null;
+    var current=!!(manifest&&manifest.build===status.build);
+    offlineShell={ready:status.ready&&current,waiting:!!reg.waiting,build:status.build,message:status.ready&&current?'앱 오프라인 준비 완료':'앱 버전이 바뀌었습니다. 앱 오프라인 준비 후 모든 상황판 창을 닫고 다시 여세요.'};
+  }catch(ignore){}updateOfflineUi();
+}
+async function refreshOfflinePacks(redraw){
+  var engine=offlineEngine();if(!engine){offlineCatalogLoaded=true;offlineCatalogError='배포 폴더에 오프라인 지도 구성 파일을 함께 준비하세요.';updateOfflineUi();return [];}
+  var prior=effectiveMapSource();
+  try{offlinePacks=await engine.list();offlineCatalogLoaded=true;offlineCatalogError='';}
+  catch(error){offlinePacks=[];offlineCatalogLoaded=true;offlineCatalogError='지역 지도 보관함을 읽지 못했습니다. '+error.message;}
+  updateOfflineUi();if(redraw||prior!==effectiveMapSource()||S.grid.source==='offline')renderGridAll();
+  return offlinePacks;
+}
+async function saveOfflineRegion(maxZoom){
+  if(!ensureEditor())return false;
+  if(offlineJob){offlineStatus('진행 중인 지도 저장을 먼저 완료하거나 취소하세요.');return false;}
+  var error=offlineRequirements()||(!geoOK()?'현재 사진의 좌표를 보정하거나 새 수색 범위를 먼저 만드세요.':onlineGeoError(S.grid.geo));
+  if(error){offlineStatus(error);return false;}
+  var scope=offlineScopeKey(),bounds=Object.assign({},S.grid.geo),controller=new AbortController();
+  var job=offlineJob={controller:controller,scope:scope};updateOfflineUi();
+  try{
+    offlineStatus('지도 표시 도구와 앱 파일을 준비하는 중…');
+    await offlineEngine().init();await prepareOfflineShell();
+    if(controller.signal.aborted)throw new DOMException('저장을 취소했습니다.','AbortError');
+    var pack=await offlineEngine().download({bbox:[bounds.west,bounds.south,bounds.east,bounds.north],maxZoom:Number(maxZoom)||14,signal:controller.signal,onProgress:function(p){
+      if(offlineJob!==job)return;
+      offlineStatus('지역 지도 '+(({source:'원본 확인',download:'다운로드',verify:'저장 검증',ready:'준비 완료',import:'가져오기'})[p.stage]||'저장 중')+' · '+(p.completed==null?(p.done||0):p.completed)+' / '+(p.total||p.tileCount||'?')+' · '+offlineBytes(p.bytes));
+    }});
+    await refreshOfflinePacks(false);signalOfflineCatalog();
+    if(controller.signal.aborted||scope!==offlineScopeKey()||!ownsEditorLock()){
+      offlineStatus('지역 지도는 보관함에 저장했습니다. 수색 범위나 편집권이 바뀌어 현재 상황에는 연결하지 않았습니다.');return true;
+    }
+    S.grid.offlineId=pack.id;
+    if(!commit()){offlineStatus('지도는 보관함에 저장했지만 현재 상황에 연결하지 못했습니다. 저장 지도 사용을 다시 선택하세요.');return false;}
+    offlineStatus('지역 지도 저장·검증 완료 · '+offlineBytes(pack.bytes)+' · 자료 '+offlineDate(pack)+(offlineShell.ready?' · 앱 재시작 준비 완료':' · 모든 상황판 창을 닫고 다시 열어 앱 준비 상태를 확인하세요.'));
+    return true;
+  }catch(error){offlineStatus(error.name==='AbortError'?'지역 지도 저장을 취소했습니다. 기존 지도·핀·구역은 유지됩니다.':'저장 실패 · '+error.message+' · 기존 지도·핀·구역은 유지됩니다.');return false;}
+  finally{if(offlineJob===job)offlineJob=null;updateOfflineUi();}
+}
+function selectOfflinePack(id){
+  if(!ensureEditor())return false;
+  var pack=offlinePacks.find(function(p){return p.id===id;});
+  if(!pack||!offlineCovers(pack,S.grid.geo)){offlineStatus('현재 수색 범위를 모두 포함하는 저장 지도를 선택하세요. 기존 구역·핀은 변경하지 않았습니다.');return false;}
+  cancelMapInteraction();S.grid.offlineId=pack.id;S.grid.source='offline';S.grid.mapType='roadmap';
+  offlineFallback=false;if(!commit())return false;
+  offlineStatus('저장한 지역 지도를 사용합니다. 핀·구역·담당·기록을 유지했습니다.');return true;
+}
+function activateOfflineFallback(message){
+  if(!selectedOfflinePack()||S.grid.source==='image'||S.grid.source==='offline')return false;
+  offlineFallback=true;offlineFallbackScope=offlineScopeKey();cancelMapInteraction();mapEditMode='view';pinMode=null;
+  renderGridAll();updatePinModeUi();offlineStatus(message+' 저장한 지역 지도로 전환했습니다. 핀·구역·기록은 유지됩니다.');return true;
+}
+async function purgeOfflineMaps(){
+  if(offlineJob)offlineJob.controller.abort();offlineJob=null;
+  var engine=offlineEngine();if(engine)await engine.purge();
+  else {
+    var databases=indexedDB.databases?await indexedDB.databases():null;
+    if(!databases||databases.some(function(db){return db.name==='stayup-offline-regions-v1';}))throw new Error('지역 지도 구성 파일이 없어 저장 지도 삭제를 확인하지 못했습니다. 전체 폴더를 복원하거나 브라우저 사이트 데이터를 삭제하세요.');
+  }
+  offlinePacks=[];offlineFallback=false;offlineMessage='';signalOfflineCatalog();updateOfflineUi();
+}
+function downloadOfflineBlob(blob,name){
+  var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},30000);
+}
+async function importOfflineFile(file){
+  if(!file||!ensureEditor()||offlineJob)return false;
+  var requirement=offlineRequirements();if(requirement){offlineStatus(requirement);return false;}
+  var scope=offlineScopeKey(),controller=new AbortController(),job=offlineJob={controller:controller,scope:scope};updateOfflineUi();
+  try{
+    await offlineEngine().init();offlineStatus('지도 파일의 형식·범위·전체 타일을 검증하는 중…');
+    var pack=await offlineEngine().importPack(file,{signal:controller.signal});
+    await refreshOfflinePacks(false);signalOfflineCatalog();
+    if(!controller.signal.aborted&&offlineJob===job&&scope===offlineScopeKey()&&ownsEditorLock()&&offlineCovers(pack,S.grid.geo)){S.grid.offlineId=pack.id;commit();}
+    offlineStatus('지도 파일 가져오기 완료 · 자료 '+offlineDate(pack)+' · 현재 범위를 포함하면 저장 지도 사용을 선택하세요.');return true;
+  }catch(error){offlineStatus('지도 파일 가져오기 실패 · '+error.message);return false;}
+  finally{if(offlineJob===job)offlineJob=null;updateOfflineUi();}
+}
+document.addEventListener('change',function(ev){
+  if(ev.target.id==='offlineLevel'){offlineLevel=Number(ev.target.value)||14;updateOfflineUi();}
+  if(ev.target.id==='offlinePackFile'){var file=ev.target.files[0];ev.target.value='';importOfflineFile(file);}
+});
+document.addEventListener('click',async function(ev){
+  var button=ev.target.closest('[data-offline-action]');if(!button)return;
+  var action=button.dataset.offlineAction;
+  if(action==='reconnect'){
+    if(navigator.onLine===false){offlineStatus('인터넷 연결을 확인하세요. 저장한 지도는 계속 사용할 수 있습니다.');return;}
+    offlineFallback=false;cancelMapInteraction();renderGridAll();updateOfflineUi();return;
+  }
+  if(!ensureEditor())return;
+  var root=button.closest('#consoleRoot,#drawerIn')||document,select=root.querySelector('[data-offline-pack-select]'),id=select&&select.value;
+  if(action==='save'){saveOfflineRegion(offlineLevel);return;}
+  if(action==='cancel'){if(offlineJob)offlineJob.controller.abort();return;}
+  if(action==='use'){selectOfflinePack(id);return;}
+  if(action==='import'){root.querySelector('#offlinePackFile').click();return;}
+  try{
+    if(action==='shell'){var requirement=offlineRequirements();if(requirement)throw new Error(requirement);await offlineEngine().init();await prepareOfflineShell();return;}
+    if(!id)throw new Error('보관함에서 지역 지도를 선택하세요.');
+    if(action==='export'){var blob=await offlineEngine().exportPack(id);downloadOfflineBlob(blob,'STAYUP-'+id+'.stayup-map.json');offlineStatus('지도 파일 다운로드를 시작했습니다. 상황 JSON과 함께 보관하세요.');}
+    if(action==='delete'){
+      if(id===S.grid.offlineId){offlineStatus('현재 상황에 연결된 지도입니다. 다른 저장 지도를 연결하거나 새 상황으로 전환한 뒤 삭제하세요.');return;}
+      if(confirm('선택한 지역 지도 파일을 이 브라우저에서 삭제할까요? 다른 출동의 백업이 이 지도를 참조할 수 있으므로 먼저 지도 파일을 내보내세요.')){
+        await offlineEngine().remove(id);await refreshOfflinePacks(true);signalOfflineCatalog();offlineStatus('선택한 지역 지도를 삭제했습니다.');
+      }
+    }
+  }catch(error){offlineStatus(error.message);}
+});
+window.addEventListener('offline',function(){
+  if(activateOfflineFallback('인터넷 연결이 끊겼습니다.'))return;
+  Object.keys(onlineHosts).forEach(function(id){var r=onlineHosts[id];if(r.source!=='offline')failOnlineMap(r,'인터넷 연결이 끊겼고 현재 범위의 저장 지도가 없습니다. 핀·구역 기록은 유지됩니다.');});
+});
+window.addEventListener('online',function(){updateOfflineUi();});
+window.addEventListener('storage',function(ev){if(ev.key===OFFLINE_CATALOG_KEY)refreshOfflinePacks(true);});
+function initOfflineMaps(){refreshOfflinePacks(false);checkOfflineShell();}
 
 var pinMode = null;      /* 'last' | 'found' | 'ref1' | 'ref2' | null */
 var mapEditMode = 'view'; /* 창별 보기 설정이며 출동 데이터에는 저장하지 않는다. */
 var mapViews = Object.create(null);
 var mapGesture = null;
 function mapIdentity(){
-  return [S.meta.epoch,stateLifecycleSeq,S.grid.mapId||'',S.grid.mapVer||0,S.grid.generation||0,S.grid.source||'image',S.grid.mapType||'roadmap',JSON.stringify(S.grid.geo)].join('|');
+  return [S.meta.epoch,stateLifecycleSeq,S.grid.mapId||'',S.grid.mapVer||0,S.grid.generation||0,effectiveMapSource(),S.grid.mapType||'roadmap',effectiveMapSource()==='offline'?(selectedOfflinePack()||{}).id||'missing':'',JSON.stringify(S.grid.geo)].join('|');
 }
 function mapViewState(host){
   var key=host&&host.id||'mapWrap',identity=mapIdentity(),rec=mapViews[key];
@@ -3395,7 +3649,7 @@ function syncMapInteractionUi(host){
 }
 function mapMaxZoom(host){
   var rec=host&&onlineHosts[host.id];
-  return isOnlineMap()&&rec&&isFinite(rec.baseZoom)?Math.max(1,Math.min(16,Math.pow(2,21-rec.baseZoom))):16;
+  return isOnlineMap()&&rec&&isFinite(rec.baseZoom)?Math.max(1,Math.min(16,Math.pow(2,((rec.adapter&&rec.adapter.maxZoom)||21)-rec.baseZoom))):16;
 }
 function setMapView(host,patch){
   if(!host)return;
@@ -3461,7 +3715,7 @@ function cancelMapInteraction(){
 }
 function mapEditsAllowed(mode){
   if(!ensureEditor())return false;
-  if(isOnlineMap()&&(!onlineMapReady($('consMap'))||/^ref[12]$/.test(mode||''))){mapMsg('온라인 지도 연결을 확인하세요. 좌표 보정은 사진·오프라인에서만 할 수 있습니다.','warn');return false;}
+  if(isOnlineMap()&&(!onlineMapReady($('consMap'))||/^ref[12]$/.test(mode||''))){mapMsg('배경 지도의 준비 상태를 확인하세요. 좌표 보정은 사진·오프라인에서만 할 수 있습니다.','warn');return false;}
   return /^ref[12]$/.test(mode||'')||typeof ensureMapReviewed!=='function'||ensureMapReviewed();
 }
 
@@ -3660,7 +3914,7 @@ function buildGrid(host, interactive){
   var g = S.grid;
   var online=isOnlineMap();
   if(!online)destroyOnlineHost(host.id);
-  host.classList.toggle('online-active',online);
+  host.classList.toggle('online-active',online);host.classList.toggle('offline-active',effectiveMapSource()==='offline');
   var hadGridFocus=!!(interactive&&host.contains(document.activeElement));
   var html = '<div class="mapfit">';
   if(MAPDATA&&!online){
@@ -3718,7 +3972,7 @@ function buildGrid(host, interactive){
     });
   }
   html += '</div>';
-  if(online)html='<div class="online-overlays" hidden>'+html+'</div><div class="online-status" role="status"><span>온라인 지도 연결 중…</span><button type="button" class="btn sm" data-online-action="retry">다시 연결</button></div>';
+  if(online)html='<div class="online-overlays" hidden>'+html+'</div><div class="online-status" role="status"><span>지도 준비 중…</span><button type="button" class="btn sm" data-online-action="retry">다시 연결</button></div>';
   host.innerHTML = html;
   if(online)mountOnlineMap(host);
   fitMapBox(host); observeMapFit(host);
@@ -3849,7 +4103,7 @@ function renderGridStats(){
   $('gridMeta').innerHTML = gridRows()+'×'+gridCols()+' = <b>'+st.total+'</b> 구역'
     + ' · 완료 <b>'+n[2]+'</b> · 지도폭 '+Math.round(mapWidthMeters())+'m'
     + (geoOK()?' · 좌표 <b>보정됨</b>':' · 좌표 미보정')
-    + (isOnlineMap()?' · <b>'+onlineSourceName(S.grid.source)+'</b>':(S.grid.hasMap?'':' · <b>배경 사진 없음</b>'));
+    + (isOnlineMap()?' · <b>'+onlineSourceName(effectiveMapSource())+'</b>':(S.grid.hasMap?'':' · <b>배경 사진 없음</b>'));
 }
 
 function renderSafety(){
@@ -4220,6 +4474,7 @@ function mapToolsHtml(hostId,editable){
     +'<div class="map-tools-row">'+(editable?button('view','보기·이동')+button('paint','구역 칠하기'):'')
     +button('zoom-out','축소')+'<output class="map-zoom" data-map-zoom="'+hostId+'">100%</output>'+button('zoom-in','확대')
     +button('fit','전체 맞춤')+button('expand','지도 크게 보기')+'</div>'
+    +'<div class="offline-map-status" data-offline-map-status role="status" hidden><span></span><button type="button" class="btn sm" data-offline-action="reconnect">온라인 지도 다시 연결</button></div>'
     +'<details class="map-options"><summary>표시 설정 · 이동</summary><div class="map-options-body">'
     +'<div class="map-tools-row" aria-label="지도 이동">'+button('pan-left','← 왼쪽')+button('pan-right','오른쪽 →')+button('pan-up','↑ 위쪽')+button('pan-down','아래쪽 ↓')+'</div>'
     +['grid','by','radius'].map(function(key,i){return '<label class="chkline"><input type="checkbox" data-map-layer="'+key+'"'+(mapLayers[key]?' checked':'')+'>'+['격자','담당','추정반경'][i]+'</label>';}).join('')
@@ -4227,7 +4482,7 @@ function mapToolsHtml(hostId,editable){
     +'</div></details></div>';
 }
 function ensureMapReviewed(){
-  if(isOnlineMap()&&!onlineMapReady($('consMap'))){mapMsg('온라인 지도 연결이 완료된 뒤 편집할 수 있습니다.','warn');return false;}
+  if(isOnlineMap()&&!onlineMapReady($('consMap'))){mapMsg('배경 지도 준비가 끝난 뒤 편집할 수 있습니다.','warn');return false;}
   if(!S.grid.spatialReview)return true;
   mapMsg('이전 지도·표식을 대조한 뒤 지도·표식 확인 완료를 눌러 주세요.','warn');return false;
 }
@@ -4290,11 +4545,11 @@ function updateMapWorkspaceUi(host){
       var coords=geoOK()?geoAt(point.x/100,point.y/100):null;
       points.push(p[1]+' '+(coords?fmtLatLon(coords):'원본 '+point.x+'%, '+point.y+'%'));
     });
-    var text=points.join(' · ')||(isOnlineMap()?onlineSourceName(S.grid.source)+' · 고정 수색 범위 · 가로 '+Math.round(mapWidthMeters())+'m':S.grid.hasMap?'사진 '+S.grid.mapW+'×'+S.grid.mapH+' · '+(geoOK()?'좌표 보정됨':'좌표 미보정'):'지도·사진 미적용');
+    var text=points.join(' · ')||(isOnlineMap()?onlineSourceName(effectiveMapSource())+' · 고정 수색 범위 · 가로 '+Math.round(mapWidthMeters())+'m':S.grid.hasMap?'사진 '+S.grid.mapW+'×'+S.grid.mapH+' · '+(geoOK()?'좌표 보정됨':'좌표 미보정'):'지도·사진 미적용');
     if(S.grid.spatialReview)text='지도·표식 재확인 필요 · '+text;
     if(position.textContent!==text)position.textContent=text;
   }
-  updateMapDialogStatus();
+  updateMapDialogStatus();updateOfflineUi();
 }
 function refreshMapWorkspaceUi(){
   ['consMap','mapWrap'].forEach(function(id){updateMapWorkspaceUi($(id));});
@@ -4744,7 +4999,7 @@ function cellGeoLabel(){
 }
 
 function geoPanel(){
-  if(isOnlineMap())return '<div class="geo"><p class="note">온라인 지도는 고정 수색 범위의 위경도를 사용합니다. 사진 좌표 보정은 사진·오프라인으로 전환한 뒤 적용하세요.</p></div>';
+  if(isOnlineMap())return '<div class="geo"><p class="note">지도 서비스와 저장 지역 지도는 고정 수색 범위의 위경도를 사용합니다. 사진 좌표 보정은 사진·오프라인으로 전환한 뒤 적용하세요.</p></div>';
   function refRow(i){
     var k = 'ref'+i, r = S.grid[k];
     var h = '<div class="geo-row">'
@@ -6842,7 +7097,7 @@ function boot(){
   }
 
   applyUi();
-  renderAll();
+  renderAll();initOfflineMaps();
   if(STARTUP_WARNINGS.length)showSystemAlert(STARTUP_WARNINGS.join(' · '));
   var arm=$('audioArm');if(arm){arm.onclick=primeAudio;updateAudioArm();}
   if(MOTION_QUERY&&MOTION_QUERY.addEventListener)MOTION_QUERY.addEventListener('change',renderTicker);

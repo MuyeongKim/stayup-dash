@@ -2,6 +2,7 @@
 /* Copyright 2026 MuyeongKim · Licensed under the Apache License, Version 2.0 */
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -65,4 +66,6 @@ if (updatedApp === state.appSource) fail('APP_VERSION을 교체하지 못했습�
 
 writeFileSync(appPath, updatedApp, 'utf8');
 writeFileSync(versionPath, `${next}\n`, 'utf8');
+// The application version participates in the offline shell's integrity identity.
+execFileSync(process.execPath, [join(scriptDir, 'build-offline-shell.mjs')], {stdio: ['ignore', 'ignore', 'pipe']});
 console.log(next);

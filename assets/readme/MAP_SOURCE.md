@@ -1,5 +1,7 @@
 # 문서용 실제 지도 화면 출처
 
+## 기존 사진 모드 화면 (2026-10-10)
+
 - 지도: © OpenStreetMap 기여자
 - 이용 안내: [OpenStreetMap 저작권 및 Open Database License(ODbL)](https://www.openstreetmap.org/copyright)
 - 지도 원본 위치: [완주군 지도, 중심 약 35.88990 / 127.21571, 확대 수준 15](https://www.openstreetmap.org/#map=15/35.88990/127.21571)
@@ -31,3 +33,25 @@ v1.2.4 촬영 당시 390px 휴대 화면에서 핀 라벨 약 2.93px, 점 약 3.
 사진을 문서나 웹사이트에서 다시 사용할 때는 사진 바로 주변에 **지도 © OpenStreetMap 기여자**와
 [저작권 및 ODbL 안내](https://www.openstreetmap.org/copyright) 링크를 함께 유지합니다.
 앱 코드의 Apache-2.0 라이선스가 지도에 적용되는 것은 아닙니다.
+
+## 저장 지역 지도 화면 (2026-10-18)
+
+- 문서 이미지: `offline-map-preview.png`, 1440×1000px
+- 프로그램 화면: 오프라인 지역 지도 기능 추가 작업본, 2026-10-18 실제 앱 촬영
+- 지도 자료: Protomaps·OpenStreetMap 기반 PMTiles 벡터 데이터
+- 원본 배포: [Source Cooperative의 Protomaps OpenStreetMap](https://source.coop/protomaps/openstreetmap)
+- 다운로드 방식: [Protomaps 공개 다운로드 안내](https://docs.protomaps.com/basemaps/downloads)
+  에 연결된 배포본에서 수색 범위만 저장
+- 원본 자료 기준 시각: `2026-03-31T04:00:00Z`. 2026-10-18은 저장·촬영 날짜이며 원본의 갱신 날짜가 아님
+- 저장 범위: 서쪽 127.209, 남쪽 35.881, 동쪽 127.221, 북쪽 35.893
+- 저장 내용: 최고 세부 수준 14, 타일 19개, 지도 데이터 1,946,021바이트
+- 지도 출처: © OpenStreetMap 기여자 · Protomaps. [저작권 및 ODbL 안내](https://www.openstreetmap.org/copyright)
+
+이 그림은 PNG 지도 업로드 예시와 다릅니다. 실제 지역 지도 데이터를 미리 저장한 뒤
+브라우저의 네트워크를 차단하고 앱을 다시 열어 표시한 화면입니다. 가상 최종목격·발견 핀과
+C3·D4 완료 구역의 유지를 확인했으며, 수색 범위와 자료 기준일도 화면에 표시합니다.
+핀·칠한 구역·상황·판정은 가상 시연 데이터입니다. 실제 출동 사례, 현장 지형의 현재 상태,
+물리 GPS 정확도나 현장 장비 인수시험을 검증한 자료가 아닙니다.
+
+원본 지도 자료는 촬영 시점보다 오래됐으며, 네이버·구글 타일 또는 위성사진을 저장한 화면이 아닙니다.
+문서나 웹사이트에서 사용할 때에도 인접한 출처 링크, 원본 자료 기준일과 가상 상황 안내를 유지합니다.
