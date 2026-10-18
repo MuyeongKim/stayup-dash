@@ -57,6 +57,7 @@ STAY UP은 현장 조작자가 입력한 내용을 같은 PC의 대형 모니터
 - **수색구역** — 최대 12×12 격자, 상태·담당, 사진·오프라인 또는 네이버·구글 지도, 최종목격·발견 핀, 좌표 범위 설정 후 칸별 위경도
 - **안전·기상** — 승인, 야간, 유인기 경보, 풍속·돌풍·강수, 일출·일몰
 - **활동기록** — 발생시각 기반 타임라인, 정정·취소, JSON 백업, 활동일지 복사
+- **AI 사진 후보** — AI-page의 사진 후보 파일 추가·갱신, 축소 이미지·판정·촬영 위치, 대응 상태·메모와 별도 타임라인
 
 상단 KPI는 실종 후 경과, 일몰, 입력된 안전조건에 따른 비행 판정, 출동 경과를 보여줍니다. 배터리 지속시간과 이동 반경은 입력값을 이용한 **계획 보조용 근사치**이며 실제 텔레메트리나 GIS 분석이 아닙니다.
 
@@ -75,6 +76,8 @@ flowchart LR
 - 조작 패널과 표출 화면은 **동일 PC·동일 브라우저 저장영역**을 사용합니다.
 - 창이 직접 연결돼 있으면 `postMessage`, 연결이 끊기면 `localStorage` 폴링으로 상태를 따라갑니다.
 - 서버, 로그인, 클라우드 동기화, 기관 간 네트워크 공유는 제공하지 않습니다.
+- AI-page와는 `stayup-ai-candidates.json` 파일로 연결합니다. 같은 PC나 다른 PC에서 **AI 후보 불러오기** 또는 후보 JSON 한 개를 끌어다 놓아 추가/갱신합니다. 기존 **JSON 불러오기**는 상황 전체 복원용입니다. 반복 파일·과거/충돌 갱신을 구분하고 기존 상황·대응 기록을 보존합니다. [공통 형식·검증 기록](./docs/ai-photo-bridge.md)을 참고하세요.
+- 후보는 사진 촬영 GPS이며 고유 인원이나 사람의 정확한 좌표가 아닙니다. GPS 없음·지도 미보정·지도 범위 밖은 목록으로 유지합니다. 원본 판정과 상황판의 대응 상태·메모를 분리하고, 원본에서 빠진 후보도 대응 이력을 보존합니다. 연계 버전으로 조작·표출 창을 모두 다시 여세요.
 - 자동 기상을 켜면 위·경도가 Open-Meteo 요청에 포함됩니다.
 - 온라인 지도를 켜면 해당 지도 사업자의 SDK와 지도 데이터를 요청합니다. 지도 조회 위치·접속 정보·인증키 등이 사업자에게 전달되므로, 외부 연결을 사용할 수 있는 환경에서 선택합니다. 상황 기록을 서버에 공유하는 기능은 아닙니다.
 
@@ -333,6 +336,9 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 
 ### 이번 업데이트
 
+- **사진 후보 연계 1단계(2026-10-18)** — AI-page V26.1018에서 내보낸 파일을 현재 상황에 추가·갱신합니다. 작업/후보 ID·리비전으로 중복·과거·충돌을 구분하며 기존 상황·지도·수색 상태·대응 기록을 유지합니다. AI 후보의 대응 상태·메모와 원본 판정을 분리하고 원본에서 빠진 후보도 보존합니다. 작은 이미지는 별도 블롭 저장소와 전체 JSON 백업·복구·삭제에 포함합니다.
+- **연계 검증** — 브라우저 **349/349 통과**(기존 315 + 연계 34), 기존 온라인 SDK 계약 검사 18개 통과. 실제 YOLO에서 내보낸 9개 후보 파일로 두 창 동기화·기존 상황 보존·리비전 갱신·대응 보존을 확인했고, 새 브라우저 저장소로 별도 PC 구성을 재현해 파일만으로 미리보기 9장을 읽었습니다. 물리적인 다른 PC·기관망·실제 지도 사업자 키 연결은 별도 인수시험입니다.
+
 2026-10-18 선택형 네이버·구글 배경 지도를 추가했습니다.
 
 - **사진·온라인 배경 선택** — 기존 오프라인 사진 지도에 네이버·구글의 일반·위성 지도를 선택적으로 연결합니다. HTTPS·로컬 HTTP와 사업자 인증 설정이 필요하며, `file://`에서는 사진 모드를 사용합니다.
@@ -476,7 +482,7 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 
 ### 회귀 검사로 고정한 항목
 
-회귀검사는 [tests/regression.html](./tests/regression.html)의 기존 130건과 모바일 핀 검사 16건, [tests/review-fixes.js](./tests/review-fixes.js)의 46건, [tests/ui-ux-fixes.js](./tests/ui-ux-fixes.js)의 30건, [tests/map-workspace.js](./tests/map-workspace.js)의 43건, [tests/online-maps.js](./tests/online-maps.js)의 온라인 지도 50건을 합쳐 **315건**입니다. 내부 함수·합성 입력·브라우저 저장소·계산된 레이아웃을 검사합니다. 실제 브라우저 UI에서 수행한 두 창 동기화와 화면 검토는 별도 확인이며, 물리 장비 인수시험을 대체하지 않습니다. 자세한 실행 방법은 [개발자 메모](#회귀-검사)를 참고하십시오.
+회귀검사는 [tests/regression.html](./tests/regression.html)의 기존 130건과 모바일 핀 검사 16건, [tests/review-fixes.js](./tests/review-fixes.js)의 46건, [tests/ui-ux-fixes.js](./tests/ui-ux-fixes.js)의 30건, [tests/map-workspace.js](./tests/map-workspace.js)의 43건, [tests/online-maps.js](./tests/online-maps.js)의 온라인 지도 50건, [tests/ai-candidates.js](./tests/ai-candidates.js)의 사진 후보 연계 34건을 합쳐 **349건**입니다. 내부 함수·합성 입력·브라우저 저장소·계산된 레이아웃을 검사합니다. 실제 브라우저 UI에서 수행한 두 창 동기화와 화면 검토는 별도 확인이며, 물리 장비 인수시험을 대체하지 않습니다. 자세한 실행 방법은 [개발자 메모](#회귀-검사)를 참고하십시오.
 
 ### 남은 인수시험
 
@@ -488,6 +494,7 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 | --- | ---: |
 | 일반 이벤트 | 5,000건. 유인기 경보 긴급 기록은 별도 집계하며 100건부터 보관 안내. 긴급 기록 자체를 건수로 차단·삭제하지 않지만 저장공간 한도는 적용 |
 | JSON 입력 파일 | 24 MiB 이하. 브라우저 잔여 저장공간에 따라 더 작은 파일도 실패 가능 |
+| AI 후보 파일 | 16 MiB 이하, 현재 상황의 후보 5,000건·작업 500개 이하. JPEG 한 장은 32 KiB 이하 |
 | 지도 원본 파일 | 60 MiB 이하. 초과 시 읽기 전에 차단 |
 | 지도 축소 크기 | 가로 3,072px (폴백 시 1,600px) |
 | 좌표 파일 | 2 MiB 이하. world file 또는 KML GroundOverlay |
@@ -526,7 +533,7 @@ python3 -m http.server 8899 --bind 127.0.0.1
 
 ### 회귀 검사
 
-[tests/regression.html](./tests/regression.html)을 로컬 HTTP로 열면 앱을 iframe에 띄워 내부 함수·합성 입력·저장소·레이아웃 **315건**을 검사합니다. 같은 폴더의 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js)도 필요합니다. 실제 파일 선택 권한, 물리 터치·스피커, 절전 복귀는 별도 인수시험 대상입니다.
+[tests/regression.html](./tests/regression.html)을 로컬 HTTP로 열면 앱을 iframe에 띄워 내부 함수·합성 입력·저장소·레이아웃 **349건**을 검사합니다. 같은 폴더의 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [ai-candidates.js](./tests/ai-candidates.js)와 fixtures 폴더도 필요합니다. 실제 파일 선택 권한, 물리 터치·스피커, 절전 복귀는 별도 인수시험 대상입니다.
 
 ```bash
 python3 -m http.server 8899 --bind 127.0.0.1

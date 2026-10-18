@@ -48,6 +48,7 @@
 <script src="ui-ux-fixes.js"></script>
 <script src="map-workspace.js"></script>
 <script src="online-maps.js"></script>
+<script src="ai-candidates.js"></script>
 <script>
 "use strict";
 var out = document.getElementById('out'), sum = document.getElementById('sum');
@@ -673,7 +674,8 @@ async function run(){
     '칩 ' + navBtns.length + '개');
 
   ok('조작 패널 제목 계층이 H1 다음 H2로 이어진다',
-    W.document.querySelectorAll('.cons h1').length===1&&W.document.querySelectorAll('.sec>h2').length===9);
+    W.document.querySelectorAll('.cons h1').length===1&&W.document.querySelectorAll('.sec>h2').length===10
+    &&W.document.querySelector('#sec-ai>h2').textContent.includes('AI 사진 후보'));
   ok('빠른기록 입력에 접근 가능한 이름이 있다',
     ['evType','evZone','evText'].every(function(id){return !!W.document.getElementById(id).getAttribute('aria-label');}));
   ok('상태 선택 버튼은 눌림 상태를 보조기기에 알린다',
@@ -974,6 +976,7 @@ async function run(){
   await runMapWorkspace();
   await runOnlineMaps();
   await runMobileMapPins();
+  await runAICandidates();
 
   /* ---------------- 마무리 ---------------- */
   var pass = results.filter(function(r){ return r.pass; }).length;

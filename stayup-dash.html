@@ -1042,6 +1042,19 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 }
 @media(pointer:coarse){.map-tools .btn,.map-options summary{min-height:44px}.map-tools .chkline{min-height:44px}.map-fill input{min-height:44px}}
 @media print{body{background:#fff}}
+/* Reuse the board's existing surfaces, controls and informational colours. */
+.ai-candidate{border-top:1px solid var(--border);padding:12px 0}
+.ai-candidate-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;overflow-wrap:anywhere}
+.ai-response-note{flex:1 1 220px;min-width:0}.ai-response-note input{width:100%}
+.ai-map-pin{position:absolute;z-index:4;transform:translate(-50%,-50%);pointer-events:auto;background:#132c40;color:#e8f6ff;border:2px dashed #62b8e8;border-radius:4px;min-width:32px;min-height:30px;padding:3px 6px;font:700 12px system-ui;cursor:pointer}
+.ai-map-pin:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.ai-summary{padding:4px 12px;color:var(--text2);font:13px/1.5 system-ui;overflow-wrap:anywhere}
+.ai-summary[hidden]{display:none}
+.ai-detail{max-width:min(90vw,600px);max-height:85vh;overflow:auto;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:20px}
+.ai-detail::backdrop{background:#000b}.ai-detail img{display:block;max-width:100%;max-height:45vh;margin:12px auto}.ai-detail img[hidden]{display:none}
+#sec-ai [data-ai-status]{overflow-wrap:anywhere}#sec-ai .row-tools{flex-wrap:wrap}
+@media(max-width:600px){.ai-candidate .row-tools>*{max-width:100%}.ai-response-note{flex-basis:100%}}
+
 </style>
 </head>
 <body>
@@ -1178,7 +1191,7 @@ var EPOCHKEY = 'stayup.dash.epoch.v1';
 var PURGE_LOCKKEY = 'stayup.dash.purge.v1';
 var MAP_PREFIX = 'stayup.dash.map.v2.';
 var APP_VERSION = '1.2.7';
-var STATE_VERSION = 2;
+var STATE_VERSION = 3;
 /* 지도 이미지는 IndexedDB 에, 그 밖의 상태는 localStorage 에 둔다.
    localStorage 는 약 5MB 라 지도를 1,600px 로 줄여야 했고, 그러면 정사영상을 쓸
    이유가 사라진다. IndexedDB 가 막힌 환경에서는 종전 값으로 그대로 되돌아간다. */
@@ -1204,6 +1217,7 @@ var DRONE_ST = {
 };
 var CELL_ST = ['미수색','수색중','완료','재수색'];
 var EV_TYPE = {
+  ai:'AI 후보',
   takeoff:'이륙', landing:'착륙', heat:'열원감지', found:'발견',
   order:'지휘부 지시', note:'특이사항', accident:'안전사고', zone:'구역완료',
   correction:'정정', crew:'인원교대'
@@ -1243,6 +1257,7 @@ function defaultState(){
       mapNatW:0, mapNatH:0,   /* 축소 전 원본 픽셀 크기 (world file 해석에 필요) */
       pinLast:null, pinFound:null
     },
+    ai:{runs:[],candidates:[]},
     events:[],
     safety:{
       ctrlZone:false, noFly:false, approval:'unknown', nightApproval:false,
@@ -1351,7 +1366,7 @@ function mapBlobKeys(){
 }
 /* 완전삭제는 localStorage 뿐 아니라 별도 지도 저장소까지 비워야 끝난다.
    일시적인 IndexedDB 실패 이력이 있더라도 한 번 다시 열어 실제 삭제를 확인한다. */
-function mapBlobClear(){
+function mapBlobClearBase(){
   idbBroken=false;
   return idbReq('readwrite', function(st){ return st.clear(); }).then(function(){
     if(STORAGE_OK){
@@ -1602,6 +1617,7 @@ function validateImportPackage(raw){
     if(!Array.isArray(raw[k])) throw new Error(k+' 항목은 배열이어야 합니다.');
   });
   if(ordinaryEventCount(raw.events)>MAX_EVENTS) throw new Error('일반 이벤트가 '+MAX_EVENTS+'건을 초과합니다. 먼저 원본을 별도 보관하세요.');
+  aiValidateBackup(raw);
   var v = Number(raw.meta.v);
   if(!Number.isInteger(v)||v<1||v>STATE_VERSION) throw new Error('지원하지 않는 데이터 버전입니다.');
   if(raw.map != null && !validMapData(raw.map)) throw new Error('지도 데이터가 올바른 PNG/JPG/WebP 형식이 아닙니다.');
@@ -1741,6 +1757,9 @@ function migrate(raw){
     if(ga.indexOf('by:')===0){ d.ui.paintS=null; d.ui.paintBy=BY_OPTS.indexOf(ga.slice(3))>=0?ga.slice(3):''; }
     else { d.ui.paintS=2; d.ui.paintBy=null; }
   }
+  try{d.ai=aiNormalizeState(raw.ai);}catch(error){
+    d.ai={runs:[],candidates:[]};STARTUP_WARNINGS.push('AI 후보 기록을 읽지 못했습니다. 원본 파일 또는 완전한 백업으로 복구하세요.');
+  }
   var meta=isPlainObject(raw.meta)?raw.meta:{};
   d.meta.v=STATE_VERSION; d.meta.updated=sanNum(meta.updated,0,Number.MAX_SAFE_INTEGER,0,false);
   d.meta.revision=sanInt(meta.revision,0,Number.MAX_SAFE_INTEGER,0);
@@ -1865,7 +1884,7 @@ function gcMapBlobs(){
      지우지 못하도록 정리는 단일 편집자만 수행한다. */
   if(!ownsEditorLock()) return Promise.resolve(false);
   var gcSeq=mapGcGeneration;
-  var keep={};
+  var keep={};aiProtectBlobs(keep);
   try{if(S.grid.mapId)keep[S.grid.mapId]=true;}catch(e){}
   try{
     var live=JSON.parse(localStorage.getItem(KEY)||'null');
@@ -1891,6 +1910,7 @@ function gcMapBlobs(){
     try{var live2=JSON.parse(localStorage.getItem(KEY)||'null');var lid2=live2&&live2.grid&&live2.grid.mapId;if(lid2)keep[lid2]=true;}catch(e){}
     try{getSnapshots().forEach(function(x){var id=x&&x.state&&x.state.grid&&x.state.grid.mapId;if(id)keep[id]=true;});}catch(e){}
     try{var rr2=JSON.parse(localStorage.getItem(RECOVERY_KEY)||'null');var rid2=rr2&&rr2.state&&rr2.state.grid&&rr2.state.grid.mapId;if(rid2)keep[rid2]=true;}catch(e){}
+    aiProtectBlobs(keep);
     return Promise.all(ks.filter(function(id){return !keep[id];}).map(function(id){
       if(gcSeq!==mapGcGeneration||!ownsEditorLock())return Promise.resolve(false);
       return mapBlobDel(id);
@@ -1980,7 +2000,7 @@ function purgeIncidentData(){
 }
 /* 지도 블롭을 먼저 저장소에 쓰고, 그 id 로 상태 전환을 실행한다.
    상태 저장이 실패하면 방금 쓴 블롭을 지운다. */
-function applyStateWithMap(nextState,nextMap,opSeq,opEpoch,fileSeq){
+function applyStateWithMapBase(nextState,nextMap,opSeq,opEpoch,fileSeq){
   if(opSeq===undefined)opSeq=stateLifecycleSeq;
   if(opEpoch===undefined)opEpoch=SESSION_EPOCH;
   if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))return Promise.resolve(false);
@@ -5773,6 +5793,7 @@ document.addEventListener('drop', function(ev){
   if(pz) pz.classList.remove('hot');
   var files = ev.dataTransfer && ev.dataTransfer.files;
   if(!files || !files.length){ mapMsg('끌어다 놓은 항목에서 파일을 찾지 못했습니다.', 'warn'); return; }
+  if(files.length===1&&/\.json$/i.test(files[0].name)){aiReadFile(files[0]);return;}
   var f = null, gf = null;
   for(var i=0;i<files.length;i++){
     if(!f && /^image\//.test(files[i].type)) f = files[i];
@@ -6000,23 +6021,24 @@ function stampName(){
 }
 /* 보관 파일 한 개만 있어도 복원 가능해야 한다. 지도 참조만 들어간 JSON은 상태상
    '지도 있음'인데 본체가 없어, 가장 최신 파일일수록 오히려 복원할 수 없게 된다. */
-function exportPayload(includeMap){
+function exportPayloadBase(includeMap){
   var out = JSON.parse(JSON.stringify(S));
   out.appVersion = APP_VERSION;
   if(includeMap !== false && MAPDATA) out.map = MAPDATA;
   return JSON.stringify(out, null, 1);
 }
-function mapPayloadReady(){
+function mapPayloadReadyBase(){
   if(!S.grid.hasMap)return true;
   return mapVerLoaded===S.grid.mapVer
     &&mapIdLoaded===(S.grid.mapId||'legacy')&&validMapData(MAPDATA);
 }
 function exportJson(){
   if(!mapPayloadReady()){
-    alert('지도 데이터를 아직 읽지 못해 완전한 JSON을 만들 수 없습니다. 잠시 후 다시 시도하세요.');
+    alert('지도 또는 후보 이미지를 아직 읽지 못해 완전한 JSON을 만들 수 없습니다. 잠시 후 다시 시도하세요.');
     return false;
   }
-  download('stayup-'+stampName()+'.json', exportPayload(true));return true;
+  try{download('stayup-'+stampName()+'.json', exportPayload(true));return true;}
+  catch(error){alert(error.message);return false;}
 }
 
 /* ==========================================================================
@@ -6284,6 +6306,430 @@ function loadSample(){
     if(!ok) alert('샘플을 저장하지 못해 기존 상태를 유지했습니다.');
   });
 }
+
+/* Photo candidates: import source data, preserve local response records. */
+var AI_MAX_ITEMS=5000, AI_MAX_BYTES=16*1024*1024, AI_IMAGE_PREFIX='ai-image-';
+var AI_REVIEWS={unreviewed:'미확인',person:'사람 맞음',false_positive:'오탐',hold:'보류'};
+var AI_RESPONSES={waiting:'확인 대기',checking:'확인 중',notified:'지상팀 통보',done:'대응 완료'};
+var aiCache=Object.create(null),aiLoads=Object.create(null),aiStaging=Object.create(null),aiCacheGeneration=0;
+var aiMessage='',aiFilter='active',aiPage=0,aiResponseDrafts=Object.create(null);
+function aiFail(message){throw new Error(message);}
+function aiText(v,n){return typeof v==='string'&&v.length<=n;}
+function aiNumber(v,low,high){return typeof v==='number'&&Number.isFinite(v)&&v>=low&&v<=high;}
+function aiId(v){return aiText(v,100)&&/^[A-Za-z0-9_-]+$/.test(v);}
+function aiUuid(v){return typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(v);}
+function aiDate(v,requiredZone){
+  if(v===null&&!requiredZone)return true;
+  if(!aiText(v,40))return false;
+  var m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(Z|[+-](\d{2}):(\d{2}))?$/.exec(v);
+  if(!m||requiredZone&&!m[7])return false;
+  var d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
+  return d.getUTCFullYear()===+m[1]&&d.getUTCMonth()===+m[2]-1&&d.getUTCDate()===+m[3]
+    &&+m[4]<24&&+m[5]<60&&+m[6]<60&&(!m[8]||+m[8]<=14&&+m[9]<60&&(+m[8]<14||+m[9]===0));
+}
+function aiJpeg(value){
+  if(!aiText(value,44000)||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(value))aiFail('후보 이미지는 작은 JPEG만 지원합니다.');
+  var bytes;try{bytes=atob(value.slice(23));}catch(e){aiFail('후보 JPEG 인코딩 오류');}
+  if(bytes.length>32768||bytes.length<12||bytes.charCodeAt(0)!==255||bytes.charCodeAt(1)!==216)aiFail('후보 JPEG 형식/크기를 확인하세요.');
+  var pos=2;
+  while(pos+8<bytes.length){
+    if(bytes.charCodeAt(pos++)!==255)break;
+    var marker=bytes.charCodeAt(pos++);while(marker===255)marker=bytes.charCodeAt(pos++);
+    if(marker===217||marker===218)break;
+    var size=bytes.charCodeAt(pos)*256+bytes.charCodeAt(pos+1);
+    if(size<2||pos+size>bytes.length)break;
+    if([192,193,194,195,197,198,199,201,202,203,205,206,207].indexOf(marker)>=0){
+      var h=bytes.charCodeAt(pos+3)*256+bytes.charCodeAt(pos+4),w=bytes.charCodeAt(pos+5)*256+bytes.charCodeAt(pos+6);
+      if(w>0&&h>0&&w<=512&&h<=512)return value;
+      break;
+    }
+    pos+=size;
+  }
+  aiFail('후보 JPEG 크기를 읽지 못했습니다.');
+}
+function aiCandidate(raw){
+  if(!isPlainObject(raw)||!aiId(raw.id)||!aiId(raw.photoId)||!aiText(raw.file,240)
+     ||/[\\/]/.test(raw.file)||!aiDate(raw.capturedAt,false)||raw.locationKind!=='photo_gps'
+     ||!aiNumber(raw.confidence,0,1)||!Object.prototype.hasOwnProperty.call(AI_REVIEWS,raw.review))aiFail('후보의 ID·파일명·시각·판정이 올바르지 않습니다.');
+  var g=raw.gps;
+  if(g!==null&&(!isPlainObject(g)||!aiNumber(g.lat,-90,90)||!aiNumber(g.lon,-180,180)))aiFail('촬영 위경도가 올바르지 않습니다.');
+  var s=raw.imageSize,b=raw.box;
+  if(!Array.isArray(s)||s.length!==2||!s.every(function(v){return Number.isInteger(v)&&v>0&&v<=100000;})
+     ||!Array.isArray(b)||b.length!==4||!b.every(function(v,i){return aiNumber(v,0,s[i%2]);})||b[2]<=b[0]||b[3]<=b[1])aiFail('후보 박스 좌표가 올바르지 않습니다.');
+  return {id:raw.id,photoId:raw.photoId,file:raw.file,capturedAt:raw.capturedAt,
+    gps:g===null?null:{lat:g.lat,lon:g.lon},locationKind:'photo_gps',confidence:raw.confidence,
+    review:raw.review,box:b.slice(),imageSize:s.slice()};
+}
+function aiPackage(raw){
+  if(!isPlainObject(raw)||raw.format!=='stayup-ai-candidates'||raw.version!==1||!aiDate(raw.generatedAt,true)
+     ||!isPlainObject(raw.app)||!aiText(raw.app.version,40))aiFail('지원하지 않는 AI 후보 파일입니다.');
+  var r=raw.run;
+  if(!isPlainObject(r)||!aiUuid(r.id)||!Number.isSafeInteger(r.revision)||r.revision<1
+     ||['completed','partial','failed','cancelled'].indexOf(r.status)<0
+     ||!['photoCount','completedCount','failedCount'].every(function(k){return Number.isSafeInteger(r[k])&&r[k]>=0&&r[k]<=1000000;})
+     ||r.completedCount+r.failedCount!==r.photoCount||!Array.isArray(raw.candidates)||raw.candidates.length>AI_MAX_ITEMS)aiFail('작업 번호·리비전·사진 수를 확인하세요.');
+  var ids=Object.create(null),photos=Object.create(null);
+  var candidates=raw.candidates.map(function(c){
+    var v=aiCandidate(c);if(ids[v.id])aiFail('중복 후보 ID가 있습니다.');ids[v.id]=true;
+    var photo=JSON.stringify([v.file,v.capturedAt,v.gps,v.imageSize]);
+    if(photos[v.photoId]&&photos[v.photoId]!==photo)aiFail('같은 사진의 촬영 정보가 다릅니다.');photos[v.photoId]=photo;
+    v.thumbnail=c.thumbnail===null?null:aiJpeg(c.thumbnail);return v;
+  });
+  if(Object.keys(photos).length>r.completedCount)aiFail('후보 사진 수가 처리 성공 수보다 큽니다.');
+  return {run:{id:r.id,revision:r.revision,status:r.status,photoCount:r.photoCount,completedCount:r.completedCount,failedCount:r.failedCount},
+    generatedAt:raw.generatedAt,appVersion:raw.app.version,candidates:candidates};
+}
+function aiNormalizeState(raw){
+  if(raw===undefined)return {runs:[],candidates:[]};
+  if(!isPlainObject(raw)||!Array.isArray(raw.runs)||!Array.isArray(raw.candidates)||raw.runs.length>500||raw.candidates.length>AI_MAX_ITEMS)aiFail('저장된 AI 후보 구조 오류');
+  var runs=Object.create(null),keys=Object.create(null);
+  var normalizedRuns=raw.runs.map(function(r){
+    if(!isPlainObject(r)||!aiUuid(r.id)||runs[r.id]||!Number.isSafeInteger(r.revision)||r.revision<1
+       ||!aiText(r.signature,64)||!/^[a-f0-9]{64}$/.test(r.signature)||!aiDate(r.generatedAt,true)
+       ||!aiText(r.appVersion,40)||!aiText(r.status,16)||!Number.isSafeInteger(r.photoCount)||r.photoCount<0)aiFail('AI 작업 기록 오류');
+    runs[r.id]=true;return {id:r.id,revision:r.revision,signature:r.signature,generatedAt:r.generatedAt,appVersion:r.appVersion,status:r.status,photoCount:r.photoCount};
+  });
+  var candidates=raw.candidates.map(function(c){
+    var v=aiCandidate(c),key=c.runId+'/'+v.id;
+    if(!runs[c.runId]||keys[key]||typeof c.sourceMissing!=='boolean'||!Object.prototype.hasOwnProperty.call(AI_RESPONSES,c.responseStatus)
+       ||!aiText(c.responseNote,500)||!aiNumber(c.responseAt,0,Number.MAX_SAFE_INTEGER)
+       ||c.thumbnailId!==null&&!/^ai-image-[a-f0-9]{64}$/.test(c.thumbnailId))aiFail('AI 후보 대응 기록 오류');
+    keys[key]=true;return Object.assign(v,{runId:c.runId,thumbnailId:c.thumbnailId,sourceMissing:c.sourceMissing,
+      responseStatus:c.responseStatus,responseNote:c.responseNote,responseAt:c.responseAt});
+  });
+  return {runs:normalizedRuns,candidates:candidates};
+}
+async function aiHash(value){
+  if(!globalThis.crypto||!crypto.subtle)aiFail('이 브라우저에서는 후보 파일 무결성을 확인할 수 없습니다. 최신 브라우저를 사용하세요.');
+  var bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(bytes)).map(function(v){return v.toString(16).padStart(2,'0');}).join('');
+}
+function aiCollectReferences(keep,states){
+  states.forEach(function(state){
+    var items=state&&state.ai&&state.ai.candidates;
+    if(Array.isArray(items))items.forEach(function(c){if(c&&typeof c.thumbnailId==='string')keep[c.thumbnailId]=true;});
+  });
+}
+function aiImageIds(state){var refs=Object.create(null);aiCollectReferences(refs,[state]);return Object.keys(refs);}
+function aiGuard(seq,epoch,fileSeq,generation){return lifecycleCurrent(seq,epoch)&&fileMutationCurrent(fileSeq)&&ownsEditorLock()&&generation===aiCacheGeneration;}
+async function aiStageAssets(state,embedded,seq,epoch,fileSeq){
+  var ids=aiImageIds(state),made=[],generation=aiCacheGeneration;
+  if(embedded!==undefined&&(!isPlainObject(embedded)||Object.keys(embedded).some(function(k){return ids.indexOf(k)<0;})))aiFail('후보 이미지 묶음 오류');
+  ids.forEach(function(id){aiStaging[id]=(aiStaging[id]||0)+1;});
+  var released=false;
+  made.release=function(){if(released)return;released=true;ids.forEach(function(id){aiStaging[id]--;if(!aiStaging[id])delete aiStaging[id];});mapGcGeneration++;};
+  try{
+    for(var id of ids){
+      if(!aiGuard(seq,epoch,fileSeq,generation))aiFail('상황 또는 파일 선택이 바뀌어 가져오기를 중단했습니다.');
+      var data=embedded&&embedded[id],stored=await mapBlobGet(id);
+      if(data!==undefined){
+        aiJpeg(data);
+        if(AI_IMAGE_PREFIX+await aiHash(data)!==id)aiFail('후보 이미지 지문이 다릅니다.');
+        if(stored&&stored!==data)aiFail('저장된 후보 이미지와 내용이 다릅니다.');
+        if(!stored){
+          if(!aiGuard(seq,epoch,fileSeq,generation))aiFail('이전 상황의 이미지 저장을 취소했습니다.');
+          made.push(id);await mapBlobPut(id,data);
+          stored=await mapBlobGet(id);if(stored!==data)aiFail('후보 이미지 저장 확인 실패');
+        }
+      }
+      if(!stored)aiFail('후보 이미지 본체가 없습니다. 원본 후보 파일이나 완전한 백업을 사용하세요.');
+      aiJpeg(stored);
+      if(AI_IMAGE_PREFIX+await aiHash(stored)!==id)aiFail('저장된 후보 이미지 지문이 다릅니다.');
+      await decodeMapData(stored);
+      if(!aiGuard(seq,epoch,fileSeq,generation))aiFail('상황이 변경되었습니다.');
+      aiCache[id]=stored;
+    }
+    return made;
+  }catch(e){await aiDiscardAssets(made);throw e;}
+}
+async function aiDiscardAssets(ids){
+  if(ids.release)ids.release();
+  var keep=Object.create(null),states=[S];
+  Object.keys(aiStaging).forEach(function(id){keep[id]=true;});
+  try{states.push(JSON.parse(localStorage.getItem(KEY)||'null'));}catch(e){}
+  try{states=states.concat(getSnapshots().map(function(x){return x.state;}));}catch(e){}
+  try{states.push(JSON.parse(localStorage.getItem(RECOVERY_KEY)||'null').state);}catch(e){}
+  aiCollectReferences(keep,states);
+  for(var id of ids)if(!keep[id]){await mapBlobDel(id);delete aiCache[id];}
+}
+function aiWarm(){
+  var generation=aiCacheGeneration;
+  aiImageIds(S).forEach(function(id){
+    if(aiCache[id]||aiLoads[id])return;
+    aiLoads[id]=true;
+    mapBlobGet(id).then(function(data){
+      if(generation!==aiCacheGeneration)return;
+      if(data){aiCache[id]=aiJpeg(data);aiRefreshImages();}
+      else aiMessage='후보 이미지를 읽지 못했습니다. 원본 후보 파일을 다시 불러오세요.';
+    }).catch(function(){aiMessage='후보 이미지 저장소를 읽지 못했습니다. 다시 불러오거나 새로고침하세요.';});
+  });
+}
+function aiSignature(pack){return JSON.stringify([pack.run.status,pack.run.photoCount,pack.run.completedCount,pack.run.failedCount,
+  pack.candidates.slice().sort(function(a,b){return a.id.localeCompare(b.id);})]);}
+function aiMerge(pack,signature,thumbnails){
+  var state=aiNormalizeState(S.ai),previous=state.runs.filter(function(r){return r.id===pack.run.id;})[0];
+  if(previous&&pack.run.revision<previous.revision)aiFail('이미 더 최신 리비전을 가져왔습니다. 과거 파일은 적용하지 않습니다.');
+  if(previous&&pack.run.revision===previous.revision){
+    if(signature!==previous.signature)aiFail('같은 리비전의 내용이 다릅니다. 원본 기록에서 다시 내보내세요.');
+    return {state:state,unchanged:true,added:0,updated:0};
+  }
+  var incoming=Object.create(null),old=Object.create(null),added=0;
+  state.candidates.forEach(function(c){old[c.runId+'/'+c.id]=c;if(c.runId===pack.run.id)c.sourceMissing=true;});
+  pack.candidates.forEach(function(c){
+    var key=pack.run.id+'/'+c.id,prior=old[key],item=Object.assign({},c,{runId:pack.run.id,thumbnailId:thumbnails[c.id],sourceMissing:false,
+      responseStatus:prior?prior.responseStatus:'waiting',responseNote:prior?prior.responseNote:'',responseAt:prior?prior.responseAt:0});
+    delete item.thumbnail;
+    incoming[key]=item;if(!prior){state.candidates.push(item);added++;}
+  });
+  state.candidates=state.candidates.map(function(c){return incoming[c.runId+'/'+c.id]||c;});
+  if(state.candidates.length>AI_MAX_ITEMS||!previous&&state.runs.length>=500)aiFail('현재 상황의 AI 후보 보관 한도를 넘습니다. 먼저 기존 상황을 내보내세요.');
+  state.runs=state.runs.filter(function(r){return r.id!==pack.run.id;});
+  state.runs.push(Object.assign({},pack.run,{signature:signature,generatedAt:pack.generatedAt,appVersion:pack.appVersion}));
+  return {state:aiNormalizeState(state),unchanged:false,added:added,updated:pack.candidates.length-added};
+}
+async function aiImportPackage(raw,confirmImport){
+  if(!ensureEditor())return false;
+  var seq=stateLifecycleSeq,epoch=SESSION_EPOCH,fileSeq=++fileMutationSeq,generation=aiCacheGeneration;
+  var pack=aiPackage(raw),signature=await aiHash(aiSignature(pack)),images=Object.create(null),thumbnails=Object.create(null);
+  for(var c of pack.candidates){
+    var id=c.thumbnail===null?null:AI_IMAGE_PREFIX+await aiHash(c.thumbnail);thumbnails[c.id]=id;if(id)images[id]=c.thumbnail;
+  }
+  if(!aiGuard(seq,epoch,fileSeq,generation))aiFail('상황이 변경되어 가져오기를 중단했습니다.');
+  var merged=aiMerge(pack,signature,thumbnails);
+  if(confirmImport!==false&&!confirm('현재 상황: '+(S.mission.title||'(상황명 미입력)')+'\n사진 후보 '+pack.candidates.length+'건 · 신규 '+merged.added+'건 · 갱신 '+merged.updated+'건\n기존 상황·대응 기록을 유지하며 추가/갱신할까요?'))return false;
+  mapGcGeneration++;
+  var next=JSON.parse(JSON.stringify(S));next.ai=merged.state;
+  var made=await aiStageAssets(next,images,seq,epoch,fileSeq);
+  try{
+  if(!aiGuard(seq,epoch,fileSeq,generation)){await aiDiscardAssets(made);aiFail('상황이 변경되어 가져오기를 중단했습니다.');}
+  // Re-merge against the latest state after asynchronous image writes so notes
+  // entered meanwhile are retained too.
+  merged=aiMerge(pack,signature,thumbnails);
+  if(merged.unchanged){aiMessage='같은 작업·리비전입니다. 중복 없이 유지했습니다.';aiRenderAll();return true;}
+  if(!requireEventSlots(1,'AI 후보 가져오기')){await aiDiscardAssets(made);return false;}
+  if(!saveRecoveryPoint('AI 후보 가져오기 전')){await aiDiscardAssets(made);aiFail('복구본 저장 실패로 가져오기를 중단했습니다.');}
+  S.ai=merged.state;
+  addEvent('ai','사진 후보 추가 '+merged.added+'건 · 갱신 '+merged.updated+'건 (고유 인원 아님)','',true);
+  if(!commit()){await aiDiscardAssets(made);aiFail('상태 저장 실패로 기존 상황을 유지했습니다.');}
+  aiMessage='사진 후보 추가 '+merged.added+'건 · 갱신 '+merged.updated+'건. 기존 대응 기록을 유지했습니다.';
+  aiRenderAll();gcMapBlobs();return true;
+  }finally{made.release();}
+}
+
+function aiKey(c){return c.runId+'/'+c.id;}
+function aiLocation(c){
+  if(!c.gps)return {text:'촬영 GPS 없음',point:null};
+  if(!geoOK())return {text:'지도 좌표 미보정',point:null};
+  var g=S.grid.geo,u=(c.gps.lon-g.west)/(g.east-g.west),v=(g.north-c.gps.lat)/(g.north-g.south);
+  if(S.grid.spatialReview)return {text:'지도 위치 재확인 필요',point:null};
+  if(u<0||u>1||v<0||v>1)return {text:'현재 지도 범위 밖',point:null};
+  var row=Math.min(gridRows()-1,Math.floor(v*gridRows())),col=Math.min(gridCols()-1,Math.floor(u*gridCols()));
+  return {text:String.fromCharCode(65+row)+(col+1)+' 촬영 지점',point:{x:u*100,y:v*100}};
+}
+function aiActive(c){return !c.sourceMissing&&c.review!=='false_positive';}
+function aiRefreshImages(){
+  document.querySelectorAll('[data-ai-image]').forEach(function(img){
+    var data=aiCache[img.dataset.aiImage];if(data&&img.getAttribute('src')!==data){img.src=data;img.hidden=false;}
+  });
+}
+function aiSectionHtml(){
+  var items=S.ai.candidates,filtered=items.filter(function(c){
+    return aiFilter==='all'||(aiFilter==='active'?aiActive(c):aiFilter==='withdrawn'?c.sourceMissing:c.review===aiFilter&&!c.sourceMissing);
+  });
+  var pages=Math.max(1,Math.ceil(filtered.length/20));aiPage=Math.max(0,Math.min(aiPage,pages-1));
+  var html='<h2>AI 사진 후보 <span class="hint">고유 인원 아님 · 사진 GPS는 촬영 위치</span></h2>'
+    +'<div class="row-tools"><button type="button" class="btn primary" data-ai-action="import"'+(!ownsEditorLock()?' disabled':'')+'>AI 후보 불러오기</button>'
+    +'<input type="file" data-ai-file accept=".json,application/json" hidden>'
+    +'<label>표시 <select data-ai-filter aria-label="AI 후보 표시 필터">'
+    +[['active','확인할 후보'],['all','전체'],['unreviewed','미확인'],['person','사람 맞음'],['hold','보류'],['false_positive','오탐'],['withdrawn','원본에서 빠진 후보']].map(function(p){return '<option value="'+p[0]+'"'+(aiFilter===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+'</select></label></div>'
+    +'<p class="note">상황 전체 복원과 별개로 후보만 추가·갱신합니다. 기존 지도·기체·수색 상태·대응 기록은 유지합니다. 발견 경보와 수색 완료는 자동 변경하지 않습니다.</p>'
+    +'<p data-ai-status role="status" aria-live="polite">'+esc(aiMessage||('분석 작업 '+S.ai.runs.length+'개 · 보관 후보 '+items.length+'건 · 표시 '+filtered.length+'건'))+'</p>';
+  filtered.slice(aiPage*20,aiPage*20+20).forEach(function(c){
+    var key=aiKey(c),draft=aiResponseDrafts[key]||{note:c.responseNote,status:c.responseStatus};
+    var time=c.capturedAt?(c.capturedAt.replace('T',' ')+(/[Z+-]\d\d:?\d\d$|Z$/.test(c.capturedAt)?'':' (시간대 미상)')):'촬영 시각 없음';
+    html+='<article class="ai-candidate" data-ai-key="'+esc(key)+'"><div class="ai-candidate-head">'
+      +'<button type="button" class="btn sm" data-ai-action="detail" data-ai-key="'+esc(key)+'">사진 확인</button> <b>'+esc(c.file||c.photoId)+'</b> · '+esc(AI_REVIEWS[c.review])+' · 신뢰도 '+Math.round(c.confidence*100)+'%'
+      +(c.sourceMissing?' · 원본에서 빠짐(대응 기록 유지)':'')+'</div>'
+      +'<p class="note">'+esc(c.id)+' · '+esc(time)+'<br>'+esc(aiLocation(c).text)
+      +(c.gps?' · '+c.gps.lat.toFixed(6)+', '+c.gps.lon.toFixed(6):'')+'</p>'
+      +'<div class="row-tools"><label>대응 상태 <select data-ai-response="status" aria-label="'+esc(c.id)+' 대응 상태"'+(!ownsEditorLock()?' disabled':'')+'>'
+      +Object.keys(AI_RESPONSES).map(function(k){return '<option value="'+k+'"'+(draft.status===k?' selected':'')+'>'+AI_RESPONSES[k]+'</option>';}).join('')+'</select></label>'
+      +'<label class="ai-response-note">대응 메모 <input data-ai-response="note" aria-label="'+esc(c.id)+' 대응 메모" maxlength="500" value="'+esc(draft.note)+'"'+(!ownsEditorLock()?' disabled':'')+'></label>'
+      +'<button type="button" class="btn sm" data-ai-action="response" data-ai-key="'+esc(key)+'"'+(!ownsEditorLock()?' disabled':'')+'>대응 저장</button></div></article>';
+  });
+  if(!filtered.length)html+='<p class="note">표시할 사진 후보가 없습니다. 탐지 프로그램에서 내보낸 파일을 불러오세요.</p>';
+  return html+'<div class="row-tools"><button type="button" class="btn sm" data-ai-action="previous"'+(!aiPage?' disabled':'')+'>이전 후보</button><span>'+(aiPage+1)+' / '+pages+'쪽</span><button type="button" class="btn sm" data-ai-action="next"'+(aiPage+1>=pages?' disabled':'')+'>다음 후보</button></div>';
+}
+function aiMount(root){
+  var cons=root&&root.querySelector('.cons');if(!cons)return;
+  var focused=document.activeElement,field=focused&&root.contains(focused)&&focused.dataset.aiResponse,
+      focusedRow=field&&focused.closest('[data-ai-key]'),focusedKey=focusedRow&&focusedRow.dataset.aiKey,
+      start=field==='note'?focused.selectionStart:null,end=field==='note'?focused.selectionEnd:null;
+  var section=root.querySelector('#sec-ai');
+  if(!section){section=document.createElement('section');section.id='sec-ai';section.className='sec';var grid=root.querySelector('#sec-grid');if(grid)grid.after(section);else cons.appendChild(section);}
+  section.innerHTML=aiSectionHtml();
+  var fileInput=section.querySelector('[data-ai-file]');fileInput.onchange=function(event){
+    event.stopPropagation();var file=fileInput.files&&fileInput.files[0];fileInput.value='';if(file)aiReadFile(file);
+  };
+  if(focusedKey)section.querySelectorAll('[data-ai-key]').forEach(function(row){
+    if(row.dataset.aiKey!==focusedKey)return;var input=row.querySelector('[data-ai-response="'+field+'"]');
+    if(input){input.focus({preventScroll:true});if(field==='note')input.setSelectionRange(start,end);}
+  });
+  var nav=root.querySelector('.cons-nav,.section-nav,nav');
+  if(nav&&!nav.querySelector('[data-ai-action="section"]')){var b=document.createElement('button');b.type='button';b.dataset.aiAction='section';b.textContent='AI 후보';nav.appendChild(b);}
+  aiWarm();
+}
+function aiRenderPins(host){
+  if(!host)return;
+  host.querySelectorAll('.ai-map-pin').forEach(function(el){el.remove();});
+  var fit=host.querySelector('.mapfit');if(!fit||!geoOK()||isOnlineMap()&&!onlineMapReady(host))return;
+  var groups=Object.create(null);
+  S.ai.candidates.filter(aiActive).forEach(function(c){
+    var loc=aiLocation(c);if(!loc.point)return;
+    var key=c.runId+'/'+c.photoId;if(!groups[key])groups[key]={candidate:c,location:loc,count:0};groups[key].count++;
+  });
+  Object.keys(groups).forEach(function(key){
+    var group=groups[key],c=group.candidate,p=group.location.point,button=document.createElement('button');
+    button.type='button';button.className='ai-map-pin';button.dataset.aiAction='detail';button.dataset.aiKey=aiKey(c);
+    button.textContent='AI '+group.count;button.title='사진 촬영 지점 · '+c.file+' · 후보 '+group.count+'건';button.setAttribute('aria-label',button.title);
+    var x=p.x+'%',y=p.y+'%';
+    if(isOnlineMap()){
+      var rec=onlineHosts[host.id],g=S.grid.geo,tl=rec.adapter.project({lat:g.north,lon:g.west}),point=rec.adapter.project(c.gps);
+      x=(point.x-tl.x)+'px';y=(point.y-tl.y)+'px';
+    }
+    button.style.left=x;button.style.top=y;button.onpointerdown=function(e){e.stopPropagation();};fit.appendChild(button);
+  });
+}
+function aiRenderSummary(){
+  var host=$('mapWrap');if(!host)return;
+  var section=host.closest('.card')||host.parentElement,summary=section.querySelector('[data-ai-summary]');
+  if(!summary){summary=document.createElement('div');summary.dataset.aiSummary='';summary.className='ai-summary';section.appendChild(summary);}
+  var active=S.ai.candidates.filter(aiActive),pending=active.filter(function(c){return c.review==='unreviewed';}).length;
+  summary.hidden=!S.ai.candidates.length;
+  summary.textContent='AI 사진 후보 '+active.length+'건 · 미확인 '+pending+'건 · 지도 표시 불가 '+active.filter(function(c){return !aiLocation(c).point;}).length+'건 · 고유 인원 아님';
+}
+function aiRenderAll(){
+  aiMount($('consoleRoot'));aiMount($('drawerIn'));aiRenderSummary();aiRenderPins($('consMap'));aiRenderPins($('mapWrap'));aiRefreshImages();
+}
+function aiShowDetail(key){
+  var c=S.ai.candidates.filter(function(v){return aiKey(v)===key;})[0];if(!c)return;
+  var dialog=document.createElement('dialog');dialog.className='ai-detail';
+  dialog.innerHTML='<h2>AI 사진 후보 · '+esc(AI_REVIEWS[c.review])+'</h2><p>'+esc(c.file)+' · '+esc(c.id)+'</p>'
+    +(c.thumbnailId?'<img data-ai-image="'+esc(c.thumbnailId)+'" alt="후보 주변 축소 이미지" hidden>':'<p>후보 이미지 없음</p>')
+    +'<p>'+esc(aiLocation(c).text)+(c.gps?' · '+c.gps.lat.toFixed(6)+', '+c.gps.lon.toFixed(6):'')+'</p>'
+    +'<p>GPS는 사진 촬영 위치입니다. 같은 사진의 여러 후보는 지도에서 한 지점에 묶습니다. 이 이미지는 축소본이며 원본 세부 확인은 탐지 프로그램에서 진행하세요.</p>'
+    +'<button type="button" class="btn">닫기</button>';
+  document.body.appendChild(dialog);dialog.querySelector('button').onclick=function(){dialog.close();};dialog.onclose=function(){dialog.remove();};dialog.showModal();aiWarm();aiRefreshImages();
+}
+function aiSaveResponse(key){
+  if(!ensureEditor())return false;
+  var item=S.ai.candidates.filter(function(c){return aiKey(c)===key;})[0],draft=aiResponseDrafts[key];
+  if(!item||!draft)return false;
+  if(!Object.prototype.hasOwnProperty.call(AI_RESPONSES,draft.status)||!aiText(draft.note,500))aiFail('대응 입력을 확인하세요.');
+  if(item.responseNote===draft.note&&item.responseStatus===draft.status){delete aiResponseDrafts[key];return true;}
+  if(!requireEventSlots(1,'AI 후보 대응 기록'))return false;
+  item.responseNote=draft.note;item.responseStatus=draft.status;item.responseAt=Date.now();
+  addEvent('ai','후보 '+item.id+' ('+item.runId.slice(0,8)+') · '+AI_RESPONSES[draft.status]+(draft.note?' · '+draft.note:''),'',true);
+  if(!commit()){aiMessage='대응 저장 실패 · 입력을 유지했습니다. 다시 저장하세요.';aiRenderAll();return false;}
+  delete aiResponseDrafts[key];aiMessage='AI 후보 대응 기록을 저장했습니다.';aiRenderAll();return true;
+}
+document.addEventListener('input',function(e){
+  var input=e.target.closest('[data-ai-response]');if(!input)return;
+  var article=input.closest('[data-ai-key]'),key=article.dataset.aiKey,item=S.ai.candidates.filter(function(c){return aiKey(c)===key;})[0];if(!item)return;
+  var draft=aiResponseDrafts[key]||(aiResponseDrafts[key]={note:item.responseNote,status:item.responseStatus});
+  if(input.dataset.aiResponse==='note')draft.note=input.value;else draft.status=input.value;
+});
+function aiReadFile(file){
+  if(!file||!ensureEditor())return;
+  if(file.size>AI_MAX_BYTES){aiMessage='AI 후보 파일은 16 MiB까지 읽습니다.';aiRenderAll();return;}
+  var seq=stateLifecycleSeq,epoch=SESSION_EPOCH,fileSeq=++fileMutationSeq;
+  return file.text().then(function(text){
+    if(!lifecycleCurrent(seq,epoch)||!fileMutationCurrent(fileSeq))aiFail('상황이 바뀌어 파일 읽기를 취소했습니다.');
+    return aiImportPackage(JSON.parse(text));
+  }).catch(function(error){aiMessage='AI 후보 불러오기 실패: '+error.message;aiRenderAll();return false;});
+}
+document.addEventListener('change',function(e){
+  if(e.target.matches('[data-ai-response]'))e.target.dispatchEvent(new Event('input',{bubbles:true}));
+  if(e.target.matches('[data-ai-filter]')){aiFilter=e.target.value;aiPage=0;aiRenderAll();}
+});
+document.addEventListener('click',function(e){
+  var button=e.target.closest('[data-ai-action]');if(!button)return;
+  e.stopPropagation();var action=button.dataset.aiAction;
+  try{
+    if(action==='import')button.closest('#sec-ai').querySelector('[data-ai-file]').click();
+    if(action==='section'){var root=button.closest('#consoleRoot,#drawerIn'),section=root.querySelector('#sec-ai'),bar=root.querySelector('.cons-top');if(bar)section.style.scrollMarginTop=(bar.getBoundingClientRect().height+12)+'px';section.scrollIntoView({block:'start'});}
+    if(action==='detail')aiShowDetail(button.dataset.aiKey);
+    if(action==='response')aiSaveResponse(button.dataset.aiKey);
+    if(action==='previous'||action==='next'){aiPage+=action==='next'?1:-1;aiRenderAll();}
+  }catch(error){aiMessage=error.message;aiRenderAll();}
+});
+
+/* Preserve compact metadata in state; JPEG bodies share the existing blob store. */
+function aiProtectBlobs(keep){
+  Object.keys(aiStaging).forEach(function(id){keep[id]=true;});
+  var states=[S];
+  try{states.push(JSON.parse(localStorage.getItem(KEY)||'null'));}catch(e){}
+  try{states=states.concat(getSnapshots().map(function(x){return x.state;}));}catch(e){}
+  try{states.push(JSON.parse(localStorage.getItem(RECOVERY_KEY)||'null').state);}catch(e){}
+  aiCollectReferences(keep,states);
+}
+function aiValidateBackup(raw){
+  if(raw.meta.v>=3&&!isPlainObject(raw.ai))aiFail('AI 후보 상태가 없는 새 형식 백업입니다.');
+  var state={ai:aiNormalizeState(raw.ai)},ids=aiImageIds(state),images=raw.aiImages;
+  if(ids.length&&(!isPlainObject(images)||ids.some(function(id){return !Object.prototype.hasOwnProperty.call(images,id);})))aiFail('후보 이미지가 빠진 백업입니다. 완전한 JSON을 사용하세요.');
+  if(images!==undefined){
+    if(!isPlainObject(images)||Object.keys(images).some(function(id){return ids.indexOf(id)<0;}))aiFail('알 수 없는 후보 이미지가 있습니다.');
+    ids.forEach(function(id){aiJpeg(images[id]);});
+  }
+}
+async function applyStateWithMap(nextState,nextMap,opSeq,opEpoch,fileSeq){
+  if(opSeq===undefined)opSeq=stateLifecycleSeq;if(opEpoch===undefined)opEpoch=SESSION_EPOCH;
+  var state={ai:aiNormalizeState(nextState&&nextState.ai)},generation=aiCacheGeneration;
+  if(!aiImageIds(state).length){
+    var emptyResult=await applyStateWithMapBase(nextState,nextMap,opSeq,opEpoch,fileSeq);
+    if(emptyResult)aiResponseDrafts=Object.create(null);return emptyResult;
+  }
+  mapGcGeneration++;
+  var made=[];
+  try{
+    made=await aiStageAssets(state,nextState.aiImages,opSeq,opEpoch,fileSeq);
+    if(!aiGuard(opSeq,opEpoch,fileSeq,generation))aiFail('상황이 변경되어 백업 적용을 취소했습니다.');
+    var ok=await applyStateWithMapBase(nextState,nextMap,opSeq,opEpoch,fileSeq);
+    if(ok)aiResponseDrafts=Object.create(null);else await aiDiscardAssets(made);
+    return ok;
+  }catch(error){await aiDiscardAssets(made);setSaveStatus(false,error.message);return false;}
+  finally{if(made.release)made.release();}
+}
+function exportPayload(includeMap){
+  var out=JSON.parse(exportPayloadBase(includeMap));out.aiImages={};
+  aiImageIds(S).forEach(function(id){if(!aiCache[id])aiFail('후보 이미지를 읽는 중이거나 누락됐습니다. 잠시 후 다시 시도하세요.');out.aiImages[id]=aiCache[id];});
+  var result=JSON.stringify(out,null,1);
+  if(new TextEncoder().encode(result).length>MAX_IMPORT_BYTES)aiFail('완전한 백업이 24 MiB를 넘습니다. 후보 묶음을 나누어 다른 상황에 보관해 주세요.');
+  return result;
+}
+function mapPayloadReady(){aiWarm();return mapPayloadReadyBase()&&aiImageIds(S).every(function(id){return !!aiCache[id];});}
+function mapBlobClear(){
+  aiCacheGeneration++;aiCache=Object.create(null);aiLoads=Object.create(null);aiResponseDrafts=Object.create(null);
+  return mapBlobClearBase();
+}
+var aiRenderConsoleBase=renderConsole;
+renderConsole=function(root){
+  var active=document.activeElement,field=active&&root&&root.contains(active)&&active.dataset.aiResponse,
+      row=field&&active.closest('[data-ai-key]'),key=row&&row.dataset.aiKey,
+      start=field==='note'?active.selectionStart:null,end=field==='note'?active.selectionEnd:null;
+  aiRenderConsoleBase(root);aiMount(root);
+  if(key)root.querySelectorAll('[data-ai-key]').forEach(function(item){
+    if(item.dataset.aiKey!==key)return;var input=item.querySelector('[data-ai-response="'+field+'"]');
+    if(input){input.focus({preventScroll:true});if(field==='note')input.setSelectionRange(start,end);}
+  });
+};
+var aiRenderAllBase=renderAll;
+renderAll=function(){aiRenderAllBase();aiRenderAll();};
+var aiBuildGridBase=buildGrid;
+buildGrid=function(host,interactive){aiBuildGridBase(host,interactive);aiRenderPins(host);};
+var aiDrawOnlineMapBase=drawOnlineMap;
+drawOnlineMap=function(rec){aiDrawOnlineMapBase(rec);aiRenderPins(rec.host);};
+
 
 /* ==========================================================================
    S12. 드로어 (표출 화면 위에 조작 패널 겹쳐 열기 · 화면이 하나뿐일 때)
