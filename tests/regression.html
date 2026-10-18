@@ -47,6 +47,7 @@
 <script src="review-fixes.js"></script>
 <script src="ui-ux-fixes.js"></script>
 <script src="map-workspace.js"></script>
+<script src="online-maps.js"></script>
 <script>
 "use strict";
 var out = document.getElementById('out'), sum = document.getElementById('sum');
@@ -971,6 +972,7 @@ async function run(){
   await runReviewFixes();
   await runUiUxFixes();
   await runMapWorkspace();
+  await runOnlineMaps();
   await runMobileMapPins();
 
   /* ---------------- 마무리 ---------------- */

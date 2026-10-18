@@ -7,7 +7,7 @@
 <!--
   ============================================================================
   STAY UP 현장 상황판 (전북소방 드론팀 실종자 수색 현장 대시보드)
-  단일 HTML 파일 · 외부 의존성 없음 · file:// 로 직접 열어 사용
+  단일 HTML 파일 · 사진 모드는 외부 의존성 없이 file:// 사용 · 온라인 지도는 공식 SDK와 HTTP(S) 필요
   ----------------------------------------------------------------------------
   Copyright 2026 MuyeongKim
   Licensed under the Apache License, Version 2.0 — 자세한 조건은 LICENSE 파일 참조
@@ -981,6 +981,19 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .map-palette-fold{border:1px solid var(--border2);border-radius:6px;padding:0 10px;margin-bottom:8px;flex:0 0 auto}
 .map-palette-fold>summary{padding:9px 0;font-size:13px;font-weight:700;cursor:pointer}
 .map-palette-fold .paint{margin-bottom:10px}
+.online-settings{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border2)}
+.online-settings .settings-fold{padding:10px;margin-top:10px}
+.online-settings .f{margin-top:8px}
+.online-settings a{color:var(--info);text-underline-offset:3px}
+.online-map{position:absolute;inset:0;z-index:0;color:#152534}
+.online-overlays{position:absolute;inset:0 0 30px;overflow:hidden;pointer-events:auto;z-index:1}
+.online-overlays[hidden]{display:none}
+.online-active .mapfit{left:0;top:0}
+.online-active .gridlayer{display:block;padding:0;gap:0}
+.online-active .gcell{position:absolute;pointer-events:auto;min-width:0;min-height:0;overflow:hidden}
+.online-status{position:absolute;z-index:2;top:12px;left:12px;right:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--warn);border-radius:6px;font:14px/1.6 system-ui,sans-serif;color:var(--text)}
+.online-status[hidden]{display:none}
+.online-status span{flex:1 1 180px}
 .mapfit.hide-grid .gridlayer{visibility:hidden;pointer-events:none}
 .mapfit.hide-by .gcell .by{display:none}
 .mapfit.hide-radius .rcircle{display:none}
@@ -1222,7 +1235,7 @@ function defaultState(){
     drones:[], crew:[],
     batteries:{ ready:0, charging:0, empty:0, generator:false, avgFlightMin:25, concurrent:2 },
     grid:{
-      rows:5, cols:6, cells:{}, generation:uid(), mapVer:0, mapId:null, hasMap:false, mapW:0, mapH:0, mapKB:0,
+      source:'image', mapType:'roadmap', rows:5, cols:6, cells:{}, generation:uid(), mapVer:0, mapId:null, hasMap:false, mapW:0, mapH:0, mapKB:0,
       mapZoom:100, mapX:0, mapY:0, viewportVersion:1, spatialReview:false, mapOpacity:0.85, widthMeters:2000,
       /* geo: 지도 네 변의 위경도. 있으면 격자·핀에 실제 좌표가 생기고
          가로 실거리도 손입력이 아니라 계산값을 쓴다. 없으면 종전과 같이 픽셀 좌표계. */
@@ -1644,6 +1657,8 @@ function migrate(raw){
   d.batteries.concurrent=sanInt(b.concurrent,1,50,2);
 
   var g = isPlainObject(raw.grid) ? raw.grid : {};
+  d.grid.source=['naver','google'].indexOf(g.source)>=0?g.source:'image';
+  d.grid.mapType=g.mapType==='satellite'?'satellite':'roadmap';
   d.grid.rows=sanInt(g.rows,1,12,5); d.grid.cols=sanInt(g.cols,1,12,6); d.grid.cells={};
   d.grid.generation=/^[a-z0-9_-]{3,100}$/i.test(String(g.generation||''))?String(g.generation):'legacy-grid';
   if(isPlainObject(g.cells)) Object.keys(g.cells).slice(0,144).forEach(function(k){
@@ -1668,7 +1683,7 @@ function migrate(raw){
     if(!isPlainObject(v)) return null;
     var o={west:sanNum(v.west,-180,180,NaN,false),east:sanNum(v.east,-180,180,NaN,false),
            north:sanNum(v.north,-90,90,NaN,false),south:sanNum(v.south,-90,90,NaN,false),
-           src:['manual','world','kml'].indexOf(v.src)>=0?v.src:'manual',
+           src:['manual','world','kml','online'].indexOf(v.src)>=0?v.src:'manual',
            at:sanNum(v.at,0,Number.MAX_SAFE_INTEGER,0,false)};
     if(!isFinite(o.west)||!isFinite(o.east)||!isFinite(o.north)||!isFinite(o.south)) return null;
     if(o.west===o.east||o.north===o.south) return null;
@@ -1931,7 +1946,7 @@ function purgeIncidentData(){
   }
   function finishLocalPurge(){
     var keys=[],failed=[];
-    try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('stayup.dash.')===0&&k!==EPOCHKEY&&k!==PURGE_LOCKKEY)keys.push(k);}}
+    try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf('stayup.dash.')===0||k===ONLINE_KEYS_KEY)&&k!==EPOCHKEY&&k!==PURGE_LOCKKEY)keys.push(k);}}
     catch(e){failed.push('저장목록');}
     keys.forEach(function(k){try{localStorage.removeItem(k);if(localStorage.getItem(k)!==null)failed.push(k);}catch(e){failed.push(k);}});
     S=defaultState();S.meta.epoch=SESSION_EPOCH;MAPDATA=null;mapVerLoaded=-1;mapIdLoaded=null;lastSnapshotUpdated=-1;lastSeenUpdated=0;STARTUP_WARNINGS=[];lastSweep=null;
@@ -2269,6 +2284,7 @@ function commitMap(dataUrl,meta,newId,opSeq,opEpoch,fileSeq){
   try{
     if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))throw new Error('더 최신 지도 작업이 시작됐습니다.');
     var sameImage=!!(dataUrl&&MAPDATA&&dataUrl===MAPDATA);
+    candidate.grid.source='image';
     candidate.grid.mapId = dataUrl ? newId : null;
     candidate.grid.hasMap=!!dataUrl; candidate.grid.mapVer=(candidate.grid.mapVer||0)+1;
     candidate.grid.mapW=meta?sanInt(meta.w,0,20000,0):0; candidate.grid.mapH=meta?sanInt(meta.h,0,20000,0):0;
@@ -2568,7 +2584,7 @@ function geoFromRefs(r1, r2){
 }
 function geoSrcLabel(){
   if(!geoOK()) return '미보정';
-  return {manual:'수동 2점', world:'좌표 파일(world)', kml:'좌표 파일(KML)'}[S.grid.geo.src] || '보정됨';
+  return {manual:'수동 2점', world:'좌표 파일(world)', kml:'좌표 파일(KML)',online:'온라인 수색 범위'}[S.grid.geo.src] || '보정됨';
 }
 
 /* 실종 경과시간 기반 이동 추정반경(km) */
@@ -2731,12 +2747,596 @@ function renderCrew(){
    수색구역: 지도 이미지 + 격자 오버레이
    표출 화면(읽기 전용)과 조작 패널(클릭 편집)이 같은 함수를 공유한다.
    -------------------------------------------------------------------------- */
+/* Optional online providers. Nothing is fetched until onlineSDK.load is called. */
+var onlineSDK = (function () {
+  'use strict';
+  var providers = Object.create(null);
+  var serial = 0;
+  var LOAD_TIMEOUT = 20000;
+  var PROJECTION_TIMEOUT = 15000;
+
+  function name(provider) { return provider === 'naver' ? '네이버지도' : '구글지도'; }
+  function validProvider(provider) { return provider === 'naver' || provider === 'google'; }
+  function asError(message) { return new Error(message); }
+  function apiFor(provider) {
+    return provider === 'naver' ? window.naver && window.naver.maps : window.google && window.google.maps;
+  }
+  function validApi(api) {
+    return api && typeof api.Map === 'function' && typeof api.LatLng === 'function'
+      && typeof api.Point === 'function' && typeof api.OverlayView === 'function'
+      && api.event && typeof api.event.addListener === 'function';
+  }
+  function providerApiValid(provider, api) {
+    if (provider === 'naver') {
+      return api && typeof api.Map === 'function' && typeof api.LatLng === 'function'
+        && typeof api.Point === 'function' && typeof api.Size === 'function'
+        && typeof api.LatLngBounds === 'function' && typeof api.OverlayView === 'function'
+        && api.Event && typeof api.Event.addListener === 'function';
+    }
+    return validApi(api);
+  }
+  function authMessage(provider) {
+    return provider === 'naver'
+      ? '네이버지도 인증에 실패했습니다. Client ID, Web Dynamic Map 활성화와 현재 웹 서비스 URL 등록을 확인한 뒤 새로고침해 주세요. 사진 지도는 계속 사용할 수 있습니다.'
+      : '구글지도 인증에 실패했습니다. API 키, Maps JavaScript API 활성화, 결제 계정과 현재 사이트의 허용 주소를 확인한 뒤 새로고침해 주세요. 사진 지도는 계속 사용할 수 있습니다.';
+  }
+  function installAuthHook(provider, state) {
+    var hook = provider === 'naver' ? 'navermap_authFailure' : 'gm_authFailure';
+    var previous = window[hook];
+    window[hook] = function () {
+      var error = asError(authMessage(provider));
+      state.authError = error;
+      if (state.rejectLoad) state.rejectLoad(error);
+      Array.from(state.errors).forEach(function (notify) { try { notify(error); } catch (_) {} });
+      if (typeof previous === 'function') { try { previous(); } catch (_) {} }
+    };
+  }
+  function load(provider, key) {
+    if (!validProvider(provider)) return Promise.reject(asError('지원하지 않는 지도 제공자입니다.'));
+    key = String(key || '').trim();
+    if (!key) return Promise.reject(asError(name(provider) + '의 브라우저용 API 키를 먼저 입력해 주세요.'));
+    var state = providers[provider];
+    if (state && state.key !== key) {
+      return Promise.reject(asError(name(provider) + ' 키를 바꾸려면 설정을 저장한 뒤 페이지를 새로고침해 주세요. 이미 불러온 지도 SDK의 키는 실행 중에 교체할 수 없습니다.'));
+    }
+    if (state && state.authError) return Promise.reject(state.authError);
+    if (state && (state.status === 'loading' || state.status === 'ready')) return state.promise;
+    // Never adopt an SDK injected by another source or a partially completed load.
+    if (apiFor(provider)) {
+      return Promise.reject(asError(name(provider) + ' SDK가 이미 존재합니다. 키 설정을 확인하고 페이지를 새로고침한 뒤 다시 연결해 주세요.'));
+    }
+    if (!state) {
+      state = { key: key, status: 'idle', api: null, errors: new Set(), authError: null, rejectLoad: null };
+      providers[provider] = state;
+      installAuthHook(provider, state);
+    }
+    state.status = 'loading';
+    state.promise = new Promise(function (resolve, reject) {
+      var done = false;
+      var callbackName = '__stayupOnlineMapReady' + (++serial);
+      var script = document.createElement('script');
+      var timer;
+      function finish(error, api) {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        state.rejectLoad = null;
+        script.onerror = null;
+        // A timed-out request may still complete. Ignore its late callback.
+        window[callbackName] = function () {};
+        if (error) {
+          state.status = 'failed';
+          script.remove();
+          reject(error);
+        } else {
+          state.status = 'ready';
+          state.api = api;
+          resolve(api);
+        }
+      }
+      state.rejectLoad = function (error) { finish(error); };
+      window[callbackName] = function () {
+        var api = apiFor(provider);
+        if (state.authError) return finish(state.authError);
+        if (!providerApiValid(provider, api)) {
+          return finish(asError(name(provider) + ' SDK 준비를 확인할 수 없습니다. 페이지를 새로고침한 뒤 다시 연결해 주세요.'));
+        }
+        finish(null, api);
+      };
+      var url = new URL(provider === 'naver'
+        ? 'https://oapi.map.naver.com/openapi/v3/maps.js'
+        : 'https://maps.googleapis.com/maps/api/js');
+      url.searchParams.set(provider === 'naver' ? 'ncpKeyId' : 'key', key);
+      url.searchParams.set('callback', callbackName);
+      if (provider === 'google') {
+        url.searchParams.set('loading', 'async');
+        url.searchParams.set('v', 'quarterly');
+        url.searchParams.set('language', 'ko');
+        url.searchParams.set('region', 'KR');
+      }
+      script.async = true;
+      script.src = url.toString();
+      script.onerror = function () {
+        finish(asError(name(provider) + '를 불러오지 못했습니다. 인터넷 연결과 브라우저의 지도 요청 차단 여부를 확인한 뒤 다시 연결해 주세요.'));
+      };
+      timer = setTimeout(function () {
+        finish(asError(name(provider) + ' 연결 시간이 초과되었습니다. 인터넷 연결을 확인하고 새로고침하거나 사진 지도로 전환해 주세요.'));
+      }, LOAD_TIMEOUT);
+      document.head.appendChild(script);
+    });
+    return state.promise;
+  }
+
+  function validPoint(point) {
+    return point && Number.isFinite(point.lat) && Number.isFinite(point.lon)
+      && Math.abs(point.lat) <= 85 && Math.abs(point.lon) <= 180;
+  }
+  function validGeo(geo) {
+    return geo && [geo.north, geo.south, geo.east, geo.west].every(Number.isFinite)
+      && geo.north > geo.south && geo.east > geo.west
+      && geo.north <= 85 && geo.south >= -85 && geo.west >= -180 && geo.east <= 180;
+  }
+  function create(provider, element, options, onDraw, onError) {
+    options = options || {};
+    var state = providers[provider];
+    if (!validProvider(provider) || !state || state.status !== 'ready' || state.authError) {
+      return Promise.reject(state && state.authError || asError('지도 SDK를 먼저 연결해 주세요.'));
+    }
+    if (!element || element.nodeType !== 1 || !validGeo(options.geo)) {
+      return Promise.reject(asError('지도를 표시할 영역과 올바른 위경도 범위를 확인해 주세요.'));
+    }
+    return new Promise(function (resolve, reject) {
+      var api = state.api, map = null, overlay = null, projection = null, adapter = null;
+      var disposed = false, settled = false, ready = false, frame = 0, observer = null;
+      var listeners = [], pendingFit = null, lastFit = null;
+      var initialFitted = validPoint(options.center) && Number.isFinite(options.zoom);
+      var timer = setTimeout(function () {
+        fail(asError(name(provider) + '의 좌표 준비 시간이 초과되었습니다. 지도 영역을 펼치고 인터넷 연결과 키 설정을 확인한 뒤 다시 연결해 주세요.'));
+      }, PROJECTION_TIMEOUT);
+      var center = validPoint(options.center) ? options.center : {
+        lat: (options.geo.north + options.geo.south) / 2,
+        lon: (options.geo.east + options.geo.west) / 2
+      };
+      var zoom = Number.isFinite(options.zoom) ? Math.max(1, Math.min(21, options.zoom)) : 15;
+      function latLng(point) { return new api.LatLng(point.lat, point.lon); }
+      function position(value) { return value ? { lat: value.lat(), lon: value.lng() } : null; }
+      function finitePixel(value) { return value && Number.isFinite(value.x) && Number.isFinite(value.y); }
+      function project(point) {
+        if (disposed || !projection || !validPoint(point)) return null;
+        var pixel = provider === 'naver' ? projection.fromCoordToOffset(latLng(point))
+          : projection.fromLatLngToContainerPixel(latLng(point));
+        return finitePixel(pixel) ? { x: pixel.x, y: pixel.y } : null;
+      }
+      function unproject(pixel) {
+        if (disposed || !projection || !finitePixel(pixel)) return null;
+        var point = new api.Point(pixel.x, pixel.y);
+        var value = provider === 'naver' ? projection.fromOffsetToCoord(point)
+          : projection.fromContainerPixelToLatLng(point);
+        var result = position(value);
+        return validPoint(result) ? result : null;
+      }
+      function destroy() {
+        if (disposed) return;
+        disposed = true;
+        clearTimeout(timer);
+        cancelAnimationFrame(frame);
+        state.errors.delete(fail);
+        cancelFit(asError('지도 연결이 해제되어 범위 맞춤을 취소했습니다.'));
+        if (observer) observer.disconnect();
+        listeners.forEach(function (listener) {
+          if (provider === 'naver') api.Event.removeListener(listener);
+          else listener.remove();
+        });
+        listeners = [];
+        if (overlay) { overlay.setMap(null); overlay = null; }
+        if (map) {
+          if (provider === 'naver') map.destroy();
+          else { api.event.clearInstanceListeners(map); map.unbindAll(); }
+        }
+        projection = null;
+        map = null;
+        element.replaceChildren();
+      }
+      function fail(error) {
+        if (disposed) return;
+        destroy();
+        if (!settled) { settled = true; reject(error); }
+        if (typeof onError === 'function') onError(error.message);
+      }
+      function queueDraw() {
+        if (disposed || frame) return;
+        frame = requestAnimationFrame(function () {
+          frame = 0;
+          if (disposed || !map || !projection || !element.clientWidth || !element.clientHeight) return;
+          var pixel;
+          try { pixel = project(position(map.getCenter())); } catch (_) { return; }
+          if (!finitePixel(pixel)) return;
+          if (pendingFit && fitAlreadyMatches(pendingFit.geo)) finishFit(pendingFit);
+          if (!initialFitted) return;
+          if (!ready) {
+            ready = true;
+            settled = true;
+            clearTimeout(timer);
+            resolve(adapter);
+            // The caller can store its resolved adapter before the first redraw.
+            queueDraw();
+            return;
+          }
+          if (typeof onDraw === 'function') onDraw();
+        });
+      }
+      function camera() {
+        return { center: position(map.getCenter()), zoom: map.getZoom() };
+      }
+      function sameCamera(a, b) {
+        return a && b && a.center && b.center && a.zoom === b.zoom
+          && Math.abs(a.center.lat - b.center.lat) < 1e-10
+          && Math.abs(a.center.lon - b.center.lon) < 1e-10;
+      }
+      function fitKey(geo) {
+        return [geo.north, geo.south, geo.east, geo.west, element.clientWidth, element.clientHeight].join('|');
+      }
+      function fitAlreadyMatches(geo) {
+        if (!map || !projection || !element.clientWidth || !element.clientHeight) return false;
+        if (lastFit && lastFit.key === fitKey(geo) && sameCamera(lastFit.camera, camera())) return true;
+        // A native no-op may not fire idle. Prove the camera is already the
+        // requested integer-zoom fit instead of guessing from elapsed time.
+        var nw, se;
+        try {
+          nw = project({ lat: geo.north, lon: geo.west });
+          se = project({ lat: geo.south, lon: geo.east });
+        } catch (_) { return false; }
+        if (!finitePixel(nw) || !finitePixel(se)) return false;
+        var w = element.clientWidth - 48, h = element.clientHeight - 72;
+        var bw = se.x - nw.x, bh = se.y - nw.y, z = map.getZoom();
+        return w > 0 && h > 0 && bw > 0 && bh > 0 && bw <= w + 0.1 && bh <= h + 0.1
+          && Math.abs((nw.x + se.x) / 2 - element.clientWidth / 2) < 0.1
+          && Math.abs((nw.y + se.y) / 2 - (element.clientHeight / 2 - 12)) < 0.1
+          && (z >= 21 || bw * 2 > w || bh * 2 > h);
+      }
+      function releaseFit(operation) {
+        clearTimeout(operation.timer);
+        if (operation.listener) {
+          if (provider === 'naver') api.Event.removeListener(operation.listener);
+          else operation.listener.remove();
+        }
+        if (pendingFit === operation) pendingFit = null;
+      }
+      function cancelFit(error) {
+        if (!pendingFit) return;
+        var operation = pendingFit;
+        releaseFit(operation);
+        operation.reject(error);
+      }
+      function finishFit(operation) {
+        if (disposed || pendingFit !== operation) return;
+        lastFit = { key: fitKey(operation.geo), camera: camera() };
+        releaseFit(operation);
+        operation.resolve();
+        queueDraw();
+      }
+      function fitBounds(geo) {
+        if (disposed || !map) return Promise.reject(asError('지도 연결이 해제되었습니다.'));
+        if (!validGeo(geo)) return Promise.reject(asError('범위 맞춤에 사용할 위경도를 확인해 주세요.'));
+        cancelFit(asError('새 범위 맞춤 요청으로 이전 작업을 취소했습니다.'));
+        if (fitAlreadyMatches(geo)) return Promise.resolve();
+        return new Promise(function (done, rejectFit) {
+          var operation = pendingFit = { geo: Object.assign({}, geo), before: camera(), resolve: done, reject: rejectFit };
+          function onIdle() {
+            if (pendingFit !== operation || disposed) return;
+            // Ignore a loading/resize idle at the unchanged pre-fit camera.
+            if (!sameCamera(operation.before, camera()) || fitAlreadyMatches(operation.geo)) finishFit(operation);
+          }
+          operation.listener = provider === 'naver' ? api.Event.addListener(map, 'idle', onIdle)
+            : map.addListener('idle', onIdle);
+          operation.timer = setTimeout(function () {
+            if (pendingFit !== operation) return;
+            if (fitAlreadyMatches(operation.geo)) { finishFit(operation); return; }
+            var error = asError(name(provider) + '의 범위 맞춤 시간이 초과되었습니다. 지도 영역과 인터넷 연결을 확인하고 다시 연결해 주세요.');
+            releaseFit(operation);
+            rejectFit(error);
+            fail(error);
+          }, 12000);
+          try {
+            if (provider === 'naver') {
+              map.fitBounds(new api.LatLngBounds(new api.LatLng(geo.south, geo.west), new api.LatLng(geo.north, geo.east)),
+                { top: 24, right: 24, bottom: 48, left: 24, maxZoom: 21 });
+            } else {
+              map.fitBounds({ north: geo.north, south: geo.south, east: geo.east, west: geo.west },
+                { top: 24, right: 24, bottom: 48, left: 24 });
+            }
+            if (pendingFit === operation && fitAlreadyMatches(operation.geo)) finishFit(operation);
+            queueDraw();
+          } catch (_) {
+            var error = asError(name(provider) + '의 범위를 맞추지 못했습니다. 지도 연결과 위경도 범위를 확인해 주세요.');
+            releaseFit(operation);
+            rejectFit(error);
+            fail(error);
+          }
+        });
+      }
+      function resize() {
+        if (disposed || !map || !element.clientWidth || !element.clientHeight) return;
+        var oldCenter = map.getCenter();
+        if (provider === 'naver') map.setSize(new api.Size(element.clientWidth, element.clientHeight));
+        // Google resizes with its container; preserve the camera and update our layer.
+        if (oldCenter && !pendingFit) map.setCenter(oldCenter);
+        queueDraw();
+      }
+      try {
+        if (provider === 'naver') {
+          map = new api.Map(element, {
+            center: latLng(center), zoom: zoom, minZoom: 1, maxZoom: 21, gl: false,
+            mapTypeId: options.type === 'satellite' ? api.MapTypeId.HYBRID : api.MapTypeId.NORMAL,
+            draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false,
+            disableDoubleClickZoom: true, disableDoubleTapZoom: true, disableTwoFingerTapZoom: true,
+            disableKineticPan: true, zoomControl: false, mapTypeControl: false, tileTransition: false,
+            logoControl: true, mapDataControl: true, scaleControl: true
+          });
+        } else {
+          map = new api.Map(element, {
+            center: latLng(center), zoom: zoom, minZoom: 1, maxZoom: 21,
+            mapTypeId: options.type === 'satellite' ? 'hybrid' : 'roadmap',
+            renderingType: api.RenderingType ? api.RenderingType.RASTER : 'RASTER',
+            tilt: 0, heading: 0, tiltInteractionEnabled: false, headingInteractionEnabled: false,
+            gestureHandling: 'none', draggable: false, scrollwheel: false,
+            disableDoubleClickZoom: true, keyboardShortcuts: false, clickableIcons: false,
+            disableDefaultUI: true, scaleControl: true, isFractionalZoomEnabled: false
+          });
+        }
+        state.errors.add(fail);
+        if (state.authError) { fail(state.authError); return; }
+        adapter = {
+          project: project,
+          unproject: unproject,
+          setZoom: function (value) {
+            if (disposed || !map || !Number.isFinite(value)) return;
+            cancelFit(asError('지도 확대·축소로 범위 맞춤을 취소했습니다.'));
+            value = Math.max(1, Math.min(21, value));
+            if (provider === 'naver') map.setZoom(value, false); else map.setZoom(value);
+            queueDraw();
+          },
+          getZoom: function () { return !disposed && map ? map.getZoom() : null; },
+          getCenter: function () { return !disposed && map ? position(map.getCenter()) : null; },
+          setCenter: function (point) {
+            if (!disposed && map && validPoint(point)) {
+              cancelFit(asError('지도 이동으로 범위 맞춤을 취소했습니다.'));
+              map.setCenter(latLng(point)); queueDraw();
+            }
+          },
+          // Positive offsets move the camera right/down; map content moves left/up.
+          panBy: function (dx, dy) {
+            if (disposed || !map || !Number.isFinite(dx) || !Number.isFinite(dy)) return;
+            cancelFit(asError('지도 이동으로 범위 맞춤을 취소했습니다.'));
+            var target = unproject({ x: element.clientWidth / 2 + dx, y: element.clientHeight / 2 + dy });
+            if (target) { map.setCenter(latLng(target)); queueDraw(); }
+          },
+          fitBounds: fitBounds,
+          resize: resize,
+          destroy: destroy
+        };
+        ['bounds_changed', 'zoom_changed', 'center_changed', 'projection_changed', 'idle'].forEach(function (event) {
+          listeners.push(provider === 'naver' ? api.Event.addListener(map, event, queueDraw)
+            : map.addListener(event, queueDraw));
+        });
+        overlay = new api.OverlayView();
+        overlay.onAdd = function () {};
+        overlay.onRemove = function () { projection = null; };
+        overlay.draw = function () {
+          if (disposed || !map) return;
+          projection = provider === 'naver' ? map.getProjection() : overlay.getProjection();
+          queueDraw();
+        };
+        overlay.setMap(map);
+        if (!initialFitted) {
+          fitBounds(options.geo).then(function () { initialFitted = true; queueDraw(); }, fail);
+        }
+        if (typeof ResizeObserver === 'function') {
+          observer = new ResizeObserver(resize);
+          observer.observe(element);
+        }
+        queueDraw();
+      } catch (_) {
+        fail(asError(name(provider) + '를 시작하지 못했습니다. 인터넷 연결, 키 설정과 지도 영역을 확인하고 새로고침해 주세요.'));
+      }
+    });
+  }
+  return { load: load, create: create };
+})();
+
+/* 온라인 배경은 선택한 경우에만 SDK를 불러온다. 출동 데이터와 인증 설정은 분리한다. */
+var ONLINE_KEYS_KEY='stayup.onlineKeys.v1';
+var onlineHosts=Object.create(null);
+function isOnlineMap(){return S.grid.source==='naver'||S.grid.source==='google';}
+function onlineSourceName(source){return {image:'사진·오프라인',naver:'네이버지도',google:'구글지도'}[source]||'사진·오프라인';}
+function getOnlineKeys(){
+  try{var value=JSON.parse(localStorage.getItem(ONLINE_KEYS_KEY)||'{}');return {naver:typeof value.naver==='string'?value.naver:'',google:typeof value.google==='string'?value.google:''};}
+  catch(ignore){return {naver:'',google:''};}
+}
+function saveOnlineKeys(keys){
+  if(!ensureEditor())return false;
+  var clean={naver:String(keys.naver||'').trim(),google:String(keys.google||'').trim()};
+  if(![clean.naver,clean.google].every(function(k){return !k||/^[A-Za-z0-9_-]{5,200}$/.test(k);})){mapMsg('키 형식을 확인하세요. URL이나 Client Secret이 아닌 웹 지도용 키를 입력하세요.','err');return false;}
+  try{var raw=JSON.stringify(clean);localStorage.setItem(ONLINE_KEYS_KEY,raw);if(localStorage.getItem(ONLINE_KEYS_KEY)!==raw)throw new Error('write');}
+  catch(ignore){mapMsg('지도 키를 저장하지 못했습니다. 브라우저 저장공간을 확인하세요.','err');return false;}
+  return true;
+}
+function onlineGeoError(geo){
+  var error=validateGeo(geo).err;
+  if(error)return error;
+  if(geo.west>=geo.east||geo.north>85||geo.south< -85)return '온라인 지도는 정북 방향, 서쪽 < 동쪽, 위도 -85~85도 범위를 지원합니다.';
+  return '';
+}
+function onlineEnvironmentError(source){
+  if(!/^https?:$/.test(location.protocol))return '온라인 지도는 localhost 또는 HTTPS 주소에서 열어야 합니다. 파일로 연 화면에서는 사진·오프라인을 사용하세요.';
+  if(!getOnlineKeys()[source])return onlineSourceName(source)+' 키가 없습니다. 지도·격자 설정의 온라인 지도 연결 설정에서 키를 저장하세요.';
+  if(navigator.onLine===false)return '인터넷 연결이 끊겼습니다. 연결 후 다시 시도하거나 사진·오프라인을 선택하세요.';
+  return '';
+}
+function applyMapSource(source,type){
+  if(!ensureEditor()||['image','naver','google'].indexOf(source)<0)return false;
+  if(source!=='image'){
+    var error=!geoOK()?'기존 사진의 좌표를 먼저 보정하거나 새 수색 범위를 만드세요. 좌표 없는 표식을 온라인 지도에 옮길 수 없습니다.':onlineGeoError(S.grid.geo);
+    error=error||onlineEnvironmentError(source);
+    if(error){mapMsg(error,'warn');return false;}
+  }
+  cancelMapInteraction();pinMode=null;mapEditMode='view';
+  S.grid.source=source;S.grid.mapType=type==='satellite'?'satellite':'roadmap';
+  if(!commit())return false;
+  mapMsg(onlineSourceName(source)+' 배경을 선택했습니다. 수색 범위·핀·기록은 유지됩니다.','ok');return true;
+}
+function createOnlineArea(lat,lon,widthKm,source,type){
+  if(!ensureEditor())return false;
+  lat=Number(lat);lon=Number(lon);widthKm=Number(widthKm);
+  if(!isFinite(lat)||!isFinite(lon)||!isFinite(widthKm)||Math.abs(lat)>84||Math.abs(lon)>180||widthKm<.1||widthKm>100){mapMsg('중심 위도(-84~84), 경도(-180~180), 가로 범위(0.1~100km)를 확인하세요.','err');return false;}
+  if(source!=='naver'&&source!=='google'){mapMsg('새 수색 범위에 사용할 네이버지도 또는 구글지도를 먼저 선택하세요.','warn');return false;}
+  var environmentError=onlineEnvironmentError(source);if(environmentError){mapMsg(environmentError,'warn');return false;}
+  var dx=widthKm*1000/(MPD_LAT*Math.cos(lat*RAD))/2,dy=widthKm*1000*.625/MPD_LAT/2;
+  var geo={north:lat+dy,south:lat-dy,west:lon-dx,east:lon+dx,src:'online',at:Date.now()},error=onlineGeoError(geo);
+  if(error){mapMsg(error,'err');return false;}
+  if(!confirm('중심 '+lat.toFixed(5)+', '+lon.toFixed(5)+' / 가로 '+widthKm+'km로 새 수색 범위를 만들까요?\n기존 사진·구역 상태·담당·핀·좌표 보정과 기체 담당구역을 초기화합니다. 기존 기록은 남고, 작업 전 상태는 복구본에 보관합니다.'))return false;
+  if(!saveRecoveryPoint('온라인 수색 범위 변경 전')){mapMsg('복구본을 만들 수 없어 수색 범위 변경을 중단했습니다.','err');return false;}
+  var next=migrate(S);resetSpatialGrid(next,true);
+  Object.assign(next.grid,{source:source,mapType:type==='satellite'?'satellite':(type==='roadmap'?'roadmap':next.grid.mapType),geo:geo,ref1:null,ref2:null,mapId:null,hasMap:false,mapW:0,mapH:0,mapNatW:0,mapNatH:0,mapKB:0,mapVer:next.grid.mapVer+1});
+  touchState(next);if(!persistCandidate(next))return false;
+  cancelMapInteraction();fileMutationSeq++;S=next;MAPDATA=null;mapIdLoaded=null;mapVerLoaded=S.grid.mapVer;lastSeenUpdated=S.meta.updated;
+  pinMode=null;mapEditMode='view';lastSweep=null;gridDimensionsDraft=null;
+  broadcast();renderAll();sendPeer({type:'map',ver:S.grid.mapVer,data:null});gcMapBlobs();
+  mapMsg('새 수색 범위를 만들었습니다. 지도에서 현장 위치를 대조한 뒤 핀·구역을 기록하세요.','ok');return true;
+}
+function onlineMapPanel(){
+  var keys=getOnlineKeys(),center=geoOK()?geoAt(.5,.5):{lat:S.mission.lat,lon:S.mission.lon};
+  function field(id,label,value,attrs){return '<label class="f"><span>'+label+'</span><input id="'+id+'" value="'+esc(value==null?'':value)+'" '+attrs+'></label>';}
+  return '<div class="online-settings"><div class="f2"><label class="f"><span>배경 지도</span><select id="mapSourceSelect">'
+    +['image','naver','google'].map(function(s){return '<option value="'+s+'"'+((S.grid.source||'image')===s?' selected':'')+'>'+onlineSourceName(s)+'</option>';}).join('')
+    +'</select></label><label class="f"><span>지도 종류</span><select id="mapTypeSelect"><option value="roadmap">일반지도</option><option value="satellite"'+(S.grid.mapType==='satellite'?' selected':'')+'>위성지도</option></select></label></div>'
+    +'<div class="row-tools"><button type="button" class="btn primary" data-online-action="source">배경 적용</button></div>'
+    +'<p class="note">좌표가 있는 사진은 같은 구역·핀을 유지하며 전환합니다. 지도 이동은 수색 범위를 바꾸지 않습니다.</p>'
+    +'<details class="settings-fold" data-fold="online-keys"><summary>온라인 지도 연결 설정</summary>'
+    +field('naverMapKey','NAVER Client ID (ncpKeyId)','','type="password" autocomplete="off" spellcheck="false" placeholder="'+(keys.naver?'저장됨 · 변경할 때만 입력':'웹 지도용 Client ID 입력')+'"')
+    +field('googleMapKey','Google Maps API 키','','type="password" autocomplete="off" spellcheck="false" placeholder="'+(keys.google?'저장됨 · 변경할 때만 입력':'Maps JavaScript API 키 입력')+'"')
+    +'<div class="row-tools"><button type="button" class="btn" data-online-action="keys">이 브라우저에 키 저장</button><button type="button" class="btn" data-online-action="forget">저장한 키 삭제</button></div>'
+    +'<p class="note">NAVER: Web Dynamic Map과 서비스 URL을 등록하세요. Google: Maps JavaScript API·결제를 활성화하고 웹사이트/API 제한을 설정하세요. Client Secret은 입력하지 않습니다. 키는 이 브라우저에 저장되며 상황 JSON·복구본에 포함되지 않습니다. 인터넷과 localhost/HTTPS 주소가 필요하며 이용량에 따라 비용이 발생할 수 있습니다.</p>'
+    +'<p class="note"><a href="https://guide.ncloud-docs.com/docs/maps-app" target="_blank" rel="noopener noreferrer">NAVER 설정 안내</a> · <a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noopener noreferrer">Google 설정 안내</a></p></details>'
+    +'<details class="settings-fold" data-fold="online-area"><summary>새 수색 범위 만들기</summary><p class="note">사진 보정 없이 시작할 때 사용합니다. 기존 사진·구역·핀은 초기화되므로, 기존 자료를 유지하려면 사진 좌표 보정 후 배경 적용을 사용하세요.</p><div class="f2">'
+    +field('onlineLat','중심 위도',center.lat,'type="number" step="any" min="-84" max="84"')
+    +field('onlineLon','중심 경도',center.lon,'type="number" step="any" min="-180" max="180"')+'</div>'
+    +field('onlineWidth','가로 범위(km)',2,'type="number" step="0.1" min="0.1" max="100"')
+    +'<div class="row-tools"><button type="button" class="btn" data-online-action="area">이 좌표로 새 수색 범위 만들기</button></div></details></div>';
+}
+function destroyOnlineHost(id){
+  var rec=onlineHosts[id];if(!rec)return;
+  delete onlineHosts[id];rec.cancelled=true;if(rec.adapter)rec.adapter.destroy();rec.element.remove();
+}
+function onlineMapReady(host){var r=host&&onlineHosts[host.id];return !!(r&&r.host===host&&r.adapter&&!r.error&&!r.fitting&&navigator.onLine!==false);}
+function onlineNotice(rec,message){
+  if(!rec.host||!rec.host.isConnected)return;
+  var status=rec.host.querySelector('.online-status');if(status){status.hidden=!message;status.querySelector('span').textContent=message;}
+  var overlay=rec.host.querySelector('.online-overlays');if(overlay)overlay.hidden=!!message;
+  updateMapWorkspaceUi(rec.host);
+}
+function failOnlineMap(rec,message){
+  if(onlineHosts[rec.host.id]!==rec)return;
+  rec.error=message;cancelMapInteraction();mapEditMode='view';pinMode=null;onlineNotice(rec,message);updatePinModeUi();
+}
+function mountOnlineMap(host){
+  var identity=mapIdentity(),rec=onlineHosts[host.id];
+  if(rec&&rec.identity!==identity){destroyOnlineHost(host.id);rec=null;}
+  if(rec){rec.host=host;host.prepend(rec.element);if(rec.adapter){rec.adapter.resize();drawOnlineMap(rec);}onlineNotice(rec,rec.error||(!rec.adapter?'온라인 지도 연결 중…':rec.fitting?'수색 범위에 맞추는 중…':''));return;}
+  var element=document.createElement('div');element.className='online-map';element.setAttribute('aria-label',onlineSourceName(S.grid.source)+' 배경');host.prepend(element);
+  rec=onlineHosts[host.id]={host:host,element:element,identity:identity,source:S.grid.source,adapter:null,error:'',x:0,y:0,zoom:1};
+  var error=!geoOK()?'좌표가 없습니다. 사진 좌표를 보정하거나 새 수색 범위를 만드세요.':onlineGeoError(S.grid.geo);
+  error=error||onlineEnvironmentError(rec.source);
+  if(error){failOnlineMap(rec,error);return;}
+  onlineNotice(rec,'온라인 지도 연결 중…');
+  var options={geo:Object.assign({},S.grid.geo),type:S.grid.mapType};
+  onlineSDK.load(rec.source,getOnlineKeys()[rec.source]).then(function(){
+    if(rec.cancelled)return null;
+    return onlineSDK.create(rec.source,element,options,function(){if(rec.adapter&&!rec.cancelled)drawOnlineMap(rec);},function(message){if(!rec.cancelled)failOnlineMap(rec,message);});
+  }).then(function(adapter){
+    if(!adapter)return;
+    if(rec.cancelled||onlineHosts[host.id]!==rec){adapter.destroy();return;}
+    rec.adapter=adapter;rec.baseZoom=adapter.getZoom();
+    if(rec.error)return;
+    fitOnlineMap(rec.host);onlineNotice(rec,'');syncMapInteractionUi(rec.host);
+  }).catch(function(error){if(!rec.cancelled)failOnlineMap(rec,error&&error.message||'온라인 지도를 불러오지 못했습니다. 키·등록 URL·결제·인터넷 연결을 확인한 뒤 다시 시도하세요.');});
+}
+function fitOnlineMap(host){
+  var rec=onlineHosts[host.id];if(!rec||!rec.adapter||rec.error||rec.fitting)return;
+  var v=mapViewState(host),w=host.clientWidth,h=host.clientHeight;
+  v.zoom=clamp(v.zoom,1,mapMaxZoom(host));
+  if(rec.width!==w||rec.height!==h){rec.width=w;rec.height=h;rec.adapter.resize();}
+  /* SDK가 바뀌는 동안에도 저장된 수색 범위는 건드리지 않는다. */
+  if(v.zoom!==rec.zoom){rec.zoom=v.zoom;rec.adapter.setZoom(rec.baseZoom+Math.log2(v.zoom));}
+  if(v.x!==rec.x||v.y!==rec.y){var dx=rec.x-v.x,dy=rec.y-v.y;rec.x=v.x;rec.y=v.y;rec.adapter.panBy(dx,dy);}
+  drawOnlineMap(rec);syncMapInteractionUi(host);
+}
+function drawOnlineMap(rec){
+  if(!rec.adapter||rec.error||rec.cancelled||!rec.host.isConnected)return;
+  var host=rec.host,fit=host.querySelector('.mapfit'),g=S.grid.geo;if(!fit||!g)return;
+  var tl=rec.adapter.project({lat:g.north,lon:g.west}),br=rec.adapter.project({lat:g.south,lon:g.east});
+  if(!tl||!br||![tl.x,tl.y,br.x,br.y].every(Number.isFinite)||br.x<=tl.x||br.y<=tl.y)return;
+  var w=br.x-tl.x,h=br.y-tl.y;
+  fit.style.width=w+'px';fit.style.height=h+'px';fit.style.transform='translate('+tl.x+'px,'+tl.y+'px)';
+  host.querySelectorAll('.gcell').forEach(function(cell){
+    var id=cell.dataset.cell,r=id.charCodeAt(0)-65,c=parseInt(id.slice(1),10)-1;
+    var a=rec.adapter.project(geoAt(c/gridCols(),r/gridRows())),b=rec.adapter.project(geoAt((c+1)/gridCols(),(r+1)/gridRows()));
+    cell.style.left=(a.x-tl.x)+'px';cell.style.top=(a.y-tl.y)+'px';cell.style.width=(b.x-a.x)+'px';cell.style.height=(b.y-a.y)+'px';
+  });
+  [['.pin.last',S.grid.pinLast],['.pin.found',S.grid.pinFound]].forEach(function(pair){
+    var el=host.querySelector(pair[0]),pin=pair[1];if(!el||!pin)return;
+    var point=rec.adapter.project(geoAt(pin.x/100,pin.y/100));el.style.left=(point.x-tl.x)+'px';el.style.top=(point.y-tl.y)+'px';
+  });
+  var circle=host.querySelector('.rcircle'),radius=moveRadiusKm(new Date());
+  if(circle&&S.grid.pinLast&&radius>0){
+    var p=geoAt(S.grid.pinLast.x/100,S.grid.pinLast.y/100),cy=rec.adapter.project(p),delta=radius*1000/MPD_LAT;
+    var n=rec.adapter.project({lat:Math.min(85,p.lat+delta),lon:p.lon});
+    var east=rec.adapter.project({lat:p.lat,lon:p.lon+delta/Math.cos(p.lat*RAD)});
+    if(!cy||!n||!east){circle.hidden=true;return;}circle.hidden=false;
+    circle.style.left=(cy.x-tl.x)+'px';circle.style.top=(cy.y-tl.y)+'px';circle.style.width=(Math.abs(east.x-cy.x)*2)+'px';circle.style.height=(Math.abs(n.y-cy.y)*2)+'px';
+  }
+  layoutMapPins(host);
+}
+function onlineMapPoint(host,x,y){
+  if(!onlineMapReady(host))return null;
+  var r=host.getBoundingClientRect();if(x<r.left||x>r.right||y<r.top||y>r.bottom-30)return null;
+  var origin=onlineHosts[host.id].element.getBoundingClientRect();
+  var p=onlineHosts[host.id].adapter.unproject({x:x-origin.left,y:y-origin.top}),g=S.grid.geo;if(!p||!g)return null;
+  var u=(p.lon-g.west)/(g.east-g.west),v=(g.north-p.lat)/(g.north-g.south);
+  if(!isFinite(u)||!isFinite(v)||u<0||u>1||v<0||v>1)return null;
+  return {x:u*100,y:v*100};
+}
+document.addEventListener('click',function(ev){
+  var button=ev.target.closest('[data-online-action]');if(!button)return;
+  var action=button.dataset.onlineAction,root=button.closest('#consoleRoot,#drawerIn')||document;
+  if(action==='retry'){
+    var host=button.closest('.cons-map,.mapwrap');if(host){destroyOnlineHost(host.id);buildGrid(host,host.id==='consMap'&&ownsEditorLock());}return;
+  }
+  if(!ensureEditor())return;
+  if(action==='source')applyMapSource(root.querySelector('#mapSourceSelect').value,root.querySelector('#mapTypeSelect').value);
+  if(action==='keys'){
+    var keys=getOnlineKeys();['naver','google'].forEach(function(k){var el=root.querySelector('#'+k+'MapKey');if(el.value.trim())keys[k]=el.value.trim();});
+    if(saveOnlineKeys(keys)){Object.keys(onlineHosts).forEach(destroyOnlineHost);renderAll();mapMsg('지도 키를 이 브라우저에 저장했습니다. 키를 교체했다면 화면을 새로고침한 뒤 배경을 적용하세요.','ok');}
+  }
+  if(action==='forget'){
+    try{localStorage.removeItem(ONLINE_KEYS_KEY);}catch(ignore){mapMsg('키를 삭제하지 못했습니다. 브라우저 사이트 설정을 확인하세요.','err');return;}
+    Object.keys(onlineHosts).forEach(destroyOnlineHost);renderAll();mapMsg('이 브라우저에 저장한 지도 키를 삭제했습니다.','ok');
+  }
+  if(action==='area'){
+    var lat=root.querySelector('#onlineLat').value.trim(),lon=root.querySelector('#onlineLon').value.trim();
+    if(!lat||!lon){mapMsg('중심 위도와 경도를 입력하세요.','warn');return;}
+    createOnlineArea(lat,lon,root.querySelector('#onlineWidth').value,root.querySelector('#mapSourceSelect').value,root.querySelector('#mapTypeSelect').value);
+  }
+});
+window.addEventListener('offline',function(){Object.keys(onlineHosts).forEach(function(id){failOnlineMap(onlineHosts[id],'인터넷 연결이 끊겼습니다. 다시 연결 후 재시도하거나 사진·오프라인을 선택하세요.');});});
+window.addEventListener('storage',function(ev){if(ev.key===ONLINE_KEYS_KEY){Object.keys(onlineHosts).forEach(destroyOnlineHost);renderGridAll();}});
+
 var pinMode = null;      /* 'last' | 'found' | 'ref1' | 'ref2' | null */
 var mapEditMode = 'view'; /* 창별 보기 설정이며 출동 데이터에는 저장하지 않는다. */
 var mapViews = Object.create(null);
 var mapGesture = null;
 function mapIdentity(){
-  return [S.meta.epoch,stateLifecycleSeq,S.grid.mapId||'',S.grid.mapVer||0,S.grid.generation||0].join('|');
+  return [S.meta.epoch,stateLifecycleSeq,S.grid.mapId||'',S.grid.mapVer||0,S.grid.generation||0,S.grid.source||'image',S.grid.mapType||'roadmap',JSON.stringify(S.grid.geo)].join('|');
 }
 function mapViewState(host){
   var key=host&&host.id||'mapWrap',identity=mapIdentity(),rec=mapViews[key];
@@ -2771,30 +3371,51 @@ function syncMapInteractionUi(host){
   host.dataset.mapMode=mode;
   host.classList.toggle('map-paint',mode==='paint');host.classList.toggle('map-view',mode==='view');
   host.classList.toggle('placing-pin',mode==='pin');
-  host.classList.toggle('map-pan-enabled',mode!=='paint'&&mapViewState(host).zoom>1);
+  host.classList.toggle('map-pan-enabled',mode!=='paint'&&(isOnlineMap()||mapViewState(host).zoom>1));
+}
+function mapMaxZoom(host){
+  var rec=host&&onlineHosts[host.id];
+  return isOnlineMap()&&rec&&isFinite(rec.baseZoom)?Math.max(1,Math.min(16,Math.pow(2,21-rec.baseZoom))):16;
 }
 function setMapView(host,patch){
   if(!host)return;
   cancelMapInteraction();
+  if(isOnlineMap()&&onlineHosts[host.id]&&onlineHosts[host.id].fitting)return mapViewState(host);
   var v=mapViewState(host),old=v.zoom;patch=patch||{};
-  if(patch.zoom!==undefined)v.zoom=clamp(num(patch.zoom,old),1,16);
-  v.x=patch.x!==undefined?num(patch.x,0):v.x*v.zoom/old;
-  v.y=patch.y!==undefined?num(patch.y,0):v.y*v.zoom/old;
+  if(patch.zoom!==undefined)v.zoom=clamp(num(patch.zoom,old),1,mapMaxZoom(host));
+  v.x=patch.x!==undefined?num(patch.x,0):(isOnlineMap()?v.x:v.x*v.zoom/old);
+  v.y=patch.y!==undefined?num(patch.y,0):(isOnlineMap()?v.y:v.y*v.zoom/old);
   fitMapBox(host);host.dispatchEvent(new CustomEvent('mapviewchange',{bubbles:true}));
   return v;
 }
-function resetMapView(host){return setMapView(host,{zoom:1,x:0,y:0});}
+function resetMapView(host){
+  var rec=host&&onlineHosts[host.id];
+  if(isOnlineMap()&&rec&&rec.adapter&&!rec.error){
+    if(rec.fitting)return mapViewState(host);
+    cancelMapInteraction();rec.fitting=true;onlineNotice(rec,'수색 범위에 맞추는 중…');
+    var v=mapViewState(host);
+    Promise.resolve(rec.adapter.fitBounds(S.grid.geo)).then(function(){
+      if(rec.cancelled||onlineHosts[host.id]!==rec||rec.error)return;
+      rec.fitting=false;rec.baseZoom=rec.adapter.getZoom();v.zoom=rec.zoom=1;v.x=rec.x=0;v.y=rec.y=0;
+      drawOnlineMap(rec);onlineNotice(rec,'');rec.host.dispatchEvent(new CustomEvent('mapviewchange',{bubbles:true}));
+    }).catch(function(){if(!rec.cancelled)failOnlineMap(rec,'수색 범위 맞춤에 실패했습니다. 다시 연결해 주세요.');});
+    return v;
+  }
+  return setMapView(host,{zoom:1,x:0,y:0});
+}
 function setMapEditMode(mode){
   cancelMapInteraction();pinMode=null;mapEditMode=mode==='paint'?'paint':'view';
   var host=$('consMap');
   if(host&&mapEditMode==='paint'&&typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches){
     var sz=mapBaseSize(host),minimum=Math.max(gridCols()*44/Math.max(1,sz.w),gridRows()*44/Math.max(1,sz.h),1);
+    if(isOnlineMap())minimum=Math.pow(2,Math.ceil(Math.log2(minimum)));
     if(mapViewState(host).zoom<minimum)setMapView(host,{zoom:minimum});
   }
   updatePinModeUi();
   if(typeof updateMapWorkspaceUi==='function')updateMapWorkspaceUi(host);
 }
 function getMapPoint(host,clientX,clientY){
+  if(isOnlineMap())return onlineMapPoint(host,clientX,clientY);
   var fit=host&&host.querySelector('.mapfit');if(!fit)return null;
   var r=fit.getBoundingClientRect(),h=host.getBoundingClientRect();
   if(!r.width||!r.height||clientX<r.left||clientX>r.right||clientY<r.top||clientY>r.bottom
@@ -2820,6 +3441,7 @@ function cancelMapInteraction(){
 }
 function mapEditsAllowed(mode){
   if(!ensureEditor())return false;
+  if(isOnlineMap()&&(!onlineMapReady($('consMap'))||/^ref[12]$/.test(mode||''))){mapMsg('온라인 지도 연결을 확인하세요. 좌표 보정은 사진·오프라인에서만 할 수 있습니다.','warn');return false;}
   return /^ref[12]$/.test(mode||'')||typeof ensureMapReviewed!=='function'||ensureMapReviewed();
 }
 
@@ -2993,6 +3615,7 @@ function paintTargetsSelected(){
 }
 
 function fitMapBox(host){
+  if(isOnlineMap()){fitOnlineMap(host);return;}
   var fit=host&&host.querySelector('.mapfit');if(!fit)return;
   var sz=mapBaseSize(host);if(!sz.w||!sz.h)return;
   var v=mapViewState(host),w=sz.w*v.zoom,h=sz.h*v.zoom;
@@ -3015,12 +3638,15 @@ function buildGrid(host, interactive){
   cancelMapInteraction();
   if(host.id==='consMap'&&!interactive){mapEditMode='view';pinMode=null;}
   var g = S.grid;
+  var online=isOnlineMap();
+  if(!online)destroyOnlineHost(host.id);
+  host.classList.toggle('online-active',online);
   var hadGridFocus=!!(interactive&&host.contains(document.activeElement));
   var html = '<div class="mapfit">';
-  if(MAPDATA){
+  if(MAPDATA&&!online){
     html += '<img class="mapimg" alt="수색 지도 또는 현장 사진" draggable="false" src="'+MAPDATA+'" style="opacity:'
           + num(g.mapOpacity,0.85) + '">';
-  } else if(interactive){
+  } else if(interactive&&!online){
     /* 표출 화면에는 운영요원용 안내문을 띄우지 않는다. 격자 뒤로 비쳐 읽히지도 않고,
        지휘부가 보는 화면에 조작 지시문이 남는다. 지도 미적용 여부는 카드 헤더로 알린다. */
     html += '<div class="mapnote">지도 이미지 없음<br>'
@@ -3065,14 +3691,16 @@ function buildGrid(host, interactive){
   if(g.pinFound) html += '<div class="pin found" style="left:'+g.pinFound.x+'%;top:'+g.pinFound.y
     + '%"><span class="plb">'+esc(pinLabel('발견', g.pinFound))
     + '</span><span class="pdot"></span><span class="stem"></span></div>';
-  if(interactive){
+  if(interactive&&!online){
     ['ref1','ref2'].forEach(function(k,i){
       var rp = g[k]; if(!rp) return;
       html += '<div class="refpt" style="left:'+rp.x+'%;top:'+rp.y+'%">'+(i+1)+'</div>';
     });
   }
   html += '</div>';
+  if(online)html='<div class="online-overlays" hidden>'+html+'</div><div class="online-status" role="status"><span>온라인 지도 연결 중…</span><button type="button" class="btn sm" data-online-action="retry">다시 연결</button></div>';
   host.innerHTML = html;
+  if(online)mountOnlineMap(host);
   fitMapBox(host); observeMapFit(host);
 
   function setGridFocus(el,moveFocus){
@@ -3112,6 +3740,8 @@ function buildGrid(host, interactive){
   };
   host.onpointerdown=function(ev){
     if(ev.button!=null&&ev.button!==0)return;
+    if(ev.target.closest&&ev.target.closest('.online-status,a'))return;
+    if(online&&(!onlineMapReady(host)||ev.clientY>host.getBoundingClientRect().bottom-30))return;
     if(ev.pointerType==='touch'&&ev.isPrimary===false){cancelMapInteraction();return;}
     if(mapGesture){cancelMapInteraction();return;}
     var mode=editingNow()?(pinMode?'pin':mapEditMode):'view';
@@ -3125,7 +3755,7 @@ function buildGrid(host, interactive){
       ev.preventDefault();
       painting={touched:{},done:[],before:{},after:{},state:S,epoch:SESSION_EPOCH,revision:S.meta.revision};
       paintCell(c);
-    }else if(v.zoom>1){ev.preventDefault();host.classList.add('map-dragging');}
+    }else if(online||v.zoom>1){ev.preventDefault();host.classList.add('map-dragging');}
     /* 100% 보기와 핀 모드에서는 브라우저의 세로 스크롤 취소 신호를 그대로 받는다. */
     try{host.setPointerCapture(ev.pointerId);}catch(ignore){}
   };
@@ -3136,7 +3766,7 @@ function buildGrid(host, interactive){
     if(Math.hypot(dx,dy)>8)p.moved=true;
     if(p.mode==='paint'){
       ev.preventDefault();var el=cellUnder(ev);if(el)paintCell(el);
-    }else if(p.moved&&mapViewState(host).zoom>1){
+    }else if(p.moved&&(online||mapViewState(host).zoom>1)){
       ev.preventDefault();var v=mapViewState(host);v.x=p.x+dx;v.y=p.y+dy;fitMapBox(host);
     }
   };
@@ -3148,7 +3778,7 @@ function buildGrid(host, interactive){
     if(p.mode==='paint'){finishPaint();return;}
     if(p.mode==='pin'&&pinMode===p.pin&&!p.moved&&Math.hypot(ev.clientX-p.startX,ev.clientY-p.startY)<=8){
       var pt=getMapPoint(host,ev.clientX,ev.clientY);
-      if(!pt||!getMapPoint(host,p.startX,p.startY)){mapMsg('사진 안의 위치를 선택하세요. 여백에는 핀을 놓을 수 없습니다.','warn');return;}
+      if(!pt||!getMapPoint(host,p.startX,p.startY)){mapMsg(online?'고정 수색 범위 안의 위치를 선택하세요. 범위 밖에는 핀을 놓을 수 없습니다.':'사진 안의 위치를 선택하세요. 여백에는 핀을 놓을 수 없습니다.','warn');return;}
       ev.preventDefault();var c=cellUnder(ev);if(c)setGridFocus(c,true);placeMapPoint(pt.x,pt.y);
     }
     host.dispatchEvent(new CustomEvent('mapviewchange',{bubbles:true}));
@@ -3199,7 +3829,7 @@ function renderGridStats(){
   $('gridMeta').innerHTML = gridRows()+'×'+gridCols()+' = <b>'+st.total+'</b> 구역'
     + ' · 완료 <b>'+n[2]+'</b> · 지도폭 '+Math.round(mapWidthMeters())+'m'
     + (geoOK()?' · 좌표 <b>보정됨</b>':' · 좌표 미보정')
-    + (S.grid.hasMap?'':' · <b>지도 미적용</b>');
+    + (isOnlineMap()?' · <b>'+onlineSourceName(S.grid.source)+'</b>':(S.grid.hasMap?'':' · <b>배경 사진 없음</b>'));
 }
 
 function renderSafety(){
@@ -3577,6 +4207,7 @@ function mapToolsHtml(hostId,editable){
     +'</div></details></div>';
 }
 function ensureMapReviewed(){
+  if(isOnlineMap()&&!onlineMapReady($('consMap'))){mapMsg('온라인 지도 연결이 완료된 뒤 편집할 수 있습니다.','warn');return false;}
   if(!S.grid.spatialReview)return true;
   mapMsg('이전 지도·표식을 대조한 뒤 지도·표식 확인 완료를 눌러 주세요.','warn');return false;
 }
@@ -3613,11 +4244,11 @@ function updateMapWorkspaceUi(host){
     if(action==='view'||action==='paint'){
       var selected=mapEditMode===action&&!pinMode;
       b.setAttribute('aria-pressed',String(selected));b.classList.toggle('primary',selected);
-      b.disabled=action==='paint'&&(!ownsEditorLock()||S.grid.spatialReview);
+      b.disabled=action==='paint'&&(!ownsEditorLock()||S.grid.spatialReview||(isOnlineMap()&&!onlineMapReady(host)));
     }
     if(action==='expand'){b.textContent='지도 크게 보기';b.hidden=mapExpandedTarget===host.id;}
     if(action==='zoom-out')b.disabled=state.zoom<=1;
-    if(action==='zoom-in')b.disabled=state.zoom>=16;
+    if(action==='zoom-in')b.disabled=state.zoom>=mapMaxZoom(host);
   });
   workspace.querySelectorAll('[data-map-layer]').forEach(function(el){
     var key=el.dataset.mapLayer;if(key==='fill')el.value=Math.round(mapLayers.fill*100);else el.checked=mapLayers[key];
@@ -3639,7 +4270,7 @@ function updateMapWorkspaceUi(host){
       var coords=geoOK()?geoAt(point.x/100,point.y/100):null;
       points.push(p[1]+' '+(coords?fmtLatLon(coords):'원본 '+point.x+'%, '+point.y+'%'));
     });
-    var text=points.join(' · ')||(S.grid.hasMap?'사진 '+S.grid.mapW+'×'+S.grid.mapH+' · '+(geoOK()?'좌표 보정됨':'좌표 미보정'):'지도·사진 미적용');
+    var text=points.join(' · ')||(isOnlineMap()?onlineSourceName(S.grid.source)+' · 고정 수색 범위 · 가로 '+Math.round(mapWidthMeters())+'m':S.grid.hasMap?'사진 '+S.grid.mapW+'×'+S.grid.mapH+' · '+(geoOK()?'좌표 보정됨':'좌표 미보정'):'지도·사진 미적용');
     if(S.grid.spatialReview)text='지도·표식 재확인 필요 · '+text;
     if(position.textContent!==text)position.textContent=text;
   }
@@ -3692,7 +4323,7 @@ document.addEventListener('click',function(ev){
   }
   var view=mapViewState(host);
   if(action==='fit'){resetMapView(host);return;}
-  if(action==='zoom-in'||action==='zoom-out'){setMapView(host,{zoom:clamp(view.zoom*(action==='zoom-in'?1.25:.8),1,16)});return;}
+  if(action==='zoom-in'||action==='zoom-out'){var stepZoom=isOnlineMap()?2:1.25;setMapView(host,{zoom:clamp(view.zoom*(action==='zoom-in'?stepZoom:1/stepZoom),1,16)});return;}
   var step=Math.max(40,Math.min(host.clientWidth,host.clientHeight)*.25),patch={};
   if(action==='pan-left')patch.x=view.x+step;if(action==='pan-right')patch.x=view.x-step;
   if(action==='pan-up')patch.y=view.y+step;if(action==='pan-down')patch.y=view.y-step;
@@ -4093,6 +4724,7 @@ function cellGeoLabel(){
 }
 
 function geoPanel(){
+  if(isOnlineMap())return '<div class="geo"><p class="note">온라인 지도는 고정 수색 범위의 위경도를 사용합니다. 사진 좌표 보정은 사진·오프라인으로 전환한 뒤 적용하세요.</p></div>';
   function refRow(i){
     var k = 'ref'+i, r = S.grid[k];
     var h = '<div class="geo-row">'
@@ -4501,7 +5133,7 @@ function consoleHtml2(){
         + '<div class="map-mode" id="mapModeStatus" role="status" aria-live="polite" hidden></div>'
         + '<div class="cons-map" id="consMap"></div>'
         + '<div class="map-position" data-map-position="consMap"></div>'
-        + (!S.grid.hasMap?'<div class="map-empty-actions"><button class="btn primary" data-act="mapfile">지도·현장 사진 넣기</button><span>이미지를 끌어다 놓거나 붙여넣을 수도 있습니다. 지도 없이 격자를 사용할 때는 구역 칠하기를 선택하세요.</span></div>':'')
+        + (!S.grid.hasMap&&!isOnlineMap()?'<div class="map-empty-actions"><button class="btn primary" data-act="mapfile">지도·현장 사진 넣기</button><span>이미지를 끌어다 놓거나 붙여넣을 수도 있습니다. 지도 없이 격자를 사용할 때는 구역 칠하기를 선택하세요.</span></div>':'')
         + '<div class="row-tools">'
           + '<button class="btn sm" data-act="pin" data-p="last">최종목격 핀 배치</button>'
           + '<button class="btn sm" data-act="pin" data-p="found">발견 핀 배치</button>'
@@ -4510,6 +5142,7 @@ function consoleHtml2(){
         + '</div>'
       + '</div>'
       + '<div>'
+      + onlineMapPanel()
       + '<div class="paste-zone'+(S.grid.hasMap?' has':'')+'" id="pasteZone" tabindex="0" role="button" aria-label="지도 이미지 붙여넣기 또는 파일 선택">'
           + (S.grid.hasMap
               ? '<b>지도 적용됨</b> · '+intv(S.grid.mapW,0)+'×'+intv(S.grid.mapH,0)
@@ -4963,12 +5596,14 @@ function bindConsole(root){
     }
     else if(act==='refpick'){setPinMode(b.getAttribute('data-r'),root);}
     else if(act==='geoapply'){
+      if(isOnlineMap())return;
       var gr = geoFromRefs(S.grid.ref1, S.grid.ref2);
       if(gr.err){ alert(gr.err); return; }
       S.grid.geo = gr.geo;commit();
       mapMsg('2점 보정을 적용했습니다 · 지도 가로 '+Math.round(mapWidthMeters())+'m','ok');
     }
     else if(act==='geoclear'){
+      if(isOnlineMap())return;
       if(!confirm('좌표 보정을 해제할까요? 격자와 핀의 위경도 표시가 사라집니다.')) return;
       S.grid.geo = null; commit();
       mapMsg('좌표 보정을 해제했습니다.','warn');
@@ -5197,6 +5832,7 @@ function applyGeoFile(file,opSeq,opEpoch,fileSeq,targetMapId,targetMapVer){
   if(opEpoch===undefined)opEpoch=SESSION_EPOCH;
   if(fileSeq===undefined)fileSeq=++fileMutationSeq;
   if(!ensureEditor() || !file) return;
+  if(isOnlineMap()){mapMsg('좌표 파일은 사진·오프라인으로 전환한 뒤 적용하세요.','warn');return;}
   if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))return;
   if(file.size > 2*1024*1024){ mapMsg('좌표 파일이 너무 큽니다.','err'); return; }
   if(!S.grid.hasMap){ mapMsg('먼저 지도 이미지를 넣은 뒤 좌표 파일을 적용하세요.','err'); return; }
@@ -5667,6 +6303,7 @@ function openDrawer(){
 function closeDrawer(){
   if(mapExpandedTarget==='consMap')closeMapWorkspace();
   $('drawer').hidden = true;
+  destroyOnlineHost('consMap');
   $('drawerIn').innerHTML = '';
   var back=drawerLastFocus;drawerLastFocus=null;
   if(back&&back.focus&&document.contains(back))back.focus();
@@ -5700,7 +6337,7 @@ document.addEventListener('keydown', function(ev){
   if(typing) return;
   if(mapExpandedTarget&&(ev.key==='+'||ev.key==='='||ev.key==='-'||ev.key==='_')){
     ev.preventDefault();var mapHost=$(mapExpandedTarget),mapView=mapViewState(mapHost);
-    setMapView(mapHost,{zoom:mapView.zoom*((ev.key==='+'||ev.key==='=')?1.25:.8)});return;
+    var zoomStep=isOnlineMap()?2:1.25;setMapView(mapHost,{zoom:mapView.zoom*((ev.key==='+'||ev.key==='=')?zoomStep:1/zoomStep)});return;
   }
   /* 쓸다가 잘못 지나가는 경우가 가장 흔하다. 입력칸에 있을 때는 동작하지 않는다. */
   if((ev.ctrlKey || ev.metaKey) && (ev.key === 'z' || ev.key === 'Z')){
