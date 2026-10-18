@@ -577,6 +577,8 @@ python3 -m http.server 8899 --bind 127.0.0.1
 
 지역 지도 엔진은 [offline-map-engine.js](./offline-map-engine.js), 로컬 표시 도구와 라이선스는 [vendor](./vendor/README.md)에 있습니다. 저장 지도는 별도 IndexedDB에 보관하고, [service-worker.js](./service-worker.js)는 검증된 앱 파일만 캐시합니다. 온라인 사업자의 SDK·지도 요청은 캐시하지 않습니다. WebGL을 사용할 수 없는 브라우저에서는 지역 지도가 표시되지 않으므로 대상 PC에서 오프라인 재시작까지 확인하세요.
 
+검증 대상 파일은 `.gitattributes`로 LF 줄바꿈을 유지해 Windows의 Git 자동 줄바꿈 변환에도 같은 해시를 사용합니다.
+
 앱·지도 엔진·벤더 파일 또는 서비스 워커를 수정한 뒤에는 파일 해시 목록도 갱신합니다. 문서 생성과 별개이며, 누락하면 앱의 오프라인 준비에서 파일 검증에 실패합니다.
 
 ```bash

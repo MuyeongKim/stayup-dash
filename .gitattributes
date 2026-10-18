@@ -1,0 +1,7 @@
+# Offline shell hashes verify exact bytes on every platform.
+stayup-dash.html text eol=lf
+offline-map-engine.js text eol=lf
+offline-shell.json text eol=lf
+service-worker.js text eol=lf
+vendor/*.js text eol=lf
+vendor/*.css text eol=lf
