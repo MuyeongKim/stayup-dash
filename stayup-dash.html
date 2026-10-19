@@ -1069,9 +1069,117 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 #sec-ai [data-ai-status],#sec-ai [data-ai-folder-status]{overflow-wrap:anywhere}#sec-ai .row-tools{flex-wrap:wrap}
 @media(max-width:600px){.ai-candidate .row-tools>*{max-width:100%}.ai-response-note{flex-basis:100%}}
 
+/* Approved OpenDesign layout: keep the operational data model and controls. */
+.skip-priority{position:fixed;left:12px;top:-100px;z-index:9300;padding:12px 18px;background:var(--text);color:var(--bg);font:700 15px/1.4 system-ui}
+.skip-priority:focus{top:12px}
+.priority-card{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 14px;align-items:center;background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--accent);border-radius:8px;padding:10px 12px;color:var(--text);font:15px/1.5 system-ui,sans-serif;min-width:0}
+.priority-label{font-size:13px;font-weight:800;white-space:nowrap}
+.priority-text{font-weight:750;overflow-wrap:anywhere;white-space:pre-wrap;min-width:0}
+.priority-toggle{min-width:76px;min-height:44px;font-size:13px}
+.priority-details{grid-column:1/-1;max-height:28svh;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);font-size:14px}
+.priority-details p{margin:0 0 8px;color:var(--muted);font-size:13px}
+.priority-details .tk-track{height:auto;display:block;overflow:visible}
+.priority-details .tk-move,.priority-full{font-size:14px;font-weight:500;white-space:pre-wrap;overflow-wrap:anywhere;animation:none!important;transform:none!important}
+.priority-details .tk-right{font-size:13px;white-space:normal;flex-wrap:wrap;margin-top:8px}
+.ticker.priority-card{height:auto;min-height:64px;overflow:visible}
+.ticker .priority-details{position:absolute;bottom:calc(100% + 8px);right:0;width:min(720px,100%);z-index:65;box-shadow:0 -8px 28px #0008}
+.far-view .ticker.priority-card{padding:10px 14px;gap:8px 14px}
+.far-view .priority-text{font-size:calc(1.4 * var(--unit))}
+.operation-brief{margin-bottom:12px}
+.operation-brief .mobile-verdict{margin:6px 0 0}
+.operation-brief .mobile-verdict button{font-size:13px}
+.priority-card:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+.hdr-clock .audio-arm{position:static;font-size:13px;line-height:1.35;min-height:44px;padding:6px;margin-top:6px;max-width:100%}
+@media(min-width:1001px) and (max-height:900px){
+  html{font-size:calc(max(13px,min(100vw / 120,100vh / 67.5)) * var(--s))}
+  .board,.board.far-view{height:100svh;min-height:700px;padding:10px 12px;gap:8px;grid-template-rows:auto minmax(0,1fr) auto}
+  .board .hdr{grid-template-columns:210px minmax(0,1fr) 100px;gap:8px}
+  .board .hdr-id,.board .hdr-clock{padding:8px}
+  .board .brand{font-size:18px;flex-wrap:wrap;gap:5px}
+  .board .brand .app-version{font-size:13px}
+  .board .mission{font-size:19px}
+  .board .mission-sub,.board .cdate{font-size:13px}
+  .board .clock{font-size:24px}
+  .board .kpis{gap:6px}
+  .board .kpi{padding:8px;min-height:88px}
+  .board .kpi-l,.board .kpi-s{font-size:13px}
+  .board .kpi-v{font-size:min(calc(32px * var(--s)),24cqw)}
+  .board .kpi-v small{font-size:13px}
+  .board .kpi-flight .kpi-v{font-size:min(calc(28px * var(--s)),18cqw)}
+  .board.far-view .kpi-v{font-size:min(calc(44px * var(--s)),24cqw)}
+  .board.far-view .kpi-flight .kpi-v{font-size:min(calc(38px * var(--s)),18cqw)}
+  .board .cols{grid-template-columns:220px minmax(0,1fr) 300px;gap:8px}
+  .board .col-l,.board .col-r{display:flex;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;gap:8px}
+  .board .col-l>.card,.board .col-r>.card{flex:0 0 auto;min-height:0!important;max-height:none!important}
+  .board .col-c{grid-template-rows:minmax(0,1fr) minmax(112px,.33fr);gap:8px}
+  .board .card-h{padding:6px 8px;gap:4px}
+  .board .card-h h2{font-size:15px}
+  .board .card-h .h-right{font-size:13px}
+  .board .card-b{padding:8px}
+  .board .cov{gap:4px 8px}
+  .board .legend{flex:1 1 auto;font-size:13px;gap:6px}
+  .board .cov-pct{font-size:28px}
+  .board .cov-pct small,.board .radchip .rl,.board .radchip .rv small{font-size:13px}
+  .board .radchip .rv{font-size:20px}
+  .board .map-tools .btn,.board .map-options>summary{min-height:44px}
+  .board .map-position{font-size:13px;padding:3px 0}
+  .board .sf .sl,.board .sf.wide .sv,.board .battery-stamp,.board .batt-cell .bl,.board .endur .el{font-size:13px}
+  .board .priority-text{font-size:calc(16px * var(--s))}
+  .board.far-view .priority-text{font-size:calc(18px * var(--s))}
+  .board .d-top,.board .d-foot{font-size:13px}
+}
+@media(min-width:1001px) and (max-height:699px){
+  body.mode-display{height:auto;overflow:auto}
+}
+@media(max-width:1000px){
+  html{font-size:16px}
+  body.mode-display{height:auto;overflow:auto}
+  .board,.board.far-view{display:flex;flex-direction:column;height:auto;min-height:100svh;padding:10px 12px;gap:12px}
+  .board .hdr{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  .board .hdr-id{padding:10px 12px}
+  .board .brand{font-size:20px;flex-wrap:wrap}
+  .board .brand .app-version{font-size:13px}
+  .board .mission{font-size:20px}
+  .board .mission-sub{font-size:14px}
+  .board .hdr-clock{flex-direction:row;flex-wrap:wrap;gap:12px;padding:6px}
+  .board .clock{font-size:20px}.board .cdate{font-size:13px}
+  .board .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .board .kpi{padding:8px;min-height:72px}
+  .board .kpi-l,.board .kpi-s{font-size:13px}
+  .board .kpi-v{font-size:28px}.board .kpi-v small{font-size:13px}
+  .board .kpi-flight .kpi-v{font-size:24px}
+  .board .cols,.board .col{display:flex;flex-direction:column;gap:12px}
+  .board .col-c{order:-1}
+  .board .col>.card{min-height:0!important;max-height:none!important;flex:none}
+  .board .card-h h2{font-size:16px}.board .card-h .h-right{font-size:13px}
+  .board .card-b{overflow:visible;padding:10px}
+  .board .mapwrap{min-height:320px}
+  .board .legend{font-size:13px;gap:8px}
+  .board .gcell{font-size:15px}.board .gcell .by{font-size:13px}
+  .board .cov-pct{font-size:28px}.board .radchip .rl{font-size:13px}.board .radchip .rv{font-size:22px}
+  .board .map-position,.board .battery-stamp,.board .sf .sl{font-size:13px}
+  .board .sf .sv,.board .sf.wide .sv{font-size:16px}
+  .board .map-tools .btn,.board .map-options>summary{min-height:44px}
+  .board .ticker.priority-card{position:sticky;top:0;z-index:60;flex:none}
+  .priority-card{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px 12px}
+  .priority-label{grid-column:1;grid-row:1}
+  .priority-toggle{grid-column:2;grid-row:1}
+  .priority-text{grid-column:1/-1;grid-row:2;font-size:15px!important}
+  .priority-details{grid-row:3;max-height:24svh}
+  .ticker .priority-details{position:static;width:auto;box-shadow:none}
+  .operation-brief{position:sticky;top:0;z-index:55;background:#0A0F15;padding:6px 0;margin:0 0 10px}
+  .operation-brief .mobile-verdict{display:block;position:static;padding:0;border:0;background:transparent}
+  .operation-brief .mobile-verdict button{font-family:inherit;font-weight:700;line-height:1.4;display:block;width:100%;text-align:left;background:var(--surface);color:var(--text);border:1px solid var(--control-border);border-radius:6px;padding:8px 10px;min-height:44px}
+  .cons-top{position:static}
+  .cons input,.cons select,.cons textarea{scroll-margin-top:300px}
+  .alert-banner{flex-wrap:wrap;font-size:16px;padding:10px}
+  .alert-banner .ab-k{font-size:24px}.alert-banner .ab-x{font-size:16px;flex-basis:60%}
+  .alert-banner button{min-height:44px;font-size:14px}
+}
 </style>
 </head>
 <body>
+<a class="skip-priority" href="#consolePriority">현재 우선 지시로 건너뛰기</a>
 <div id="dimmer"></div>
 <div class="system-alert" id="systemAlert" role="alert" hidden></div>
 
@@ -1079,7 +1187,6 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 <div class="board" id="board" hidden>
 
   <div class="alert-banner" id="alertBanner" role="alert" aria-live="assertive" aria-atomic="true" hidden></div>
-  <button class="audio-arm" id="audioArm" type="button" hidden>&#9654;&#65038; 경보음 준비</button>
 
   <header class="hdr">
     <div class="hdr-id">
@@ -1114,6 +1221,7 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
     <div class="hdr-clock">
       <div class="clock num" id="hClock">--:--:--</div>
       <div class="cdate" id="hDate">&nbsp;</div>
+      <button class="audio-arm" id="audioArm" type="button" hidden>&#9654;&#65038; 경보음 준비</button>
     </div>
   </header>
 
@@ -1180,10 +1288,15 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
     </section>
   </main>
 
-  <footer class="ticker">
-    <span class="tk-lb">지휘부 지시</span>
-    <div class="tk-track" tabindex="0" aria-label="지휘부 지시, 포커스하거나 마우스를 올리면 흐름이 멈춥니다"><div class="tk-move" id="tkMove">—</div></div>
-    <div class="tk-right" id="tkRight"></div>
+  <footer class="ticker priority-card" id="displayPriority" tabindex="-1" aria-labelledby="displayPriorityLabel">
+    <span class="priority-label" id="displayPriorityLabel">현재 우선 지시</span>
+    <div class="priority-text" data-priority-text>우선 지시 미입력</div>
+    <button type="button" class="btn priority-toggle" data-priority-toggle="display" aria-expanded="false" aria-controls="displayPriorityDetails">상세 보기</button>
+    <div class="priority-details" id="displayPriorityDetails" tabindex="0" aria-label="지휘부 지시 전문과 연락 정보" hidden>
+      <p>지휘부 지시 전문 · 입력 원문</p>
+      <div class="tk-track"><div class="tk-move" id="tkMove">—</div></div>
+      <div class="tk-right" id="tkRight"></div>
+    </div>
   </footer>
 </div>
 
@@ -4300,28 +4413,60 @@ function renderLog(){
   $('logMeta').innerHTML = '총 <b>'+ev.length+'</b>건';
 }
 
-function renderTicker(){
-  var m = S.mission;
-  var txt = (m.orders||'').trim() || '지시사항 없음';
-  var far=S.ui.viewPreset==='far';
-  if(far)txt=(m.priorityOrder||'').trim()||(m.orders&&m.orders.length<=80?m.orders:'원거리용 우선 지시 미입력 · 조작 패널의 지휘부 지시 전문을 확인하세요');
-  var mv = $('tkMove');
-  /* 문자 수(44자)로 판단하면 트랙보다 짧은 문장도 두 벌이 동시에 보여
-     같은 지시가 연달아 두 번 적힌 것처럼 읽힌다. 실제로 넘칠 때만 흘린다. */
-  mv.classList.remove('scroll'); mv.style.animationDuration=''; mv.textContent = txt;
-  var track = mv.parentNode;
-  if(track)track.setAttribute('aria-label','지휘부 지시: '+txt+(far?'':' · 포커스하거나 마우스를 올리면 흐름이 멈춥니다'));
-  if(!far&&!MOTION_QUERY.matches && track && mv.scrollWidth > track.clientWidth + 2){
-    mv.innerHTML = esc(txt)+'&nbsp;&nbsp;&nbsp;&nbsp;'+esc(txt)+'&nbsp;&nbsp;&nbsp;&nbsp;';
-    mv.classList.add('scroll');
-    mv.style.animationDuration = Math.max(14, txt.length*0.45)+'s';
-  }
-  var bits = [];
-  if(m.trs) bits.push('TRS <b>'+esc(m.trs)+'</b>');
-  if(m.callsign) bits.push('호출 <b>'+esc(m.callsign)+'</b>');
-  if(m.briefing) bits.push('브리핑 <b>'+esc(m.briefing)+'</b>');
-  $('tkRight').innerHTML = bits.join(' · ') || '';
+/* Presentation only: priority/full orders keep their existing saved fields. */
+var priorityOpen={console:false,display:false};
+var priorityMobile=window.matchMedia('(max-width:1000px)');
+var displayPrioritySlot=document.createComment('desktop priority position');
+$('displayPriority').before(displayPrioritySlot);
+function priorityText(){
+  var short=(S.mission.priorityOrder||'').trim(),full=(S.mission.orders||'').trim();
+  return short||(full&&full.length<=80?full:'우선 지시 미입력 · 상세 보기에서 지휘부 지시 전문을 확인하세요.');
 }
+function priorityContact(){
+  var m=S.mission,bits=[];
+  if(m.trs)bits.push('TRS '+m.trs);
+  if(m.callsign)bits.push('호출 '+m.callsign);
+  if(m.briefing)bits.push('브리핑 '+m.briefing);
+  return bits.join(' · ')||'연락 정보 미입력';
+}
+function consolePriorityHtml(){
+  return '<section class="priority-card" id="consolePriority" tabindex="-1" aria-labelledby="consolePriorityLabel">'
+    +'<span class="priority-label" id="consolePriorityLabel">현재 우선 지시</span>'
+    +'<div class="priority-text" data-priority-text>'+esc(priorityText())+'</div>'
+    +'<button type="button" class="btn priority-toggle" data-priority-toggle="console" aria-expanded="'+priorityOpen.console+'" aria-controls="consolePriorityDetails">'+(priorityOpen.console?'상세 접기':'상세 보기')+'</button>'
+    +'<div class="priority-details" id="consolePriorityDetails" tabindex="0" aria-label="지휘부 지시 전문과 연락 정보"'+(priorityOpen.console?'':' hidden')+'>'
+    +'<p>지휘부 지시 전문 · 입력 원문</p><div class="priority-full" data-priority-full>'+esc(S.mission.orders||'지시 전문 미입력')+'</div>'
+    +'<p data-priority-contact>'+esc(priorityContact())+'</p>'
+    +'<button type="button" class="btn" data-act="verdictnav" data-sec="sec-mission" data-path-target="mission.priorityOrder">우선 지시 입력으로 이동</button></div></section>';
+}
+function refreshPriorityInstructions(){
+  document.querySelectorAll('[data-priority-text]').forEach(function(el){if(el.textContent!==priorityText())el.textContent=priorityText();});
+  document.querySelectorAll('[data-priority-full],#tkMove').forEach(function(el){var txt=S.mission.orders||'지시 전문 미입력';if(el.textContent!==txt)el.textContent=txt;});
+  document.querySelectorAll('[data-priority-contact],#tkRight').forEach(function(el){if(el.textContent!==priorityContact())el.textContent=priorityContact();});
+  document.querySelectorAll('[data-priority-toggle]').forEach(function(button){
+    var open=priorityOpen[button.dataset.priorityToggle];
+    button.setAttribute('aria-expanded',String(open));button.textContent=open?'상세 접기':'상세 보기';
+    var details=$(button.getAttribute('aria-controls'));if(details)details.hidden=!open;
+  });
+}
+function syncPriorityLayout(){
+  var node=$('displayPriority'),active=document.activeElement,inside=node.contains(active);
+  if(priorityMobile.matches){var header=$('board').querySelector('.hdr');if(header.nextElementSibling!==node)header.after(node);}
+  else if(node.previousSibling!==displayPrioritySlot)displayPrioritySlot.after(node);
+  if(inside&&document.activeElement!==active)active.focus({preventScroll:true});
+  document.querySelectorAll('#board .col-l,#board .col-r').forEach(function(el){
+    el.tabIndex=0;el.setAttribute('aria-label',el.classList.contains('col-l')?'실종자·자원 상세 · 스크롤 가능':'기체·활동기록 상세 · 스크롤 가능');
+  });
+  var skip=document.querySelector('.skip-priority');if(skip)skip.href=MODE==='display'&&$('drawer').hidden?'#displayPriority':'#consolePriority';
+}
+priorityMobile.addEventListener('change',syncPriorityLayout);
+document.addEventListener('click',function(ev){
+  var button=ev.target.closest('[data-priority-toggle]');
+  if(button){var context=button.dataset.priorityToggle;priorityOpen[context]=!priorityOpen[context];refreshPriorityInstructions();}
+  var skip=ev.target.closest('.skip-priority');
+  if(skip){var target=$(MODE==='display'&&$('drawer').hidden?'displayPriority':'consolePriority');if(target){ev.preventDefault();target.focus();}}
+});
+function renderTicker(){refreshPriorityInstructions();}
 
 /* ==========================================================================
    S7. 경보 (발견 / 유인기 진입) · 비프음은 외부 음원 없이 코드로 생성
@@ -4627,6 +4772,7 @@ function applyUi(){
   document.documentElement.style.setProperty('--dim', num(S.ui.dim,0));
   $('board').classList.toggle('large-type',num(S.ui.scale,1)>1.15);
   $('board').classList.toggle('far-view',S.ui.viewPreset==='far');
+  syncPriorityLayout();
 }
 
 /* ==========================================================================
@@ -4800,7 +4946,7 @@ function scrollToSection(root,target){
     if(parent.tagName==='DETAILS'){parent.open=true;if(parent.dataset.fold)consoleFolds[parent.dataset.fold]=true;}
   }
   var bar=root.querySelector('.cons-top');
-  var mobile=root.querySelector('.mobile-verdict');
+  var mobile=root.querySelector('.operation-brief');
   var pad=(bar&&getComputedStyle(bar).position==='sticky'?bar.getBoundingClientRect().height:
     mobile&&getComputedStyle(mobile).display!=='none'?mobile.getBoundingClientRect().height:0)+10;
   var host=scrollHost(target), tTop=target.getBoundingClientRect().top;
@@ -5090,7 +5236,7 @@ function refreshVerdictHelp(){
 function refreshConsoleKpi(){
   var host = document.getElementById('ctKpi');
   if(host) host.innerHTML = consoleKpiCells();
-  refreshVerdictHelp();refreshMapWorkspaceUi();
+  refreshVerdictHelp();refreshMapWorkspaceUi();refreshPriorityInstructions();
 }
 
 function paintPalette(){
@@ -5215,8 +5361,8 @@ function consoleHtml(){
     + '</div>';
 
   var verdict=flightVerdict(new Date());
-  h+='<div class="mobile-verdict"><button type="button" data-act="verdictnav" data-sec="verdictHelp" id="mobileVerdictText">'
-    +esc(verdict.txt+' · '+verdict.why[0])+'</button></div>'+verdictHelpHtml()
+  h+='<div class="operation-brief">'+consolePriorityHtml()+'<div class="mobile-verdict"><button type="button" data-act="verdictnav" data-sec="verdictHelp" id="mobileVerdictText">'
+    +esc(verdict.txt+' · '+verdict.why[0])+'</button></div></div>'+verdictHelpHtml()
     +'<nav class="mobile-nav" aria-label="주요 화면 이동">'
       +'<button type="button" data-act="nav" data-sec="sec-quick">조작</button>'
       +'<button type="button" data-act="nav" data-sec="sec-grid">지도</button>'
@@ -5282,9 +5428,9 @@ function consoleHtml(){
     + '<div class="f3">'+fld('TRS 채널','mission.trs','text','placeholder="소방3"')
     + fld('호출부호','mission.callsign','text','placeholder="전북드론1"')
     + '<div></div></div>'
-    + fld('현재 우선 지시 (원거리 표출 · 80자 이내)','mission.priorityOrder','textarea','maxlength="80" placeholder="지금 가장 먼저 실행할 지시를 짧게 입력"')
-    + '<div class="note">원거리 표출에서는 우선 지시를 고정 표시합니다. 긴 원문은 아래 전문에 남기세요.</div>'
-    + fld('지휘부 지시 전문 (기본 표출)','mission.orders','textarea','placeholder="계곡 하류 우선 수색, 18시 이후 야간 장비 투입"')
+    + fld('현재 우선 지시 (모든 화면 공통 · 80자 이내)','mission.priorityOrder','textarea','maxlength="80" placeholder="지금 가장 먼저 실행할 지시를 짧게 입력"')
+    + '<div class="note">우선 지시는 조작·기본·원거리 화면에 고정 표시합니다. 긴 원문은 아래 전문에 남기고 각 화면의 상세 보기에서 확인하세요.</div>'
+    + fld('지휘부 지시 전문 (상세 보기)','mission.orders','textarea','placeholder="계곡 하류 우선 수색, 18시 이후 야간 장비 투입"')
     + '<div class="row-tools"><button class="btn sm '+(S.mission.coordsConfirmedAt?'on':'primary')+'" data-act="confirmcoords">'
       +(S.mission.coordsConfirmedAt?'좌표 확인됨 · 다시 확인':'현장 좌표 확인 완료')+'</button></div>'
     + '<div class="note">위·경도는 일출·일몰과 기상 조회의 안전 기준입니다. 공란이면 임의 지역으로 대체하지 않으며, 좌표를 바꾸면 기상·비행승인을 다시 확인해야 합니다.</div>'
@@ -5538,7 +5684,7 @@ function commitLight(){
   if(applying) return;
   var sweepBefore=lastSweep;
   touch(); var ok=persist();
-  if(ok){lastSeenUpdated=S.meta.updated;broadcast();applyUi();renderDisplayOnly();}
+  if(ok){lastSeenUpdated=S.meta.updated;broadcast();applyUi();renderDisplayOnly();refreshPriorityInstructions();}
   else {rollbackStoredState();if(sweepBefore&&epochCurrent()&&ownsEditorLock())lastSweep=sweepBefore;renderAll();}
   return ok;
 }
@@ -5987,6 +6133,7 @@ function bindConsole(root){
       var safe=act==='takecontrol'||act==='export'||act==='report'||act==='nav'||act==='verdictnav'||act==='eventpage'
         ||['eventSearch','eventTypeFilter','eventStatusFilter'].indexOf(el.id)>=0
         ||el.hasAttribute('data-map-layer')||(el.hasAttribute('data-map-action')&&el.dataset.mapAction!=='paint')
+        ||el.hasAttribute('data-priority-toggle')
         ||el.id==='btnOpenDisplay'||el.id==='btnCloseDrawer'||el.id==='btnMoreNav';
       if(!safe)el.disabled=true;
     });

@@ -9,3 +9,6 @@ design/stayup-board-legibility.html
 
 # macOS
 .DS_Store
+
+# Local browser verification captures and reports
+output/playwright/
