@@ -66,6 +66,23 @@ try{
   state=await snapshot(page);
   check('실제 잔량 입력·대기 전환은 해당 기체만 바꾸고 이륙 기록을 만들지 않음',state.drones[0].battery===98&&state.drones[0].batteryUpdatedAt>0&&state.drones[0].status==='ready'&&!state.drones[0].tookOffAt&&state.drones[0].sorties===initial.drones[0].sorties&&state.events.at(-1).type==='note'&&isDeepStrictEqual(state.drones.slice(1),initial.drones.slice(1)));
   check('상태 선택에 초점이 있어도 예비·대기 안내를 즉시 표시',await page.locator('[data-path="drones.0.status"]').evaluate(e=>e===document.activeElement)&&await page.locator('#sec-drone .item[data-di="0"]').innerText().then(t=>t.includes('예비·대기 기체')&&t.includes('뜻하지 않습니다')));
+  const controls=()=>page.locator('#sec-drone .item[data-di="0"]').evaluate(card=>({label:card.querySelector('.item-h .ct-mode').textContent,takeoff:!card.querySelector('[data-act="takeoff"]').disabled,land:!card.querySelector('[data-act="land"]').disabled}));
+  check('이륙대기 선택 직후 카드 상태와 버튼도 일치',isDeepStrictEqual(await controls(),{label:'이륙대기',takeoff:true,land:false}));
+  await page.locator('[data-path="drones.0.status"]').selectOption('maint');
+  check('정비 선택 직후 이전 대기 표시를 남기지 않음',isDeepStrictEqual(await controls(),{label:'정비',takeoff:true,land:false}));
+  before=await snapshot(page);await page.locator('[data-path="drones.0.status"]').selectOption('flying');state=await snapshot(page);
+  check('상태 목록 이륙도 카드·버튼·시각·소티·한 건의 이력이 즉시 일치',isDeepStrictEqual(await controls(),{label:'비행중',takeoff:false,land:true})&&!!state.drones[0].tookOffAt&&state.drones[0].sorties===before.drones[0].sorties+1&&state.events.length===before.events.length+1&&state.events.at(-1).type==='takeoff'&&isDeepStrictEqual(state.batteries,before.batteries));
+  before=state;await page.locator('[data-path="drones.0.status"]').selectOption('swap');state=await snapshot(page);
+  check('상태 목록 착륙도 즉시 카드·버튼에 반영하며 재고 보존',isDeepStrictEqual(await controls(),{label:'배터리교체',takeoff:true,land:false})&&!state.drones[0].tookOffAt&&state.events.length===before.events.length+1&&state.events.at(-1).type==='landing'&&isDeepStrictEqual(state.batteries,before.batteries));
+  before=state;
+  await page.evaluate(()=>{window.restoreStatusStorage=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k===KEY)throw new DOMException('synthetic full storage','QuotaExceededError');return restoreStatusStorage.call(this,k,v);};});
+  try{await page.locator('[data-path="drones.0.status"]').selectOption('flying');}finally{await page.evaluate(()=>{Storage.prototype.setItem=restoreStatusStorage;delete window.restoreStatusStorage;});}
+  state=await snapshot(page);
+  check('상태 저장 실패는 기존 전체 내용과 실제 카드·버튼으로 복원',isDeepStrictEqual(state,before)&&isDeepStrictEqual(await controls(),{label:'배터리교체',takeoff:true,land:false})&&await page.locator('[data-path="drones.0.status"]').inputValue()==='swap');
+  const eventLimit=await page.evaluate(()=>{var old=MAX_EVENTS;MAX_EVENTS=ordinaryEventCount(S.events);return old;});before=await snapshot(page);count=alerts.length;
+  try{await page.locator('[data-path="drones.0.status"]').selectOption('flying');}finally{await page.evaluate(n=>{MAX_EVENTS=n;},eventLimit);}
+  state=await snapshot(page);
+  check('기록 한도로 거절된 선택은 기존 상태·재고·기록·선택 표시를 유지',alerts.length===count+1&&isDeepStrictEqual({...state,meta:before.meta},before)&&state.meta.epoch===before.meta.epoch&&await page.locator('[data-path="drones.0.status"]').inputValue()==='swap'&&isDeepStrictEqual(await controls(),{label:'배터리교체',takeoff:true,land:false}));
   const popup=context.waitForEvent('page');await page.locator('#btnOpenDisplay').click();const display=await popup;
   await display.waitForFunction(()=>typeof S==='object'&&S.drones[0].battery===98);
   check('표출에서도 대기·교체 기체와 재고를 각각 표시',await display.locator('#droneBody').innerText().then(t=>t.includes('이륙대기')&&t.includes('배터리교체')&&t.includes('98'))&&await display.locator('#battBody .ready .bn').innerText()==='3');
@@ -75,6 +92,8 @@ try{
   await display.waitForFunction(()=>S.drones[0].status==='flying');
   check('조작 상태 변경이 표출 창에 동기화',await display.locator('#droneBody').innerText().then(t=>t.includes('비행중')&&t.includes('98')));
   await page.locator('[data-act="land"][data-di="0"]').click();
+  // Immediate controls were checked above; measure layout after deferred rendering settles.
+  await page.waitForFunction(()=>!consoleIdleTimer);
   for(const [width,height,theme] of [[390,844,'light'],[320,800,'dark']]){
     await page.setViewportSize({width,height});await page.locator('[data-theme-target="console"][data-theme-value="'+theme+'"]').click();
     await page.locator('#sec-drone .item[data-di="0"]').scrollIntoViewIfNeeded();

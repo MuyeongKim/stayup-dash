@@ -6089,7 +6089,16 @@ function bindConsole(root){
     var sm=path.match(/^drones\.(\d+)\.status$/);
     if(sm){
       if(setDroneStatus(S.drones[+sm[1]],val)) commitLight();
-      /* 변경이 거부됐으면(이벤트 한도 등) select 를 실제 상태로 되돌려야 한다. */
+      /* 전체 재렌더는 클릭 보호를 위해 늦추되 상태 표시와 버튼은 즉시 맞춘다.
+         저장 실패로 이미 다시 그려졌으면 이전 DOM 은 건드리지 않는다. */
+      var currentDrone=S.drones[+sm[1]],card=el.closest('.item[data-di]');
+      if(el.isConnected&&currentDrone&&card){
+        el.value=currentDrone.status;
+        card.querySelector('.item-h .ct-mode').textContent=DRONE_ST[currentDrone.status]||'';
+        var locked=!ownsEditorLock();
+        card.querySelector('[data-act="takeoff"]').disabled=locked||!!currentDrone.tookOffAt;
+        card.querySelector('[data-act="land"]').disabled=locked||!currentDrone.tookOffAt;
+      }
       scheduleConsoleRefresh(root);
       return;
     }
