@@ -3004,7 +3004,7 @@ function renderSubject(){
   var html =
     '<div class="subj-name">'
       + '<span class="nm">'+esc(s.name || '성명 미상')+'</span>'
-      + (s.age ? '<span class="ag">'+esc(s.age)+'세</span>' : '')
+      + (s.age===0||s.age ? '<span class="ag">'+esc(s.age)+'세</span>' : '')
       + (s.sex ? '<span class="sx">'+esc(s.sex)+'</span>' : '')
     + '</div>'
     + '<div class="wear">'
@@ -6879,7 +6879,7 @@ function buildReport(){
   if(S.mission.priorityOrder)lines.push('  · 우선 지시: '+S.mission.priorityOrder);
   lines.push('');
   lines.push('2. 실종자');
-  lines.push('  · 인적사항 : '+(S.subject.name||'-')+' / '+(S.subject.age||'-')+'세 / '+(S.subject.sex||'-')
+  lines.push('  · 인적사항 : '+(S.subject.name||'-')+' / '+(S.subject.age===0?'0':(S.subject.age||'-'))+'세 / '+(S.subject.sex||'-')
     +(S.subject.level?' / '+S.subject.level:''));
   lines.push('  · 인상착의 : 상의 '+(S.subject.topText||'미상')+' / 하의 '+(S.subject.botText||'미상'));
   lines.push('  · 실종시각 : '+(S.subject.missingAt||'-').replace('T',' '));
