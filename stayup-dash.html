@@ -1490,7 +1490,7 @@ var VIEW_KEY = PRACTICE_MODE ? 'stayup.practice.view.v1' : 'stayup.view.v1';
 var viewPreferences={consoleTheme:'light',displayTheme:'light'};
 try{var savedView=JSON.parse(localStorage.getItem(VIEW_KEY)||'null');if(savedView)['consoleTheme','displayTheme'].forEach(function(k){if(['light','dark'].includes(savedView[k]))viewPreferences[k]=savedView[k];});}catch(e){}
 var onboardingOpen=false;
-var APP_VERSION = '1.2.34';
+var APP_VERSION = '1.2.35';
 var STATE_VERSION = 3;
 /* 지도 이미지는 IndexedDB 에, 그 밖의 상태는 localStorage 에 둔다.
    localStorage 는 약 5MB 라 지도를 1,600px 로 줄여야 했고, 그러면 정사영상을 쓸
