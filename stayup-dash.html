@@ -837,6 +837,9 @@ textarea{resize:vertical;min-height:52px}
 .endur .ev{white-space:nowrap}
 .battery-stamp{color:var(--muted);font-size:.86rem;line-height:1.35;margin:.15rem 0 .35rem}
 .cons .battery-stamp{font-size:13px;margin:0}
+.drone-state-help{display:none}
+.item:has(select[data-path$=".status"] option[value="swap"]:checked) .drone-state-help.swap,
+.item:has(select[data-path$=".status"] option[value="ready"]:checked) .drone-state-help.ready{display:block}
 .setup-section,.settings-fold{border:1px solid var(--border2);border-radius:8px;margin-bottom:12px;background:var(--surface)}
 .setup-section>summary,.settings-fold>summary{
   cursor:pointer;padding:12px;font-size:14px;font-weight:750;color:var(--text);list-style-position:inside;
@@ -5786,6 +5789,8 @@ function consoleHtml2(){
       + '</div>'
       + '<div class="inline"><span class="battery-stamp" data-battery-stamp="'+esc(d.id)+'">'+esc(batteryStamp(d))+'</span>'
         + '<button class="btn sm" data-act="confirmbattery" data-di="'+i+'">배터리 확인 (지금)</button></div>'
+      + '<p class="note drone-state-help swap">실제 교체 후 새 배터리 잔량을 입력하고 상태를 이륙대기로 바꾸세요. 배터리 메뉴의 재고도 별도로 반영합니다.</p>'
+      + '<p class="note drone-state-help ready">예비·대기 기체는 실제 잔량과 조종자를 확인하세요. 이륙대기 표시는 비행승인이나 준비 점검 완료를 뜻하지 않습니다.</p>'
       + '<details class="settings-fold" data-fold="drone-'+esc(d.id)+'"'+(!d.pilot?' open':'')+'><summary>기체 설정 · 조종자 · 센서</summary><div>'
       + '<div class="f4">'
         + fld('호기명','drones.'+i+'.name','text','placeholder="1호기"')
@@ -5814,6 +5819,7 @@ function consoleHtml2(){
 
   /* --- 배터리 자원 --- */
   h += '<div class="sec" id="sec-batt"><h2>배터리 자원 <span class="hint">언제 철수해야 하는가를 숫자로</span></h2><div class="sec-b">'
+    + '<p class="note">이 메뉴는 배터리 <b>재고 수량</b>을 관리합니다. 재고를 바꿔도 기체의 잔량 %·이륙대기·배터리교체 상태는 자동으로 바뀌지 않습니다. 실제 교체 뒤 드론 메뉴에서도 해당 기체를 확인하세요.</p>'
     + '<div class="f3">'+fld('충전완료','batteries.ready','number','min="0" max="999"')
     + fld('충전중','batteries.charging','number','min="0" max="999"')
     + fld('소진','batteries.empty','number','min="0" max="999"')+'</div>'
@@ -5824,7 +5830,7 @@ function consoleHtml2(){
     + '<div class="row-tools">'
       + '<button class="btn sm" data-act="batt" data-k="ready" data-v="1">충전완료 +1</button>'
       + '<button class="btn sm" data-act="batt" data-k="ready" data-v="-1">−1</button>'
-      + '<button class="btn sm" data-act="battswap">교체 1개 (완료→소진)</button>'
+      + '<button class="btn sm" data-act="battswap">재고 교체 반영 1개 (완료→소진)</button>'
       + '<button class="btn sm" data-act="battdone">충전완료 1개 (충전중→완료)</button>'
     + '</div>'
     + '<div class="note">지속 운용 가능시간 = 충전완료 개수 × 평균 항속 ÷ 동시 운용 대수. 2시간 미만이면 주의색으로 바뀝니다.</div>'
@@ -6293,12 +6299,12 @@ function bindConsole(root){
     else if(act === 'battswap'){
       if(intv(S.batteries.ready,0) > 0){
         S.batteries.ready--; S.batteries.empty = intv(S.batteries.empty,0)+1; commit();
-      }
+      }else alert('충전완료 재고가 없어 교체를 반영하지 않았습니다. 실제 수량을 확인해 충전완료에 입력하세요. 기체 잔량·상태는 그대로입니다.');
     }
     else if(act === 'battdone'){
       if(intv(S.batteries.charging,0) > 0){
         S.batteries.charging--; S.batteries.ready = intv(S.batteries.ready,0)+1; commit();
-      }
+      }else alert('충전중 재고가 없어 완료 처리를 하지 않았습니다. 실제 충전 중인 수량을 확인하세요. 기체 잔량·상태는 그대로입니다.');
     }
     else if(act === 'pin'){
       setPinMode(b.getAttribute('data-p'),root);

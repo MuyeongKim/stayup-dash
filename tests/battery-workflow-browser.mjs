@@ -1,0 +1,87 @@
+/* Battery stock and per-aircraft state are deliberately separate.
+ * Exercise normal controls, two windows and persisted synthetic data only. */
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {isDeepStrictEqual} from 'node:util';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const option=k=>{const i=process.argv.indexOf(k);return i<0?null:process.argv[i+1];};
+const modules=option('--modules'),out=option('--out')||'/tmp/stayup-battery-workflow';
+await mkdir(out,{recursive:true});
+const {chromium}=await import(modules?pathToFileURL(path.join(modules,'playwright/index.mjs')).href:'playwright');
+const server=createServer(async(req,res)=>{try{const p=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!p.startsWith(root+path.sep))throw Error('Invalid path');res.setHeader('Content-Type',p.endsWith('.html')?'text/html':p.endsWith('.js')?'text/javascript':p.endsWith('.css')?'text/css':'application/json');res.setHeader('Cache-Control','no-store');res.end(await readFile(p));}catch{res.writeHead(404);res.end();}});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const url=(process.argv.includes('--file')?pathToFileURL(path.join(root,'stayup-dash.html')).href:'http://127.0.0.1:'+server.address().port+'/stayup-dash.html')+'?practice=1';
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const context=await browser.newContext({viewport:{width:1366,height:900},serviceWorkers:'block',reducedMotion:'reduce'});
+const results=[],errors=[],alerts=[];
+const check=(name,pass)=>{results.push({name,pass:!!pass});console.log((pass?'PASS ':'FAIL ')+name);};
+const snapshot=page=>page.evaluate(()=>JSON.parse(exportPayload(true)));
+async function number(page,key,value){const el=page.locator('[data-path="'+key+'"]');await el.fill(String(value));await el.press('Tab');await page.waitForTimeout(180);}
+try{
+  const page=await context.newPage();page.setDefaultTimeout(6000);
+  page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{alerts.push(d.message());await d.accept();});
+  await page.goto(url);await page.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
+  await page.evaluate(()=>{loadSample();S.weather.auto=false;S.ui.autoSave=false;commit();});
+  if(await page.locator('#onboardingGuide').isVisible())await page.locator('[data-onboard-action="close"]').click();
+  const initial=await snapshot(page);
+  await page.locator('#tab-drone').click();await page.locator('[data-act="land"][data-di="0"]').click();
+  let state=await snapshot(page);
+  check('착륙은 교체 상태·시각·착륙 이력을 반영하며 잔량·소티·재고 보존',state.drones[0].status==='swap'&&!state.drones[0].tookOffAt&&state.drones[0].battery===initial.drones[0].battery&&state.drones[0].sorties===initial.drones[0].sorties&&isDeepStrictEqual(state.batteries,initial.batteries)&&state.events.at(-1).type==='landing'&&state.events.at(-1).entityId===state.drones[0].id);
+  check('교체 기체에는 실제 잔량 입력과 이륙대기 전환 안내',await page.locator('#sec-drone .item[data-di="0"]').innerText().then(t=>t.includes('실제 교체 후')&&t.includes('별도로')));
+  const landed=state;
+  await page.locator('#tab-batt').click();
+  check('배터리 메뉴에 재고와 기체 잔량·상태의 별도 관리 명시',await page.locator('#sec-batt').innerText().then(t=>t.includes('재고 수량')&&t.includes('자동으로 바뀌지')));
+  await page.locator('[data-act="battswap"]').click();state=await snapshot(page);
+  check('재고 교체는 완료 한 개를 소진으로 옮기며 기체·활동 이력 보존',state.batteries.ready===landed.batteries.ready-1&&state.batteries.empty===landed.batteries.empty+1&&state.batteries.charging===landed.batteries.charging&&isDeepStrictEqual(state.drones,landed.drones)&&isDeepStrictEqual(state.events,landed.events));
+  await number(page,'batteries.ready',0);let before=await snapshot(page),count=alerts.length;
+  await page.locator('[data-act="battswap"]').click();
+  check('완료 재고 0의 교체는 사유를 알리고 전체 상태 보존',alerts.length===count+1&&alerts.at(-1).includes('충전완료 재고가 없어')&&isDeepStrictEqual(await snapshot(page),before));
+  await number(page,'batteries.charging',0);before=await snapshot(page);count=alerts.length;
+  await page.locator('[data-act="battdone"]').click();
+  check('충전중 0의 완료 처리도 사유를 알리고 전체 상태 보존',alerts.length===count+1&&alerts.at(-1).includes('충전중 재고가 없어')&&isDeepStrictEqual(await snapshot(page),before));
+  await number(page,'batteries.ready',2);await number(page,'batteries.charging',1);before=await snapshot(page);
+  await page.locator('[data-act="battdone"]').click();state=await snapshot(page);
+  check('충전 완료는 재고만 이동하고 기체 잔량을 100으로 추정하지 않음',state.batteries.ready===3&&state.batteries.charging===0&&state.batteries.empty===before.batteries.empty&&isDeepStrictEqual(state.drones,before.drones));
+  await page.locator('#tab-drone').click();await number(page,'drones.0.battery',98);
+  await page.locator('[data-path="drones.0.status"]').focus();await page.locator('[data-path="drones.0.status"]').selectOption('ready');await page.waitForTimeout(200);
+  state=await snapshot(page);
+  check('실제 잔량 입력·대기 전환은 해당 기체만 바꾸고 이륙 기록을 만들지 않음',state.drones[0].battery===98&&state.drones[0].batteryUpdatedAt>0&&state.drones[0].status==='ready'&&!state.drones[0].tookOffAt&&state.drones[0].sorties===initial.drones[0].sorties&&state.events.at(-1).type==='note'&&isDeepStrictEqual(state.drones.slice(1),initial.drones.slice(1)));
+  check('상태 선택에 초점이 있어도 예비·대기 안내를 즉시 표시',await page.locator('[data-path="drones.0.status"]').evaluate(e=>e===document.activeElement)&&await page.locator('#sec-drone .item[data-di="0"]').innerText().then(t=>t.includes('예비·대기 기체')&&t.includes('뜻하지 않습니다')));
+  const popup=context.waitForEvent('page');await page.locator('#btnOpenDisplay').click();const display=await popup;
+  await display.waitForFunction(()=>typeof S==='object'&&S.drones[0].battery===98);
+  check('표출에서도 대기·교체 기체와 재고를 각각 표시',await display.locator('#droneBody').innerText().then(t=>t.includes('이륙대기')&&t.includes('배터리교체')&&t.includes('98'))&&await display.locator('#battBody .ready .bn').innerText()==='3');
+  const standby=await snapshot(page);
+  await page.locator('[data-act="takeoff"][data-di="0"]').click();state=await snapshot(page);
+  check('재이륙은 해당 기체 소티·이륙 이력을 한 번만 기록하고 재고 보존',state.drones[0].status==='flying'&&!!state.drones[0].tookOffAt&&state.drones[0].sorties===standby.drones[0].sorties+1&&state.events.length===standby.events.length+1&&state.events.at(-1).type==='takeoff'&&isDeepStrictEqual(state.batteries,standby.batteries));
+  await display.waitForFunction(()=>S.drones[0].status==='flying');
+  check('조작 상태 변경이 표출 창에 동기화',await display.locator('#droneBody').innerText().then(t=>t.includes('비행중')&&t.includes('98')));
+  await page.locator('[data-act="land"][data-di="0"]').click();
+  for(const [width,height,theme] of [[390,844,'light'],[320,800,'dark']]){
+    await page.setViewportSize({width,height});await page.locator('[data-theme-target="console"][data-theme-value="'+theme+'"]').click();
+    await page.locator('#sec-drone .item[data-di="0"]').scrollIntoViewIfNeeded();
+    check(width+'px 교체 안내와 상태·잔량 입력의 가로 넘침 없음',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)&&await page.locator('#sec-drone .item[data-di="0"]').innerText().then(t=>t.includes('실제 교체 후')));
+    await page.screenshot({path:path.join(out,'drone-'+width+'-'+theme+'.png'),scale:'css'});
+    await page.locator('#tab-batt').click();await page.locator('#sec-batt').scrollIntoViewIfNeeded();
+    check(width+'px 재고 안내·교체 버튼 접근과 가로 폭 유지',await page.locator('[data-act="battswap"]').isVisible()&&await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+    await page.screenshot({path:path.join(out,'stock-'+width+'-'+theme+'.png'),scale:'css'});await page.locator('#tab-drone').click();
+  }
+  await page.setViewportSize({width:1366,height:900});
+  const finalState=await snapshot(page);
+  const untouched=s=>Object.fromEntries(Object.entries(s).filter(([k])=>!['meta','drones','batteries','events'].includes(k)));
+  check('상황·지도·인원·안전·기상·AI 후보 등 나머지 전체 필드 보존',isDeepStrictEqual(untouched(finalState),untouched(initial)));
+  const viewer=await context.newPage();await viewer.goto(url);await viewer.waitForFunction(()=>typeof S==='object'&&!ownsEditorLock());
+  if(await viewer.locator('#onboardingGuide').isVisible())await viewer.locator('[data-onboard-action="close"]').click();
+  await viewer.locator('#tab-batt').click();
+  check('읽기 전용은 재고 수정과 교체·완료 동작 잠금 유지',!await viewer.locator('[data-act="battswap"]').isEnabled()&&!await viewer.locator('[data-act="battdone"]').isEnabled()&&!await viewer.locator('[data-path="batteries.ready"]').isEnabled());
+  await viewer.close();await display.close();
+  await page.reload();await page.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
+  check('재시작 후 모든 상태·재고·기체·활동 이력 값 복원',isDeepStrictEqual(await snapshot(page),finalState));
+  check('실행 오류 없음',errors.length===0);
+}finally{
+  await writeFile(path.join(out,'results.json'),JSON.stringify({passed:results.filter(r=>r.pass).length,total:results.length,failed:results.filter(r=>!r.pass),errors,results},null,2));
+  await browser.close();await new Promise(r=>server.close(r));
+}
+assert.equal(results.filter(r=>!r.pass).length,0,'Battery workflow validation failed');
