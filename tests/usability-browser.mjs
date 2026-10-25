@@ -39,10 +39,21 @@ async function offlineMarker(page,name,write){
 try{
   await live.goto(url);await live.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
   check('첫 화면은 주간 테마·시작·불러오기·분리된 연습 경로 제공',await live.locator('.cons').getAttribute('data-theme')==='light'&&await live.locator('#onboardingGuide').isVisible()&&await live.locator('[data-onboard-action="new"]').isVisible()&&await live.locator('a[href*="practice=1"]').getAttribute('rel')==='noopener');
+  check('시작 안내에 첫 다운로드·변경 확인 주기·파일 확인 행동 명시',await live.locator('#onboardingGuide').innerText().then(t=>t.includes('30초')&&t.includes('첫 변경 확인')&&t.includes('10분')&&t.includes('다운로드 목록')));
   await live.screenshot({path:path.join(out,'first-start-light.png'),fullPage:false});
+  for(const [w,h] of [[390,844],[320,800]]){
+    await live.setViewportSize({width:w,height:h});
+    await live.locator('#onboardingGuide [data-sec="sec-data"]').scrollIntoViewIfNeeded();
+    check(`${w}px 시작 안내의 보관 버튼과 긴 설명 가로 넘침 없음`,await live.locator('#onboardingGuide [data-sec="sec-data"]').isVisible()&&await live.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+    await live.screenshot({path:path.join(out,`first-start-${w}.png`),fullPage:false});
+  }
+  await live.setViewportSize({width:1366,height:900});
   // Keep preservation checks stable when the new subject-form scenario reloads.
   // Automatic weather refresh has its own existing regression coverage.
   await live.evaluate(()=>{S.weather.auto=false;commitLight();});
+  const beforeBackupNav=await live.evaluate(()=>exportPayload(true));
+  await live.locator('#onboardingGuide [data-sec="sec-data"]').click();
+  check('시작 안내에서 보관 설정으로 이동해도 업무 상태 보존',await live.locator('#sec-data').isVisible()&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
   const beforeTheme=await live.evaluate(()=>exportPayload(true));
   await live.locator('[data-theme-target="console"][data-theme-value="dark"]').click();
   check('야간 날짜 컨트롤에 dark color-scheme 적용',await live.locator('[data-path="mission.dispatchedAt"]').evaluate(e=>getComputedStyle(e).colorScheme)==='dark');
@@ -54,6 +65,19 @@ try{
   await live.locator('[data-path="mission.location"]').fill('가상 훈련 구역');
   await live.locator('[data-path="mission.lat"]').fill('35.8');await live.locator('[data-path="mission.lon"]').fill('127.1');await live.locator('[data-act="confirmcoords"]').click();
   check('준비 현황은 실제 입력값으로 갱신하고 비행 승인과 구분',await live.locator('.guide-progress').innerText().then(t=>t.includes('1 / 4')&&t.includes('별개')));
+  await live.locator('#onboardingGuide [data-sec="sec-data"]').click();
+  const beforeBackup=await live.evaluate(()=>exportPayload(true));
+  const automaticDownload=live.waitForEvent('download');
+  await live.evaluate(()=>{autoSaveHandle=null;autoSaveAt=0;lastAutoSavedRev=-1;autoSaveTick();});
+  const automaticFile=await automaticDownload;await automaticFile.saveAs(path.join(out,'automatic-backup.json'));
+  const automaticPayload=JSON.parse(await readFile(path.join(out,'automatic-backup.json'),'utf8'));
+  check('실제 자동 다운로드 파일에 입력 상황을 포함하고 업무 상태 보존',automaticFile.suggestedFilename().startsWith('stayup-자동보관-')&&automaticPayload.mission.title==='실제 기록 보존 검증용 가상 상황'&&await live.evaluate(()=>exportPayload(true))===beforeBackup);
+  check('자동 다운로드 후 상단·설정 상태가 일치하고 실제 파일 확인 안내',await live.locator('#autoSavePill').innerText().then(async t=>t.includes('다운로드 요청')&&t.includes('파일 확인')&&t===await live.locator('[data-auto-save-status]').innerText()));
+  await live.screenshot({path:path.join(out,'backup-status.png'),fullPage:false});
+  await live.evaluate(()=>{autoSaveAt=0;lastAutoSavedRev=-1;autoSaveHandle={createWritable:async()=>({write:async t=>{window.backupGuidePayload=t;},close:async()=>{}})};autoSaveTick();});
+  await live.waitForFunction(()=>!autoSaveBusy&&autoSaveAt>0);
+  check('지정 파일 쓰기는 다운로드 요청과 구분하며 내용·리비전 보존',await live.locator('#autoSavePill').innerText().then(async t=>t.startsWith('파일 저장')&&!t.includes('다운로드')&&t===await live.locator('[data-auto-save-status]').innerText())&&await live.evaluate(v=>backupGuidePayload===v&&exportPayload(true)===v,beforeBackup));
+  await live.evaluate(()=>{autoSaveHandle=null;refreshAutoSavePill();});
   await live.locator('[data-onboard-action="close"]').click();
   check('안내를 접어도 기존 메뉴를 즉시 사용 가능',!(await live.locator('#onboardingGuide').isVisible())&&await live.locator('#tab-grid').isVisible());
   const palette=await live.evaluate(()=>{
@@ -107,6 +131,7 @@ try{
   const popup=context.waitForEvent('page');await live.locator('a[href*="practice=1"]').click();const practice=await popup;observe(practice);
   await practice.waitForFunction(()=>typeof S==='object'&&S.drones.length===3&&ownsEditorLock());
   check('연습은 별도 창·가상 데이터·명확한 연습 표시 제공',practice.url().includes('practice=1')&&await practice.locator('.practice-badge').isVisible()&&await practice.title().then(t=>t.startsWith('[연습]')));
+  check('연습 안내에 실제 자동 보관 주기나 설정 이동을 섞지 않음',await practice.locator('#onboardingGuide [data-sec="sec-data"]').count()===0&&!await practice.locator('#onboardingGuide').innerText().then(t=>t.includes('30초')));
   const storage=await practice.evaluate(()=>({stateStorage:KEY,recoveryStorage:SNAPKEY,editorStorage:LOCKKEY,photoStorage:IDB_NAME,onlineStorage:ONLINE_KEYS_KEY}));
   check('연습 상태·복구·편집권·이미지·지도키 저장소 분리',
     storage.stateStorage==='stayup.practice.v1'&&storage.recoveryStorage.startsWith('stayup.practice.')

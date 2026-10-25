@@ -5904,11 +5904,11 @@ function consoleHtml2(){
       + fld('자동 보관','ui.autoSave','checkbox')
       + (typeof window.showSaveFilePicker==='function'
           ? '<button class="btn primary" data-act="autofile">보관 파일 지정…</button>' : '')
-      + '<span class="hint">'+esc(autoSaveLabel())+'</span>'
+      + '<span class="hint" data-auto-save-status>'+esc(autoSaveLabel())+'</span>'
     + '</div>'
-    + '<div class="note">활동 타임라인은 그대로 보고서가 됩니다. 자동 보관을 켜두면 '
-      + '지정한 파일에 변경분을 덮어쓰고, 파일 지정이 불가능한 환경에서는 '+AUTOSAVE_MIN+'분마다 JSON을 내려받습니다. '
-      + '브라우저 저장소만 믿으면 프로필 초기화 한 번에 출동 기록이 사라집니다.</div>'
+    + '<div class="note">자동 보관을 켜두면 지정한 파일에 변경분을 덮어씁니다. 창을 다시 열면 보관 파일도 다시 지정하세요. '
+      + '약 30초마다 변경을 확인합니다. 파일을 지정하지 않으면 첫 변경 확인 때 JSON 다운로드를 요청하고, 이후 변경 시 최소 '+AUTOSAVE_MIN+'분 간격으로 요청합니다. '
+      + '다운로드 목록에서 실제 파일 생성을 확인하세요. 브라우저 저장소와 자동 복구본은 브라우저 데이터 삭제 시 함께 사라질 수 있습니다.</div>'
     + '<div class="row-tools">'
       + '<button class="btn" data-act="export">JSON 내보내기</button>'
       + '<button class="btn" data-act="import">JSON 불러오기</button>'
@@ -6756,12 +6756,13 @@ function autoSaveLabel(){
   var how = autoSaveHandle ? '파일' : '다운로드';
   if(!autoSaveAt) return '자동 보관 대기 · '+how;
   var m = Math.floor((Date.now()-autoSaveAt)/60000);
-  return '보관 '+(m<1?'방금':m+'분 전')+' · '+how;
+  return (autoSaveHandle?'파일 저장 ':'다운로드 요청 ')+(m<1?'방금':m+'분 전')+(autoSaveHandle?'':' · 파일 확인');
 }
 function refreshAutoSavePill(){
-  var el = document.getElementById('autoSavePill'); if(!el) return;
-  el.textContent = autoSaveLabel();
-  el.className = 'save-pill' + (!PRACTICE_MODE&&(!S.ui.autoSave || autoSaveErr) ? ' bad' : '');
+  document.querySelectorAll('#autoSavePill,[data-auto-save-status]').forEach(function(el){
+    el.textContent=autoSaveLabel();
+    if(el.id==='autoSavePill')el.className='save-pill'+(!PRACTICE_MODE&&(!S.ui.autoSave||autoSaveErr)?' bad':'');
+  });
 }
 function pickAutoSaveFile(){
   if(PRACTICE_MODE){alert('연습 공간에서는 실제 파일 자동 보관을 사용하지 않습니다. 연습 결과는 JSON 내보내기로 따로 보관하세요.');return;}
@@ -7666,6 +7667,7 @@ function renderOnboarding(root){
     guide.dataset.content=key;
     guide.innerHTML='<div class="onboarding-heading"><div><span class="guide-eyebrow">'+(PRACTICE_MODE?'실제 기록과 분리된 연습':'처음 사용 안내')+'</span><h2 id="onboardingTitle">'+(hasIncidentContent()?'지금 할 일을 순서대로 확인하세요':'처음이라면 여기서 시작하세요')+'</h2></div><button class="btn" type="button" data-onboard-action="close">안내 접기</button></div>'
       +(PRACTICE_MODE?'<p class="practice-notice">연습 데이터만 사용합니다. 실제 상황·지도·복구본과 표출 연결은 분리되어 있으며 자동 보관·자동 폴더 읽기는 사용하지 않습니다. <a href="'+esc(workspaceURL(false))+'" target="_blank" rel="noopener">실제 상황 화면 열기</a></p>':'<div class="start-actions"><button class="btn primary" type="button" data-onboard-action="new"'+editDisabled+'>새 상황 시작</button><button class="btn" type="button" data-onboard-action="import"'+editDisabled+'>저장한 상황 불러오기</button><a class="btn" href="'+esc(workspaceURL(true))+'" target="_blank" rel="noopener">가상 데이터로 연습하기 ↗</a></div><p class="note">'+esc(startNote)+'</p>')
+      +(PRACTICE_MODE?'':'<p class="note">자동 보관은 약 30초마다 변경을 확인합니다. 켜두면 첫 변경 확인 때, 이후 변경 시 최소 '+AUTOSAVE_MIN+'분 간격으로 JSON 다운로드를 요청합니다. 보관 파일을 지정하면 해당 파일에 저장합니다. 내려받은 파일은 다운로드 목록에서 확인하세요.</p><div class="row-tools"><button class="btn" type="button" data-act="nav" data-sec="sec-data">보관 설정·백업</button></div>')
       +'<div class="guide-progress">기본 입력 현황 <strong>'+done+' / 4</strong><span>입력 현황과 실제 비행 승인은 별개입니다.</span></div>'
       +'<ol class="preparation-list">'+steps.map(function(s){return '<li class="'+(s.done?'is-done':'')+'"><div><h3>'+s.title+'</h3><p>'+esc(s.hint)+'</p></div><span class="step-status">'+(s.done?'✓ 입력 확인':s.sec==='safety'?'사유 확인':'미완료')+'</span><button class="btn" type="button" data-act="nav" data-sec="sec-'+s.sec+'">'+s.label+'</button></li>';}).join('')+'</ol><p class="note">실종자 정보는 <b>실종자</b> 메뉴에서 입력합니다. 확인하지 못한 정보는 빈칸으로 두고, 입력된 값만으로 수색 종료나 비행 가능 여부를 확정하지 마세요.</p>';
   }
