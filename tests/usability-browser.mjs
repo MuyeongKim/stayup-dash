@@ -40,6 +40,9 @@ try{
   await live.goto(url);await live.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
   check('첫 화면은 주간 테마·시작·불러오기·분리된 연습 경로 제공',await live.locator('.cons').getAttribute('data-theme')==='light'&&await live.locator('#onboardingGuide').isVisible()&&await live.locator('[data-onboard-action="new"]').isVisible()&&await live.locator('a[href*="practice=1"]').getAttribute('rel')==='noopener');
   await live.screenshot({path:path.join(out,'first-start-light.png'),fullPage:false});
+  // Keep preservation checks stable when the new subject-form scenario reloads.
+  // Automatic weather refresh has its own existing regression coverage.
+  await live.evaluate(()=>{S.weather.auto=false;commitLight();});
   const beforeTheme=await live.evaluate(()=>exportPayload(true));
   await live.locator('[data-theme-target="console"][data-theme-value="dark"]').click();
   check('야간 날짜 컨트롤에 dark color-scheme 적용',await live.locator('[data-path="mission.dispatchedAt"]').evaluate(e=>getComputedStyle(e).colorScheme)==='dark');
@@ -61,6 +64,25 @@ try{
   });
   check('주간 입력 글자·라벨 대비 4.5:1 이상 및 16px 크기',palette.text>=4.5&&palette.label>=4.5&&palette.font>=16&&palette.scheme==='light',palette);
   await live.screenshot({path:path.join(out,'mission-light.png'),fullPage:false});
+  await live.locator('#tab-subject').click();
+  const subjectName=live.locator('[data-path="subject.name"]'),speed=live.locator('[data-path="subject.walkSpeed"]');
+  check('실종자 입력은 식별 별칭과 예시를 명시',await subjectName.getAttribute('placeholder')==='예: 대상 A'&&await subjectName.evaluate(e=>e.closest('label').textContent.includes('별칭')));
+  check('이동 추정 설정은 기본 접힘이며 감지기 정보는 바로 확인 가능',!await speed.isVisible()&&await live.locator('[data-path="subject.tracker"]').isVisible());
+  const subjectBefore=await live.evaluate(()=>exportPayload(true));
+  await live.locator('details[data-fold="subject-estimate"]>summary').click();
+  check('상세를 열어도 기존 기본값과 업무 상태를 바꾸지 않음',await speed.inputValue()==='2'&&await live.locator('[data-path="subject.decay"]').inputValue()==='0.35'&&await live.evaluate(()=>exportPayload(true))===subjectBefore);
+  await subjectName.fill('대상 A');await speed.fill('3.3');await live.locator('[data-path="subject.decay"]').fill('0.45');await live.locator('[data-path="subject.tracker"]').check();
+  await live.locator('#tab-crew').click();await live.locator('#tab-subject').click();
+  check('메뉴를 다녀와도 펼침 상태와 직접 입력한 추정 값을 유지',await speed.isVisible()&&await speed.inputValue()==='3.3'&&await live.locator('[data-path="subject.decay"]').inputValue()==='0.45');
+  await live.reload();await live.waitForFunction(()=>ownsEditorLock());await live.locator('#tab-subject').click();
+  check('다시 열어도 별칭·감지기·사용자 지정 값 보존',await subjectName.inputValue()==='대상 A'&&await live.locator('[data-path="subject.tracker"]').isChecked()&&await speed.inputValue()==='3.3'&&await live.locator('[data-path="subject.decay"]').inputValue()==='0.45');
+  await live.screenshot({path:path.join(out,'subject-basic.png'),fullPage:false});
+  for(const [w,h] of [[390,844],[320,800]]){
+    await live.setViewportSize({width:w,height:h});
+    check(`${w}px 실종자 기본 입력·감지기·상세 접기 가로 넘침 없음`,await live.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)&&await subjectName.isVisible()&&await live.locator('[data-path="subject.tracker"]').isVisible()&&!await speed.isVisible());
+    await live.screenshot({path:path.join(out,`subject-basic-${w}.png`),fullPage:false});
+  }
+  await live.setViewportSize({width:1366,height:900});
   await live.locator('#tab-crew').click();await live.locator('#btnAddCrew').click();
   check('인원 추가 뒤 새 성명 입력에 실제 포커스 연결',await live.locator('[data-path="crew.0.name"]').evaluate(e=>e===document.activeElement));
   await live.locator('#tab-drone').click();await live.locator('#btnAddDrone').click();

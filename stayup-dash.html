@@ -5658,9 +5658,10 @@ function consoleHtml(){
 
   /* --- 실종자 --- */
   h += '<div class="sec" id="sec-subject"><h2>실종자 정보</h2><div class="sec-b">'
-    + '<div class="f4">'+fld('성명','subject.name')+fld('연령','subject.age','number','min="0" max="130"')
+    + '<div class="f4">'+fld('식별명(별칭)','subject.name','text','maxlength="80" autocomplete="off" placeholder="예: 대상 A"')+fld('연령','subject.age','number','min="0" max="130"')
     + sel('성별','subject.sex',[['',''],['남','남'],['여','여']])
     + fld('치매등급·구분','subject.level','text','placeholder="치매 3등급"')+'</div>'
+    + '<p class="note">실명 대신 대상 A 같은 별칭을 사용하세요. 확인하지 못한 정보는 빈칸으로 둘 수 있습니다.</p>'
     + '<div class="f4">'
       + fld('상의 색','subject.topColor','color')+fld('상의 설명','subject.topText','text','placeholder="분홍 자켓"')
       + fld('하의 색','subject.botColor','color')+fld('하의 설명','subject.botText','text','placeholder="검정 바지"')
@@ -5668,11 +5669,14 @@ function consoleHtml(){
     + '<div class="f2">'+fld('실종(최종목격) 시각','subject.missingAt','datetime-local')
     + fld('최종목격 장소','subject.lastSeenPlace','text','placeholder="마을회관 앞 버스정류장"')+'</div>'
     + fld('특이사항 (쉼표로 구분 → 태그로 표출)','subject.notes','textarea','placeholder="보행 가능, 혈압약 복용, 청력 저하"')
-    + '<div class="f3">'+fld('보행속도 km/h','subject.walkSpeed','number','step="0.1" min="0" max="15"')
+    + fld('배회감지기 착용','subject.tracker','checkbox')
+    + '<div class="note">지도에 표시하는 이동반경은 계획 보조용 추정치입니다. 계산 가정은 아래 상세 설정에서 확인하세요.</div>'
+    + '<details class="settings-fold" data-fold="subject-estimate"><summary>상세 설정 · 이동 추정반경 <span class="hint">보행 '+num(S.subject.walkSpeed,2)+'km/h · 계수 '+num(S.subject.decay,0.35)+'</span></summary><div>'
+    + '<div class="f2">'+fld('보행속도 km/h','subject.walkSpeed','number','step="0.1" min="0" max="15"')
     + fld('감쇄계수','subject.decay','number','step="0.05" min="0" max="1"')
-    + '<div style="padding-top:18px">'+fld('배회감지기 착용','subject.tracker','checkbox')+'</div></div>'
+    + '</div>'
     + '<div class="note">이동 추정반경 = 보행속도 × 실종 경과시간 × 감쇄계수. 실제 배회는 직선이 아니므로 '
-      + '감쇄계수(기본 0.35)로 줄여 잡습니다. 지도에 파란 점선 원으로 표시됩니다.</div>'
+      + '감쇄계수(기본 0.35)로 줄여 잡습니다. 지도에 파란 점선 원으로 표시됩니다.</div></div></details>'
     + '</div></div>';
   return h + consoleHtml2() + '</div>';
 }
