@@ -1911,7 +1911,11 @@ function validateImportPackage(raw){
   if(!isPlainObject(raw)) throw new Error('루트가 객체가 아닙니다.');
   var requiredObjects = ['meta','mission','subject','batteries','grid','safety','weather','ui'];
   for(var i=0;i<requiredObjects.length;i++){
-    if(!isPlainObject(raw[requiredObjects[i]])) throw new Error(requiredObjects[i]+' 항목이 없거나 올바르지 않습니다.');
+    if(!isPlainObject(raw[requiredObjects[i]])){
+      if(raw.format==='stayup-ai-candidates')throw new Error('AI 후보 파일은 AI 후보 메뉴의 AI 후보 불러오기로 여세요.');
+      if(raw.format==='stayup-offline-region')throw new Error('지역 지도 파일은 수색구역 → 지도·격자 설정의 지도 파일 가져오기로 여세요.');
+      throw new Error(requiredObjects[i]+' 항목이 없거나 올바르지 않습니다.');
+    }
   }
   ['drones','crew','events'].forEach(function(k){
     if(!Array.isArray(raw[k])) throw new Error(k+' 항목은 배열이어야 합니다.');
@@ -7118,7 +7122,11 @@ function aiCandidate(raw){
 }
 function aiPackage(raw){
   if(!isPlainObject(raw)||raw.format!=='stayup-ai-candidates'||raw.version!==1||!aiDate(raw.generatedAt,true)
-     ||!isPlainObject(raw.app)||!aiText(raw.app.version,40))aiFail('지원하지 않는 AI 후보 파일입니다.');
+     ||!isPlainObject(raw.app)||!aiText(raw.app.version,40)){
+    if(isPlainObject(raw)&&raw.format==='stayup-offline-region')aiFail('지역 지도 파일은 수색구역 → 지도·격자 설정의 지도 파일 가져오기로 여세요.');
+    if(isPlainObject(raw)&&isPlainObject(raw.meta)&&isPlainObject(raw.mission)&&isPlainObject(raw.grid))aiFail('상황 백업 파일은 데이터 메뉴의 JSON 불러오기로 여세요.');
+    aiFail('지원하지 않는 AI 후보 파일입니다.');
+  }
   var r=raw.run;
   if(!isPlainObject(r)||!aiUuid(r.id)||!Number.isSafeInteger(r.revision)||r.revision<1
      ||['completed','partial','failed','cancelled'].indexOf(r.status)<0
