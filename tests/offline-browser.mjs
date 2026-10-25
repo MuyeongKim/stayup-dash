@@ -185,7 +185,7 @@ try {
         async getZxy() { return {data: new Uint8Array([26,10,10,6,112,108,97,99,101,115,120,2]).buffer}; }
       }};
       pack = await STAYUP_OFFLINE.download({bbox: [127.2, 35.88, 127.22, 35.9], maxZoom: 14, name: '재시작 회귀검사 지도', sourceUrl: location.origin + '/synthetic.pmtiles'});
-      window.__alternatePack = await STAYUP_OFFLINE.download({bbox: [127.2, 35.88, 127.22, 35.9], maxZoom: 14, name: '가상 다른 지도 B · '+('긴 지도 이름 '.repeat(12)), sourceUrl: location.origin + '/synthetic.pmtiles'});
+      window.__alternatePack = await STAYUP_OFFLINE.download({bbox: [127.2, 35.88, 127.22, 35.9], maxZoom: 14, name: '가상 다른 지도 B · O\'Brien <B> & "지도" · '+('긴 지도 이름 '.repeat(12)), sourceUrl: location.origin + '/synthetic.pmtiles'});
       window.__unnamedPacks = [];
       for (let i=0;i<2;i++) window.__unnamedPacks.push(await STAYUP_OFFLINE.download({bbox:[127.2,35.88,127.22,35.9],maxZoom:14,sourceUrl:location.origin+'/synthetic.pmtiles'}));
     } finally { window.pmtiles = originalPMTiles; }
@@ -215,6 +215,18 @@ try {
   pass('duplicate default names use existing ID suffixes without rewriting stored names');
   const beforeViewing = await page.evaluate(async () => ({state: exportPayload(true), pack: await (await STAYUP_OFFLINE.exportPack(S.grid.offlineId)).text()}));
   const alternateId = await page.evaluate(() => window.__alternatePack.id);
+  assert.ok(names.some(name => name.includes('O\'Brien <B> & "지도"')));
+  assert.equal(await packSelect.locator('b,script,img').count(), 0);
+  await packSelect.selectOption(alternateId); await packSelect.focus();
+  await packSelect.evaluate(el => { window.__catalogOption = el.selectedOptions[0]; });
+  await page.waitForTimeout(2200);
+  assert.equal(await packSelect.inputValue(), alternateId);
+  assert.ok(await packSelect.evaluate(el => el.selectedOptions[0] === window.__catalogOption && el === document.activeElement));
+  pass('special characters remain literal and periodic refresh preserves the chosen option node and focus');
+  await page.evaluate(async () => { await STAYUP_OFFLINE.remove(window.__unnamedPacks[0].id); await refreshOfflinePacks(false); });
+  assert.equal(await packSelect.locator('option').count(), names.length - 1);
+  assert.equal(await packSelect.inputValue(), alternateId);
+  pass('a real catalog change refreshes choices while keeping a valid pending selection');
   for (const [width, height, theme] of [[390,844,'light'], [320,800,'dark']]) {
     await page.setViewportSize({width, height});
     await page.locator('[data-theme-target="console"][data-theme-value="'+theme+'"]').click();

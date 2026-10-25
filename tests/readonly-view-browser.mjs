@@ -43,6 +43,10 @@ try{
       await viewer.locator('#tab-mission').click();check('상황 입력은 비활성화 유지',!await viewer.locator('[data-path="mission.title"]').isEnabled());
       await viewer.locator('#tab-drone').click();await viewer.locator('#sec-drone details[data-fold]').first().locator('summary').click();
       check('인원·기체 추가와 명부 선택은 잠금 유지',!await viewer.locator('#btnAddDrone').isEnabled()&&!await viewer.locator('[data-pilot-target]').first().isEnabled());
+      await viewer.locator('#tab-grid').click();
+      await viewer.locator('details[data-fold="map-setup"]>summary').click();
+      await viewer.waitForTimeout(2200);
+      check('주기 갱신 후에도 지역 지도 저장·선택·파일 작업 잠금 유지',await viewer.locator('[data-offline-busy]').evaluateAll(els=>els.length>=7&&els.every(el=>el.disabled)));
       check('읽기 전용 창이 편집권을 가져오지 않음',await viewer.evaluate(()=>!ownsEditorLock())&&await owner.evaluate(()=>ownsEditorLock()));
       check('양쪽 상황·리비전·활동 기록이 보기 조작으로 바뀌지 않음',await viewer.evaluate(v=>exportPayload(true)===v,before)&&await owner.evaluate(v=>exportPayload(true)===v,before));
       await toggle.click();check('다시 안내를 열어도 편집 동작은 계속 비활성화',!await viewer.locator('[data-onboard-action="new"]').isEnabled()&&!await viewer.locator('[data-onboard-action="import"]').isEnabled());

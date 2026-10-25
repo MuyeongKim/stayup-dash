@@ -3708,7 +3708,8 @@ function offlineWorkspaceText(){
 function updateOfflineUi(){
   document.querySelectorAll('[data-offline-status]').forEach(function(el){el.textContent=offlineMessage||offlineCatalogError||'';});
   document.querySelectorAll('[data-offline-shell-status]').forEach(function(el){el.textContent=offlineShell.message||(offlineShell.ready?'앱 오프라인 준비 완료':'앱 재시작을 위한 오프라인 준비가 필요합니다.');});
-  document.querySelectorAll('[data-offline-busy]').forEach(function(el){el.disabled=!!offlineJob;});
+  var controlsDisabled=!!offlineJob||!ownsEditorLock();
+  document.querySelectorAll('[data-offline-busy]').forEach(function(el){el.disabled=controlsDisabled;});
   document.querySelectorAll('[data-offline-action="cancel"]').forEach(function(el){el.hidden=!offlineJob;});
   document.querySelectorAll('[data-offline-map-status]').forEach(function(el){
     var text=offlineWorkspaceText(),span=el.querySelector('span');span.textContent=text;el.hidden=!text;
@@ -3718,7 +3719,8 @@ function updateOfflineUi(){
   document.querySelectorAll('[data-offline-pack-select]').forEach(function(el){
     var old=el.value||S.grid.offlineId||'';
     var html='<option value="">저장한 지도 선택</option>'+offlinePacks.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(offlinePackName(p)+' · '+offlineDate(p)+' · '+offlineBytes(p.bytes)+' · 단계 '+p.maxZoom+(offlineCovers(p,S.grid.geo)?' · 현재 범위 포함':' · 다른 범위'))+'</option>';}).join('');
-    if(el.innerHTML!==html){el.innerHTML=html;el.value=old;}
+    /* innerHTML은 따옴표 등 엔티티를 정규화하므로 생성 문자열과 비교하면 매번 재생성된다. */
+    if(el.__offlineOptionsHtml!==html){el.innerHTML=html;el.__offlineOptionsHtml=html;el.value=old;}
   });
   var estimate=document.getElementById('offlineEstimate');
   if(estimate){
