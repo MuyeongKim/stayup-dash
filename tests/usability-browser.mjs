@@ -80,7 +80,11 @@ try{
   const popup=context.waitForEvent('page');await live.locator('a[href*="practice=1"]').click();const practice=await popup;observe(practice);
   await practice.waitForFunction(()=>typeof S==='object'&&S.drones.length===3&&ownsEditorLock());
   check('연습은 별도 창·가상 데이터·명확한 연습 표시 제공',practice.url().includes('practice=1')&&await practice.locator('.practice-badge').isVisible()&&await practice.title().then(t=>t.startsWith('[연습]')));
-  check('연습 상태·복구·편집권·이미지·지도키 저장소 분리',await practice.evaluate(()=>KEY==='stayup.practice.v1'&&SNAPKEY.startsWith('stayup.practice.')&&LOCKKEY.startsWith('stayup.practice.')&&IDB_NAME==='stayup.practice'&&ONLINE_KEYS_KEY.startsWith('stayup.practice.')));
+  const storage=await practice.evaluate(()=>({stateStorage:KEY,recoveryStorage:SNAPKEY,editorStorage:LOCKKEY,photoStorage:IDB_NAME,onlineStorage:ONLINE_KEYS_KEY}));
+  check('연습 상태·복구·편집권·이미지·지도키 저장소 분리',
+    storage.stateStorage==='stayup.practice.v1'&&storage.recoveryStorage.startsWith('stayup.practice.')
+    &&storage.editorStorage.startsWith('stayup.practice.')&&storage.photoStorage==='stayup.practice'
+    &&storage.onlineStorage.startsWith('stayup.practice.'));
   await offlineMarker(practice,'stayup-practice-offline-regions-v1',true);
   const requests=[];practice.on('request',r=>{if(!r.url().startsWith(new URL(url).origin))requests.push(r.url());});
   await practice.evaluate(()=>{S.mission.title='연습에서만 수정';commit();fetchWeather(false);});
