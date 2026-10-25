@@ -5598,7 +5598,7 @@ function consoleHtml(){
       + '입력한 내용이 새로고침 후 사라지고, 표출 화면과의 동기화도 불안정합니다. '
       + '<b>Chrome 또는 Edge</b>로 열어 주세요. (Safari는 file:// 에서 저장을 막습니다)</div>';
   }
-  if(!editor&&STORAGE_OK) h+='<div class="warn-strip danger"><b>다른 조작 창이 편집 중입니다.</b> 동시 입력 유실 방지를 위해 이 창의 입력은 잠겨 있습니다. 기존 창이 닫힌 뒤 편집권을 가져오세요.</div>';
+  if(!editor&&STORAGE_OK) h+='<div class="warn-strip danger"><b>다른 조작 창이 편집 중입니다.</b> 이 창에서는 안내 확인·화면 테마 변경과 내용 보기가 가능합니다. 입력하려면 기존 창이 닫힌 뒤 편집권을 가져오세요.</div>';
   if(STARTUP_WARNINGS.length)h+='<div class="warn-strip danger">'+esc(STARTUP_WARNINGS.join(' · '))+'</div>';
 
   /* --- 즉시 조작(가장 많이 쓰는 것 위로) --- */
@@ -6369,6 +6369,8 @@ function bindConsole(root){
         ||['eventSearch','eventTypeFilter','eventStatusFilter'].indexOf(el.id)>=0
         ||el.hasAttribute('data-map-layer')||(el.hasAttribute('data-map-action')&&el.dataset.mapAction!=='paint')
         ||el.hasAttribute('data-priority-toggle')
+        ||el.hasAttribute('data-theme-target')
+        ||['toggle','close'].includes(el.getAttribute('data-onboard-action'))
         ||el.id==='btnOpenDisplay'||el.id==='btnCloseDrawer'||el.id==='btnMoreNav';
       if(!safe)el.disabled=true;
     });
@@ -7621,11 +7623,13 @@ function renderOnboarding(root){
   guide.hidden=!onboardingOpen;
   root.querySelectorAll('[data-onboard-action="toggle"]').forEach(function(b){b.setAttribute('aria-expanded',String(onboardingOpen));});
   var steps=preparationSteps(),done=steps.filter(function(s){return s.done;}).length;
-  var key=JSON.stringify([steps,PRACTICE_MODE,hasIncidentContent()]);
+  var editor=ownsEditorLock(),editDisabled=editor?'':' disabled';
+  var startNote=!editor?'이 창은 읽기 전용입니다. 안내와 테마는 사용할 수 있으며, 새 상황 시작과 파일 불러오기는 편집권을 가진 창에서 진행하세요.':hasIncidentContent()?'저장된 내용이 있습니다. 이어서 사용하려면 아래 항목이나 원하는 메뉴를 누르세요.':'입력은 자동으로 이 브라우저에 저장됩니다. 상황을 옮기거나 종료할 때는 파일로 백업하세요.';
+  var key=JSON.stringify([steps,PRACTICE_MODE,hasIncidentContent(),editor]);
   if(guide.dataset.content!==key){
     guide.dataset.content=key;
     guide.innerHTML='<div class="onboarding-heading"><div><span class="guide-eyebrow">'+(PRACTICE_MODE?'실제 기록과 분리된 연습':'처음 사용 안내')+'</span><h2 id="onboardingTitle">'+(hasIncidentContent()?'지금 할 일을 순서대로 확인하세요':'처음이라면 여기서 시작하세요')+'</h2></div><button class="btn" type="button" data-onboard-action="close">안내 접기</button></div>'
-      +(PRACTICE_MODE?'<p class="practice-notice">연습 데이터만 사용합니다. 실제 상황·지도·복구본과 표출 연결은 분리되어 있으며 자동 보관·자동 폴더 읽기는 사용하지 않습니다. <a href="'+esc(workspaceURL(false))+'" target="_blank" rel="noopener">실제 상황 화면 열기</a></p>':'<div class="start-actions"><button class="btn primary" type="button" data-onboard-action="new">새 상황 시작</button><button class="btn" type="button" data-onboard-action="import">저장한 상황 불러오기</button><a class="btn" href="'+esc(workspaceURL(true))+'" target="_blank" rel="noopener">가상 데이터로 연습하기 ↗</a></div><p class="note">'+(hasIncidentContent()?'저장된 내용이 있습니다. 이어서 사용하려면 아래 항목이나 원하는 메뉴를 누르세요.':'입력은 자동으로 이 브라우저에 저장됩니다. 상황을 옮기거나 종료할 때는 파일로 백업하세요.')+'</p>')
+      +(PRACTICE_MODE?'<p class="practice-notice">연습 데이터만 사용합니다. 실제 상황·지도·복구본과 표출 연결은 분리되어 있으며 자동 보관·자동 폴더 읽기는 사용하지 않습니다. <a href="'+esc(workspaceURL(false))+'" target="_blank" rel="noopener">실제 상황 화면 열기</a></p>':'<div class="start-actions"><button class="btn primary" type="button" data-onboard-action="new"'+editDisabled+'>새 상황 시작</button><button class="btn" type="button" data-onboard-action="import"'+editDisabled+'>저장한 상황 불러오기</button><a class="btn" href="'+esc(workspaceURL(true))+'" target="_blank" rel="noopener">가상 데이터로 연습하기 ↗</a></div><p class="note">'+esc(startNote)+'</p>')
       +'<div class="guide-progress">기본 입력 현황 <strong>'+done+' / 4</strong><span>입력 현황과 실제 비행 승인은 별개입니다.</span></div>'
       +'<ol class="preparation-list">'+steps.map(function(s){return '<li class="'+(s.done?'is-done':'')+'"><div><h3>'+s.title+'</h3><p>'+esc(s.hint)+'</p></div><span class="step-status">'+(s.done?'✓ 입력 확인':s.sec==='safety'?'사유 확인':'미완료')+'</span><button class="btn" type="button" data-act="nav" data-sec="sec-'+s.sec+'">'+s.label+'</button></li>';}).join('')+'</ol><p class="note">실종자 정보는 <b>실종자</b> 메뉴에서 입력합니다. 확인하지 못한 정보는 빈칸으로 두고, 입력된 값만으로 수색 종료나 비행 가능 여부를 확정하지 마세요.</p>';
   }
@@ -7662,7 +7666,7 @@ document.addEventListener('click',function(ev){
   var b=ev.target.closest('[data-onboard-action]');if(!b)return;
   var root=b.closest('#consoleRoot,#drawerIn');if(!root)return;
   if(b.dataset.onboardAction==='new'){startNewIncident(root);return;}
-  if(b.dataset.onboardAction==='import'){scrollToSection(root,root.querySelector('#sec-data'));root.querySelector('#importFile').click();return;}
+  if(b.dataset.onboardAction==='import'){if(!ensureEditor())return;scrollToSection(root,root.querySelector('#sec-data'));root.querySelector('#importFile').click();return;}
   onboardingOpen=b.dataset.onboardAction==='toggle'?!onboardingOpen:false;renderOnboarding(root);
 });
 

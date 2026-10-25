@@ -370,6 +370,14 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 
 ### 이번 업데이트
 
+2026-10-26 야간 사용성 검토 사이클 02에서 읽기 전용 창의 `처음 사용 안내`와 테마 버튼까지 잠겨 있던 문제를 수정했습니다. 안내 열기·접기와 보기 테마 변경은 허용하며, 새 상황·불러오기·업무 입력·기체 및 인원 추가·조종자 명부 선택의 편집 잠금은 유지합니다. 안내가 원격 입력으로 다시 그려져도 같은 경계를 적용합니다.
+
+검증은 [읽기 전용 보기 검사](./tests/readonly-view-browser.mjs)에서 가상 상황을 소유한 창과 읽기 전용 창을 함께 열어 수행합니다. [검토 기록과 화면](./docs/overnight-ux-review-20261025.md).
+
+전용 검사는 HTTP·파일 직접 실행 각각 13/13, 기존 전체 회귀 411/411, 화면·데이터 보존 85/85, 기존 새 사용자 검사 35/35를 통과했습니다.
+
+### 이전 업데이트 (v1.2.17)
+
 2026-10-25 야간 사용성 검토 사이클 01에서 `새 상황 → 인원 등록 → 기체 등록`을 직접 수행하고 입력 동선을 보완했습니다. 인원 추가 뒤 새 성명 칸으로, 기체 추가 뒤 새 조종자 칸으로 이동합니다. `등록된 조종자` 선택 메뉴로 명부의 별칭을 가져오고, 필요하면 기존 입력칸에서 직접 수정할 수 있습니다. 별칭·역할·투입 상태를 확인하는 기존 안전 판단은 유지합니다.
 
 새 기능 검사 HTTP·파일 직접 실행 각각 **35/35**를 통과했습니다. [야간 검토 기록](./docs/overnight-ux-review-20261025.md)에 사이클별 재현·수정·검증과 다음 확인 항목을 남깁니다.
@@ -694,6 +702,8 @@ node tests/offline-browser.mjs --modules /absolute/path/to/node_modules
 ```sh
 node tests/usability-browser.mjs --modules /absolute/path/to/node_modules
 node tests/usability-browser.mjs --modules /absolute/path/to/node_modules --file
+node tests/readonly-view-browser.mjs --modules /absolute/path/to/node_modules
+node tests/readonly-view-browser.mjs --modules /absolute/path/to/node_modules --file
 ```
 
 ### 사용설명서 다시 만들기
