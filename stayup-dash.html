@@ -652,6 +652,7 @@ textarea{resize:vertical;min-height:52px}
 .f4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .f3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cons :is(.f2,.f3,.f4):has(>.f>input[type="datetime-local"]){grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
 @media (max-width:760px){.f4,.f3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.weather-observation{grid-template-columns:1fr}}
 .sens-pick{display:flex;gap:5px;flex-wrap:wrap}
