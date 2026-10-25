@@ -6,7 +6,7 @@
 'use strict';
 
 /* OFFLINE_SHELL_MANIFEST_BEGIN */
-const SHELL_MANIFEST = {"schema":1,"build":"688a41308d4835e8b5330fe9","assets":[{"path":"stayup-dash.html","sha256":"a3643aed7b7137bfd6a2bd8a386df43a82eaa1a8749a90d88f36688418202e13"},{"path":"offline-map-engine.js","sha256":"82217abcf46b0198d315558e8318d2706b7c98427cbb334421225b2098aa6c2b"},{"path":"vendor/maplibre-gl-5.24.0.js","sha256":"45a9b07a9189ce56054c620a947ccf41e291e58c95e9b61533b740aaa65ee5cb"},{"path":"vendor/maplibre-gl-5.24.0.css","sha256":"ab1e70d59ec40465bae7e7030da2f3ccf28133fd502e62bd598eefbadfd7a732"},{"path":"vendor/pmtiles-4.5.0.js","sha256":"caf981bc46f6327ee7e65d5dc964d89d38a69f60edca2bd4c5c890c21b554c6c"}]};
+const SHELL_MANIFEST = {"schema":1,"build":"c809212236a8a762e9955b10","assets":[{"path":"stayup-dash.html","sha256":"bf413215faf7e85fe10531b54f43737c40682d5ef8e7a90e87c747e325c6af8f"},{"path":"offline-map-engine.js","sha256":"82217abcf46b0198d315558e8318d2706b7c98427cbb334421225b2098aa6c2b"},{"path":"vendor/maplibre-gl-5.24.0.js","sha256":"45a9b07a9189ce56054c620a947ccf41e291e58c95e9b61533b740aaa65ee5cb"},{"path":"vendor/maplibre-gl-5.24.0.css","sha256":"ab1e70d59ec40465bae7e7030da2f3ccf28133fd502e62bd598eefbadfd7a732"},{"path":"vendor/pmtiles-4.5.0.js","sha256":"caf981bc46f6327ee7e65d5dc964d89d38a69f60edca2bd4c5c890c21b554c6c"}]};
 /* OFFLINE_SHELL_MANIFEST_END */
 
 const SHELL_PREFIX = 'stayup-shell-' + SHELL_MANIFEST.build + '-';
