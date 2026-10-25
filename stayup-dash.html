@@ -3691,13 +3691,18 @@ function offlineRequirements(){
 }
 function signalOfflineCatalog(){try{localStorage.setItem(OFFLINE_CATALOG_KEY,Date.now()+'-'+uid());}catch(ignore){}}
 function offlineStatus(message){offlineMessage=message||'';updateOfflineUi();}
+function offlinePackName(pack){
+  var name=sanText(pack&&pack.name,80).trim()||'저장 지역 지도';
+  var duplicates=offlinePacks.filter(function(p){return (sanText(p&&p.name,80).trim()||'저장 지역 지도')===name;}).length>1;
+  return name+(duplicates&&pack&&pack.id?' ['+sanText(pack.id,120).slice(-6)+']':'');
+}
 function offlineWorkspaceText(){
   var pack=selectedOfflinePack();
   if(effectiveMapSource()==='offline'){
     if(!pack)return offlineCatalogLoaded?'연결된 지역 지도 없음 · 지도·격자 설정에서 저장하거나 지도 파일을 가져오세요.':'저장한 지역 지도를 확인하는 중…';
-    return (S.grid.source==='offline'?'저장한 지역 지도 사용':'연결 장애 · 저장한 지역 지도로 전환')+' · 자료 '+offlineDate(pack)+' · 상세 단계 '+pack.maxZoom+' · 저장 범위 안에서 사용';
+    return (S.grid.source==='offline'?'저장한 지역 지도 사용':'연결 장애 · 저장한 지역 지도로 전환')+' · '+offlinePackName(pack)+' · 자료 '+offlineDate(pack)+' · 상세 단계 '+pack.maxZoom+' · 저장 범위 안에서 사용';
   }
-  return pack?'오프라인 대비 지도 연결됨 · 자료 '+offlineDate(pack)+(offlineShell.ready?' · 앱 재시작 준비 완료':' · 앱 오프라인 준비 상태 확인 필요'):'';
+  return pack?'오프라인 대비 지도 연결됨 · '+offlinePackName(pack)+' · 자료 '+offlineDate(pack)+(offlineShell.ready?' · 앱 재시작 준비 완료':' · 앱 오프라인 준비 상태 확인 필요'):'';
 }
 function updateOfflineUi(){
   document.querySelectorAll('[data-offline-status]').forEach(function(el){el.textContent=offlineMessage||offlineCatalogError||'';});
@@ -3711,7 +3716,7 @@ function updateOfflineUi(){
   });
   document.querySelectorAll('[data-offline-pack-select]').forEach(function(el){
     var old=el.value||S.grid.offlineId||'';
-    var html='<option value="">저장한 지도 선택</option>'+offlinePacks.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(offlineDate(p)+' · '+offlineBytes(p.bytes)+' · 단계 '+p.maxZoom+(offlineCovers(p,S.grid.geo)?' · 현재 범위 포함':' · 다른 범위'))+'</option>';}).join('');
+    var html='<option value="">저장한 지도 선택</option>'+offlinePacks.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(offlinePackName(p)+' · '+offlineDate(p)+' · '+offlineBytes(p.bytes)+' · 단계 '+p.maxZoom+(offlineCovers(p,S.grid.geo)?' · 현재 범위 포함':' · 다른 범위'))+'</option>';}).join('');
     if(el.innerHTML!==html){el.innerHTML=html;el.value=old;}
   });
   var estimate=document.getElementById('offlineEstimate');

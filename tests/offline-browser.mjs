@@ -15,6 +15,9 @@ const moduleIndex = process.argv.indexOf('--modules');
 const moduleRoot = moduleIndex >= 0 ? process.argv[moduleIndex + 1] : process.env.STAYUP_TEST_MODULES;
 if (moduleIndex >= 0 && !moduleRoot) throw new Error('--modules requires an absolute node_modules directory');
 const {chromium} = await import(moduleRoot ? pathToFileURL(path.join(moduleRoot, 'playwright/index.mjs')).href : 'playwright');
+const outputIndex = process.argv.indexOf('--out');
+const outputDirectory = outputIndex < 0 ? null : path.resolve(process.argv[outputIndex + 1]);
+if (outputDirectory) await mkdir(outputDirectory, {recursive: true});
 const temp = await mkdtemp(path.join(os.tmpdir(), 'stayup-offline-'));
 const fixture = path.join(temp, 'app'), profile = path.join(temp, 'profile');
 await mkdir(fixture);
@@ -52,7 +55,7 @@ const origin = await new Promise(resolve => {
 const appURL = origin + '/stayup-dash.html?offline-browser-test=1';
 const launch = () => chromium.launchPersistentContext(profile, {
   headless: true, channel: 'chrome', serviceWorkers: 'allow',
-  viewport: {width: 1440, height: 1000},
+  viewport: {width: 1440, height: 1000}, deviceScaleFactor: 3,
   args: ['--disable-application-cache']
 });
 function pass(name) { passed++; console.log('PASS ' + name); }
@@ -182,6 +185,9 @@ try {
         async getZxy() { return {data: new Uint8Array([26,10,10,6,112,108,97,99,101,115,120,2]).buffer}; }
       }};
       pack = await STAYUP_OFFLINE.download({bbox: [127.2, 35.88, 127.22, 35.9], maxZoom: 14, name: '재시작 회귀검사 지도', sourceUrl: location.origin + '/synthetic.pmtiles'});
+      window.__alternatePack = await STAYUP_OFFLINE.download({bbox: [127.2, 35.88, 127.22, 35.9], maxZoom: 14, name: '가상 다른 지도 B · '+('긴 지도 이름 '.repeat(12)), sourceUrl: location.origin + '/synthetic.pmtiles'});
+      window.__unnamedPacks = [];
+      for (let i=0;i<2;i++) window.__unnamedPacks.push(await STAYUP_OFFLINE.download({bbox:[127.2,35.88,127.22,35.9],maxZoom:14,sourceUrl:location.origin+'/synthetic.pmtiles'}));
     } finally { window.pmtiles = originalPMTiles; }
     await refreshOfflinePacks(false);
     S.grid.pinLast = {x: 25, y: 35}; S.grid.pinFound = {x: 72, y: 61};
@@ -196,6 +202,40 @@ try {
   });
   assertMapRendered(await inspectMap(page), mission.offlineId);
   pass('the actual app, local tile database and MapLibre canvas render together with anchored pins and painted cells');
+  await page.locator('details[data-fold="map-setup"]>summary').click();
+  const packSelect = page.locator('[data-offline-pack-select]');
+  const names = await packSelect.locator('option').allTextContents();
+  assert.ok(names.some(name => name.startsWith('재시작 회귀검사 지도 · ')));
+  assert.ok(names.some(name => name.startsWith('가상 다른 지도 B · ')));
+  assert.equal(new Set(names).size, names.length);
+  pass('stored map choices expose distinct existing names alongside date, size, detail and coverage');
+  const unnamed = await page.evaluate(() => window.__unnamedPacks.map(p => ({id:p.id,name:p.name})));
+  for (const item of unnamed) assert.ok(names.some(name => name.startsWith('저장 지역 지도 ['+item.id.slice(-6)+'] · ')));
+  assert.ok(unnamed.every(item => item.name==='저장 지역 지도'));
+  pass('duplicate default names use existing ID suffixes without rewriting stored names');
+  const beforeViewing = await page.evaluate(async () => ({state: exportPayload(true), pack: await (await STAYUP_OFFLINE.exportPack(S.grid.offlineId)).text()}));
+  const alternateId = await page.evaluate(() => window.__alternatePack.id);
+  for (const [width, height, theme] of [[390,844,'light'], [320,800,'dark']]) {
+    await page.setViewportSize({width, height});
+    await page.locator('[data-theme-target="console"][data-theme-value="'+theme+'"]').click();
+    await packSelect.selectOption(alternateId); await packSelect.scrollIntoViewIfNeeded();
+    const rect = await packSelect.boundingBox();
+    assert.ok(rect.x >= 0 && rect.x + rect.width <= width);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    pass(width+'px '+theme+' catalog with a long name fits without horizontal overflow');
+    await packSelect.selectOption(mission.offlineId);
+    if (outputDirectory && width === 390) {
+      await page.evaluate(() => {const field=document.querySelector('[data-offline-pack-select]'),bar=document.querySelector('.console-workspace-bar');window.scrollBy(0,field.getBoundingClientRect().top-bar.getBoundingClientRect().bottom-24);});
+      const field = await packSelect.boundingBox(), buttons = await page.locator('[data-offline-action="use"]').evaluate(e => e.parentElement.getBoundingClientRect().toJSON());
+      await page.screenshot({path:path.join(outputDirectory,'offline-choice-preview.png'),clip:{x:field.x-2,y:field.y-23,width:field.width+4,height:buttons.bottom-field.y+27},scale:'device'});
+    }
+    if (outputDirectory) await page.screenshot({path:path.join(outputDirectory,'offline-catalog-'+width+'.png'),scale:'css'});
+  }
+  await page.setViewportSize({width:1440,height:1000});
+  await page.locator('[data-theme-target="console"][data-theme-value="light"]').click();
+  assert.equal(await page.evaluate(() => exportPayload(true)), beforeViewing.state);
+  assert.equal(await page.evaluate(async () => (await STAYUP_OFFLINE.exportPack(S.grid.offlineId)).text()), beforeViewing.pack);
+  pass('catalog selection and theme changes preserve mission data, selected map and every exported map byte');
   const nextApp = await readFile(path.join(fixture, 'stayup-dash.html'), 'utf8') + '\n<!-- offline-browser-next-build -->\n';
   await writeFile(path.join(fixture, 'stayup-dash.html'), nextApp);
   execFileSync(process.execPath, [path.join(fixture, 'scripts/build-offline-shell.mjs')]);
@@ -240,6 +280,12 @@ try {
   assertMapRendered(await inspectMap(page), mission.offlineId);
   assert.deepEqual(externalRequests, []);
   pass('the actual map canvas, stored vector tiles, pins and painted cells render after a fully offline browser restart');
+  assert.ok((await page.locator('#consMapWorkspace [data-offline-map-status]').innerText()).includes('재시작 회귀검사 지도'));
+  if (!await page.locator('details[data-fold="map-setup"]').evaluate(e => e.open)) await page.locator('details[data-fold="map-setup"]>summary').click();
+  const restartedNames = await page.locator('[data-offline-pack-select] option').allTextContents();
+  assert.ok(restartedNames.some(name => name.startsWith('가상 다른 지도 B · ')), JSON.stringify({names: restartedNames, packs: await page.evaluate(() => offlinePacks.map(p => ({id:p.id,name:p.name})))}));
+  assert.deepEqual(externalRequests, []);
+  pass('active map identity and catalog names remain visible after fully offline restart');
   console.log(JSON.stringify({passed, scope: 'Real persistent Chrome; HTTP server shut down before offline restart; no provider credentials or external map requests.'}, null, 2));
 } finally {
   if (browser) await browser.close();
