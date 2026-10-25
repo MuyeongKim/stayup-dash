@@ -102,7 +102,7 @@ try{
     await page.keyboard.press('Space');
     check(`${w}px 조작: Space로 상세 접기`,await toggle.getAttribute('aria-expanded')==='false');
     await page.evaluate(()=>window.scrollTo(0,1400));
-    const sticky=await page.locator('.operation-brief').boundingBox(),verdict=await page.locator('.mobile-verdict').boundingBox();
+    const sticky=await page.locator('.console-workspace-bar').boundingBox(),verdict=await page.locator('.mobile-verdict').boundingBox();
     check(`${w}px 조작: 지시와 안전 판정이 함께 상단 유지`,sticky.y>=-1&&sticky.y<=2&&verdict.y>=sticky.y&&verdict.y+verdict.height<h,{sticky,verdict});
     check(`${w}px 조작: 가로 넘침 없음`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     await page.screenshot({path:path.join(out,`console-${w}-scrolled.png`),fullPage:false});
@@ -126,6 +126,21 @@ try{
     check(`${w}px→PC: 지시 중복 없이 원위치 복귀`,await display.locator('#displayPriority').count()===1);
   }
   await page.setViewportSize({width:1366,height:768});
+  const stateBeforeTabs=await page.evaluate(()=>exportPayload(true));
+  for(const [key,label] of [['quick','즉시조작'],['mission','상황'],['subject','실종자'],['drone','드론'],['batt','배터리'],['crew','인원'],['grid','수색구역'],['ai','AI 후보'],['safety','안전·기상'],['data','데이터']]){
+    await page.locator('#tab-'+key).click();
+    check(`${label}: 선택한 입력 영역만 표시`,await page.evaluate(key=>{
+      const panels=[...document.querySelectorAll('#consoleRoot [role="tabpanel"]')].filter(p=>p.getClientRects().length);
+      return panels.length===1&&panels[0].id==='sec-'+key&&document.querySelector('#tab-'+key).getAttribute('aria-selected')==='true';
+    },key));
+    if(['mission','drone','grid','ai'].includes(key))await page.screenshot({path:path.join(out,`console-tab-${key}-1366.png`),fullPage:false});
+  }
+  check('실제 메뉴 클릭은 기존 상황·기체·핀·후보·기록을 변경하지 않음',await page.evaluate(()=>exportPayload(true))===stateBeforeTabs);
+  await page.locator('#tab-quick').click();await page.locator('#tab-quick').focus();
+  await page.keyboard.press('ArrowRight');
+  check('실제 방향키로 포커스만 이동하고 선택 상태 유지',await page.locator('#tab-mission').evaluate(e=>e===document.activeElement)&&await page.locator('#tab-quick').getAttribute('aria-selected')==='true');
+  await page.keyboard.press('Enter');
+  check('Enter로 선택한 입력 탭 활성화',await page.locator('#sec-mission').isVisible()&&await page.locator('#tab-mission').getAttribute('aria-selected')==='true');
   await page.evaluate(()=>scrollToSection(document.querySelector('#consoleRoot'),document.querySelector('#sec-mission')));
   await page.locator('[data-path="mission.priorityOrder"]').fill('통신 확인 후 C3 후보를 지상팀과 대조하세요.');
   await display.waitForFunction(()=>document.querySelector('#displayPriority [data-priority-text]').textContent.includes('C3 후보'));
@@ -138,12 +153,21 @@ try{
   await page.locator('[data-ai-response="note"]').first().fill('반응형 전환 중 대응 메모 초안');
   await page.setViewportSize({width:390,height:844});await page.setViewportSize({width:1366,height:768});
   check('화면 크기 변경이 작성 중 대응 메모를 보존',await page.locator('[data-ai-response="note"]').first().inputValue()==='반응형 전환 중 대응 메모 초안');
+  await page.locator('#tab-drone').click();await page.locator('#tab-ai').click();
+  check('다른 입력 탭을 다녀와도 저장 전 AI 대응 메모 보존',await page.locator('[data-ai-response="note"]').first().inputValue()==='반응형 전환 중 대응 메모 초안');
+  await page.setViewportSize({width:390,height:844});
+  await page.waitForFunction(()=>{const e=document.querySelector('#tab-ai'),a=e.getBoundingClientRect(),b=e.parentElement.getBoundingClientRect();return a.left>=b.left-2&&a.right<=b.right+2;});
+  check('화면을 줄여도 선택한 메뉴가 가로 스크롤 밖으로 사라지지 않음',await page.locator('#tab-ai').evaluate(e=>{const a=e.getBoundingClientRect(),b=e.parentElement.getBoundingClientRect();return a.left>=b.left-2&&a.right<=b.right+2;}));
+  await page.screenshot({path:path.join(out,'console-tab-ai-390.png'),fullPage:false});
+  await page.evaluate(()=>renderConsole(document.querySelector('#consoleRoot')));
+  check('입력 영역 재표시 뒤에도 선택 메뉴와 작성 중 메모 유지',await page.locator('#tab-ai').evaluate(e=>{const a=e.getBoundingClientRect(),b=e.parentElement.getBoundingClientRect();return a.left>=b.left-2&&a.right<=b.right+2&&e.getAttribute('aria-selected')==='true';})&&await page.locator('[data-ai-response="note"]').first().inputValue()==='반응형 전환 중 대응 메모 초안');
+  await page.setViewportSize({width:1366,height:768});
   check('보기·상세 펼침·크기 변경이 기존 대응 기록을 덮어쓰지 않음',await page.evaluate(()=>S.ai.candidates[0].responseNote)==='기존 대응 기록 보존 <img src=x>');
   await page.locator('[data-priority-toggle="console"]').click();
   const beforeView=await page.evaluate(()=>exportPayload(true));
   await page.locator('[data-priority-toggle="console"]').click();await display.locator('[data-priority-toggle="display"]').click();await display.locator('[data-priority-toggle="display"]').click();
   check('상세 펼침 자체는 저장 상태·리비전·이벤트를 바꾸지 않음',await page.evaluate(()=>exportPayload(true))===beforeView);
-  await page.evaluate(()=>{document.querySelector('details[data-fold="data"]').open=true;});
+  await page.locator('#tab-data').click();
   const downloadEvent=page.waitForEvent('download');await page.locator('[data-act="export"]').click();const download=await downloadEvent;
   const backupPath=path.join(out,'exported-backup.json');await download.saveAs(backupPath);
   const backup=JSON.parse(await readFile(backupPath,'utf8'));

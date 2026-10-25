@@ -126,7 +126,7 @@ function pick(act, v){
   return !!b;
 }
 function gotoSection(id){
-  var b = W.document.querySelector('[data-sec="'+id+'"]');
+  var b = W.document.querySelector('.ct-nav [data-sec="'+id+'"]');
   if(b) b.click();
 }
 async function loadMap(w, h, color){
@@ -669,10 +669,10 @@ async function run(){
 
   var navBtns = W.document.querySelectorAll('.ct-nav [data-act="nav"]');
   gotoSection('sec-grid'); await wait(250);
-  var bar = W.document.querySelector('.cons-top').getBoundingClientRect();
+  var bar = W.document.querySelector('.console-workspace-bar').getBoundingClientRect();
   var h3 = W.document.querySelector('#sec-grid>h2').getBoundingClientRect();
   ok('섹션 이동이 상단 바에 가리지 않는다',
-    navBtns.length === 9 && h3.top >= bar.bottom - 1,
+    navBtns.length === 10 && h3.top >= bar.bottom - 1,
     '칩 ' + navBtns.length + '개');
 
   ok('조작 패널 제목 계층이 H1 다음 H2로 이어진다',

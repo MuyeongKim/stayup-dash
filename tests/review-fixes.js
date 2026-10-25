@@ -278,19 +278,21 @@ async function reviewConsoleAndDisplay(){
   var visibleSectionOrder=Array.prototype.map.call(root.querySelectorAll('.cons>.sec'),function(section){return section.id;});
   ok('현장 반복 조작을 빠른기록·기체·배터리·격자 순서로 배치한다',
     visibleSectionOrder.slice(0,4).join(',')==='sec-quick,sec-drone,sec-batt,sec-grid');
-  ok('상황·실종자·인원·데이터 설정은 키보드로 여는 기본 접힘 영역이다',
+  ok('상황·실종자·인원·데이터 설정은 선택 전까지 숨겨진 입력 탭이다',
     ['mission','subject','crew','data'].every(function(key){
-      var fold=root.querySelector('details[data-fold="'+key+'"]');
-      return !!fold&&!fold.open&&!!fold.querySelector(':scope>summary');
+      var panel=root.querySelector('#sec-'+key),tab=root.querySelector('#tab-'+key);
+      return !!panel&&panel.hidden&&!!tab&&tab.getAttribute('role')==='tab';
     }));
   gotoSection('sec-mission');
   var missionHeading=root.querySelector('#sec-mission>h2');
-  ok('상단 메뉴는 접힌 설정을 열고 해당 제목으로 포커스를 이동한다',
-    root.querySelector('details[data-fold="mission"]').open&&W.document.activeElement===missionHeading
-    &&root.querySelector('.ct-nav [data-sec="sec-mission"]').getAttribute('aria-current')==='location');
+  ok('상단 메뉴는 해당 입력만 표시하고 선택한 탭에 포커스를 유지한다',
+    !root.querySelector('#sec-mission').hidden&&missionHeading.getClientRects().length>0
+    &&W.document.activeElement===root.querySelector('#tab-mission')
+    &&root.querySelector('#tab-mission').getAttribute('aria-selected')==='true',
+    '포커스 '+W.document.activeElement.id+' · 선택 '+root.querySelector('#tab-mission').getAttribute('aria-selected'));
   W.renderConsole(root);
-  ok('값 저장으로 패널이 다시 그려져도 열어 둔 설정을 유지한다',
-    root.querySelector('details[data-fold="mission"]').open);
+  ok('값 저장으로 패널이 다시 그려져도 선택한 입력 탭을 유지한다',
+    !root.querySelector('#sec-mission').hidden&&root.querySelector('#tab-mission').getAttribute('aria-selected')==='true');
 
   var frame=document.getElementById('app'),oldWidth=frame.style.width,oldHeight=frame.style.height;
   frame.style.width='1920px';frame.style.height='1080px';

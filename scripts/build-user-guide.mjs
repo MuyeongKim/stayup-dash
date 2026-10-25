@@ -46,7 +46,7 @@ const chapterHtml = await Promise.all(chapters.map(async chapter =>
   `<section class="sheet chapter" id="${chapter.id}"><p class="eyebrow">STAY UP · 사용 안내</p><h2>${escape(chapter.title)}</h2>${await renderMarkdown(chapter.markdown)}</section>`));
 const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>STAY UP 사용설명서</title><meta name="description" content="STAY UP 사용설명서. 노트북 표출·모바일 우선 지시, 지역 지도 미리 저장, 사진 후보 연계와 상황·지도 백업 안내.">
+<title>STAY UP 사용설명서</title><meta name="description" content="STAY UP 사용설명서. 메뉴별 입력 탭·공통 경보·모바일 우선 지시, 지역 지도 미리 저장, 사진 후보 연계와 상황·지도 백업 안내.">
 <style>
 :root{color-scheme:light;--ink:#152534;--muted:#506576;--line:#d5dfe6;--orange:#c44909}
 *{box-sizing:border-box}html{scroll-padding-top:85px}body{margin:0;background:#eef2f5;color:var(--ink);font:16px/1.75 'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;word-break:keep-all;overflow-wrap:anywhere}
@@ -62,7 +62,7 @@ blockquote{margin:18px 0;padding:12px 16px;border-left:4px solid #de681f;backgro
 @media print{body{background:white;font-size:11pt;line-height:1.62;color:#142331;-webkit-print-color-adjust:exact;print-color-adjust:exact}.toolbar,.toc,.mobile-toc,.screen-footer{display:none!important}.layout{display:block;max-width:none;margin:0;padding:0}.sheet{padding:0;margin:0;border:0;border-radius:0;box-shadow:none;break-before:page}.cover{break-before:auto}.eyebrow{font-size:9pt}h1{font-size:31pt;margin-bottom:20pt}h2{font-size:21pt;line-height:1.3;margin:0 0 16pt;padding-bottom:10pt}h3{font-size:13pt;margin-top:18pt}p{margin:9pt 0}ol,ul{margin:10pt 0;padding-left:1.6em}li{margin:6pt 0;break-inside:avoid}table{font-size:9.2pt;line-height:1.5;margin:12pt 0}td,th{padding:5pt 7pt}tr{break-inside:avoid}thead{display:table-header-group}blockquote{font-size:10pt;padding:9pt 12pt;margin:13pt 0}.guide-figure{margin:13pt 0;break-inside:avoid}.guide-figure img{max-height:104mm;object-fit:contain;object-position:left center}.guide-figure figcaption{font-size:9pt;line-height:1.5;margin-top:6pt}.page-toc{gap:7pt;margin-top:24pt;padding-top:16pt}.page-toc a{font-size:11pt;text-decoration:none}.meta{font-size:9pt}h2,h3{break-after:avoid}.chapter p{orphans:3;widows:3}a{color:#075987}}
 </style></head><body>
 <header class="toolbar"><b>STAY UP · 사용설명서</b><a href="STAY-UP-사용설명서.pdf" download>PDF 다운로드</a><button type="button" id="printGuide">인쇄하기</button><a href="../stayup-dash.html">상황판 열기</a></header>
-<div class="layout"><aside class="toc" aria-label="사용설명서 목차"><p>필요한 순서로 보기</p>${toc}<p class="meta">2026.10.19 개정<br>우선 지시·모바일 접근성 안내</p></aside>
+<div class="layout"><aside class="toc" aria-label="사용설명서 목차"><p>필요한 순서로 보기</p>${toc}<p class="meta">2026.10.25 개정<br>입력 탭·공통 경보 안내</p></aside>
 <main><details class="mobile-toc"><summary>목차 열기</summary>${toc}</details>
 <section class="sheet cover"><p class="eyebrow">START HERE · USER GUIDE</p><h1>처음부터 따라하는<br>STAY UP 사용설명서</h1>${await renderMarkdown(intro)}<nav class="page-toc" aria-label="인쇄용 목차">${toc}</nav></section>
 ${chapterHtml.join('\n')}
@@ -83,7 +83,7 @@ if (!options.includes('--html-only')) {
     await page.pdf({
       path: path.join(root, 'docs/STAY-UP-사용설명서.pdf'), preferCSSPageSize: true, printBackground: true,
       displayHeaderFooter: true, headerTemplate: '<span></span>',
-      footerTemplate: '<div style="width:100%;padding:0 16mm;font-family:sans-serif;font-size:8px;color:#637487;display:flex;justify-content:space-between"><span>STAY UP 사용설명서 · 2026.10.19</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+      footerTemplate: '<div style="width:100%;padding:0 16mm;font-family:sans-serif;font-size:8px;color:#637487;display:flex;justify-content:space-between"><span>STAY UP 사용설명서 · 2026.10.25</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
       tagged: true, outline: true,
     });
   } finally {

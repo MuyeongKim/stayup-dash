@@ -32,6 +32,8 @@
 
 STAY UP은 현장 조작자가 입력한 내용을 같은 PC의 대형 모니터에 즉시 반영하는 오프라인 우선 대시보드입니다. 사진 지도는 HTML을 직접 열어 사용하고, 지역 지도는 필요한 수색 범위를 미리 저장해 인터넷 없이 확대·이동하며 사용합니다. 지역 지도의 표시 도구는 배포 폴더에 함께 들어 있어 실행 중 CDN에 의존하지 않습니다. 선택적인 자동 기상 조회와 네이버·구글 온라인 지도는 인터넷을 사용하며, 온라인 지도를 선택한 경우에만 해당 사업자의 지도 SDK를 불러옵니다.
 
+조작 패널은 상단 메뉴에서 **선택한 입력 영역 하나만** 표시합니다. 선택 메뉴는 밝은 배경과 하단선으로, 해당 입력 영역은 같은 파란 계열의 제목 띠로 구분합니다. 탭 전환은 입력 영역을 숨기거나 보여주며 상황 데이터와 작성 중 내용을 유지합니다. 유인기 경보·현재 우선 지시·안전 판정은 모든 메뉴의 공통 영역에 남고, 좁은 화면에서도 상단 메뉴를 좌우로 밀거나 기존 하단 메뉴로 이동할 수 있습니다.
+
 > [!CAUTION]
 > **현재 버전은 훈련·시연 및 개발 검증용이며, 실출동 단독 운용 승인 전입니다.** 2026-08-23 Chrome 실행 감사에서 확인된 차단 항목 7건은 모두 해소했습니다(아래 [현재 검증 상태](#현재-검증-상태)). 다만 확인은 개발 환경(localhost, Chromium)에서만 이뤄졌으며, 대상 PC·브라우저·스피커·듀얼 모니터에서 인수시험을 마치기 전에는 현장 지휘나 비행 판단의 단일 근거로 사용하지 마십시오.
 
@@ -366,6 +368,21 @@ macOS의 `⌘ + Shift + 4`는 기본적으로 파일을 저장합니다. 이 경
 
 ### 이번 업데이트
 
+2026-10-25 조작 패널의 메뉴와 입력 내용이 같은 어두운 색으로 이어져 구분하기 어렵다는 사용 의견을 반영했습니다.
+
+- **메뉴별 입력 탭** — 선택한 입력 영역 하나만 표시하며 처음에는 `즉시조작`을 엽니다. 선택 메뉴의 밝은 배경·하단선과 입력 영역의 파란 제목 띠를 연결했습니다.
+- **입력 내용 보존** — 탭 전환은 기존 입력 영역의 표시만 바꿉니다. 기존 상황·기체·인원·수색구역·AI 후보·대응 기록과 작성 중 빠른기록·대응 메모를 유지하며, 메뉴 선택 자체는 저장 리비전이나 사건 기록을 바꾸지 않습니다.
+- **공통 경보·작은 화면·키보드** — 유인기 경보·현재 우선 지시·안전 판정은 모든 메뉴에 남습니다. 상단 메뉴 고정, 좁은 화면의 가로 이동·선택 메뉴 노출, 기존 하단 메뉴와 방향키·Enter·Space 조작을 지원합니다.
+- **사용설명서** — Markdown·오프라인 HTML·PDF에 메뉴 선택 방법과 새 조작 화면을 반영했습니다.
+
+![선택한 드론 메뉴와 해당 입력 영역을 연결해 표시한 조작 패널](./assets/readme/console-tabs-preview.png)
+
+*2026-10-25, 1366×768 조작 패널 검증 화면입니다. 기체·잔량·구역·지시는 가상 데이터이며 실제 출동 실적이 아닙니다.*
+
+검증: 전체 브라우저 회귀 **411/411**, 실제 Chrome 화면·데이터 보존·키보드·입력 탭 검사 **85/85**, 지역 지도 엔진 **18/18**, 오프라인 재시작 **11/11**을 통과했습니다. 변경 전 프로그램에서 저장한 가상 상황·지도·핀·기체·인원·후보·기록을 변경 후에도 복원하고, 백업 내보내기·다시 열기와 두 화면 동기화를 확인했습니다. 화면 검사는 PC 및 모바일 크기의 Chrome에서 수행했습니다.
+
+### 이전 업데이트 (v1.2.13)
+
 2026-10-19 승인된 OpenDesign 보완 시안의 배치와 우선 지시 접근성을 운영판에 반영했습니다. 낮은 노트북 화면은 표출의 지도·지시를 한 화면에 배치하고, 좌우 상세는 내부 스크롤로 유지합니다. 모바일은 우선 지시를 첫 화면과 스크롤 중에 표시하고 조작 화면의 안전 판정도 함께 유지합니다. **상세 보기**에서 지휘부 지시 전문·연락 정보를 확인하며, 키보드 건너뛰기와 44px 상세 버튼을 제공합니다.
 
 기존 우선 지시·전문 필드와 저장·지도·기체·활동·AI 후보·대응 기록, 수동 불러오기와 자동 폴더 연계를 유지합니다. 저장 정책·데이터 형식·외부 연결은 추가하지 않았습니다. [사용 방법](./USER_GUIDE.md) · [반영 결정과 검증 방법](./docs/layout-accessibility.md).
@@ -609,7 +626,7 @@ node scripts/build-offline-shell.mjs --check
 
 ### 회귀 검사
 
-[tests/regression.html](./tests/regression.html)을 로컬 HTTP로 열면 앱을 iframe에 띄워 내부 함수·합성 입력·저장소·레이아웃 **399건**을 검사합니다. 같은 폴더의 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [offline-maps.js](./tests/offline-maps.js), [ai-candidates.js](./tests/ai-candidates.js), [ai-folder.js](./tests/ai-folder.js)와 fixtures 폴더도 필요합니다. 결과 화면의 전체 통과 건수와 실패 목록을 확인하세요. 실제 파일 선택 권한, 물리 터치·스피커, 절전 복귀는 별도 인수시험 대상입니다.
+[tests/regression.html](./tests/regression.html)을 로컬 HTTP로 열면 앱을 iframe에 띄워 내부 함수·합성 입력·저장소·레이아웃 **411건**을 검사합니다. 같은 폴더의 [review-fixes.js](./tests/review-fixes.js), [ui-ux-fixes.js](./tests/ui-ux-fixes.js), [map-workspace.js](./tests/map-workspace.js), [online-maps.js](./tests/online-maps.js), [offline-maps.js](./tests/offline-maps.js), [ai-candidates.js](./tests/ai-candidates.js), [ai-folder.js](./tests/ai-folder.js)와 fixtures 폴더도 필요합니다. 결과 화면의 전체 통과 건수와 실패 목록을 확인하세요. 실제 파일 선택 권한, 물리 터치·스피커, 절전 복귀는 별도 인수시험 대상입니다.
 
 ```bash
 python3 -m http.server 8899 --bind 127.0.0.1
@@ -728,6 +745,7 @@ stayup-dash/
     ├── dashboard-preview.png
     ├── far-preview.png
     ├── console-preview.png
+    ├── console-tabs-preview.png
     ├── map-workspace-preview.png
     ├── map-zoom-pan-preview.png
     ├── map-pins-preview.png

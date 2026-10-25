@@ -46,6 +46,9 @@
   --warn:#E8B931;
   --danger:#EF4444;
   --info:#38BDF8;
+  --tab-selected:#BCE9FF;
+  --tab-on-selected:#082638;
+  --panel-heading:#15364A;
   --s:1;          /* 배율 슬라이더 */
   --dim:0;        /* 야간 밝기 저감 */
   --fw-num:700;
@@ -1175,6 +1178,38 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
   .alert-banner{flex-wrap:wrap;font-size:16px;padding:10px}
   .alert-banner .ab-k{font-size:24px}.alert-banner .ab-x{font-size:16px;flex-basis:60%}
   .alert-banner button{min-height:44px;font-size:14px}
+}
+
+/* 조작 메뉴와 입력 영역은 같은 정보색으로 연결한다. 경보·주의색은 그대로 둔다. */
+.cons .cons-top{position:static}
+.console-workspace-bar{position:sticky;top:0;z-index:60;background:#0A0F15;padding:8px 0 0;margin-bottom:16px}
+.console-workspace-bar .operation-brief{position:static;padding:0;margin:0;background:transparent}
+.console-alert-row{display:flex;align-items:stretch;gap:8px;margin-top:8px}
+.console-alert-row .mobile-verdict{display:block;position:static;flex:1;min-width:0;margin:0;padding:0;border:0;background:transparent}
+.console-alert-row .mobile-verdict button{width:100%;height:100%;min-height:44px;padding:8px 12px;text-align:left;white-space:normal;background:var(--surface);color:var(--text);border:1px solid var(--control-border);border-radius:6px;font:700 13px/1.4 system-ui,sans-serif}
+.console-emergency{display:flex;align-items:stretch}
+.console-emergency #btnManned{width:auto;min-height:44px;padding:8px 12px;font-size:13px;white-space:normal}
+.cons .ct-nav{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;padding:12px 2px 10px;border-bottom:2px solid #46718B;scrollbar-width:thin}
+.cons .ct-nav button{position:relative;flex:0 0 auto;min-height:44px;padding:10px 15px;border-radius:6px;border:1px solid var(--control-border);background:var(--surface);color:#C3D1DF;font-size:14px;line-height:1.25}
+.cons .ct-nav button[aria-selected="true"]{background:var(--tab-selected);color:var(--tab-on-selected);border-color:var(--tab-selected);font-weight:850;box-shadow:inset 0 -4px 0 #1687BD}
+.cons .ct-nav button:focus-visible{outline:3px solid #fff;outline-offset:-4px}
+.cons .ct-nav button[aria-selected="true"]:focus-visible{outline-color:var(--tab-on-selected)}
+.cons .console-panel{border-color:#46718B;border-radius:8px}
+.cons .console-panel>h2{background:var(--panel-heading);border-bottom:1px solid #46718B;border-left:5px solid var(--info);color:#EDF8FF;padding:14px 16px;font-size:18px;letter-spacing:0}
+.cons .console-panel>h2 .hint{color:#B5CEDD;font-size:13px;line-height:1.5;font-weight:500}
+.cons .console-panel .sec-b{padding:16px}
+.cons .console-panel label.f>span{color:#B4C6D7;font-size:14px}
+.cons .console-panel label.f{margin-bottom:12px}
+.cons .console-panel input:not([type="checkbox"]):not([type="range"]):not([type="color"]),
+.cons .console-panel select,.cons .console-panel textarea{border-color:#627C91;background:#0C141D}
+.cons .console-panel input:focus-visible,.cons .console-panel select:focus-visible,.cons .console-panel textarea:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+@media(max-width:600px){
+  .console-alert-row{flex-wrap:wrap}
+  .console-alert-row .mobile-verdict{flex-basis:100%}
+  .console-emergency,.console-emergency #btnManned{width:100%}
+  .cons .ct-nav button{padding:9px 12px}
+  .cons .console-panel>h2{padding:12px;font-size:17px}
+  .cons .console-panel .sec-b{padding:12px}
 }
 </style>
 </head>
@@ -4900,6 +4935,54 @@ function scheduleConsoleRefresh(root){
 }
 
 var consoleFolds={};
+/* 화면 선택은 이 창의 보기 상태다. 상황 JSON·이벤트·저장 리비전에는 넣지 않는다. */
+var consoleActiveSection='sec-quick';
+var CONSOLE_SECTIONS=[['quick','즉시조작'],['mission','상황'],['subject','실종자'],
+  ['drone','드론'],['batt','배터리'],['crew','인원'],['grid','수색구역'],
+  ['ai','AI 후보'],['safety','안전·기상'],['data','데이터']];
+function applyConsolePanels(root){
+  CONSOLE_SECTIONS.forEach(function(p){
+    var id='sec-'+p[0],section=root.querySelector('#'+id),tab=root.querySelector('#tab-'+p[0]);
+    var selected=id===consoleActiveSection;
+    if(section){
+      section.classList.add('console-panel');section.setAttribute('role','tabpanel');
+      section.setAttribute('aria-labelledby','tab-'+p[0]);section.tabIndex=-1;section.hidden=!selected;
+    }
+    if(tab){tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;}
+  });
+  root.querySelectorAll('.mobile-nav [data-sec],.mobile-more [data-sec]').forEach(function(button){
+    if(button.dataset.sec===consoleActiveSection)button.setAttribute('aria-current','location');
+    else button.removeAttribute('aria-current');
+    button.setAttribute('aria-controls',button.dataset.sec);
+  });
+  var more=root.querySelector('#btnMoreNav');
+  if(more){
+    if(root.querySelector('.mobile-more [data-sec="'+consoleActiveSection+'"]'))more.setAttribute('aria-current','location');
+    else more.removeAttribute('aria-current');
+  }
+  var start=root.querySelector('.operator-start');if(start)start.hidden=consoleActiveSection!=='sec-quick';
+  revealConsoleTab(root);
+}
+function revealConsoleTab(root){
+  var tab=root.querySelector('[role="tab"][aria-selected="true"]'),nav=tab&&tab.parentElement;
+  if(!nav||!nav.clientWidth)return;
+  var box=tab.getBoundingClientRect(),bar=nav.getBoundingClientRect();
+  if(box.left<bar.left)nav.scrollLeft-=bar.left-box.left+2;
+  else if(box.right>bar.right)nav.scrollLeft+=box.right-bar.right+2;
+}
+window.addEventListener('resize',function(){
+  document.querySelectorAll('#consoleRoot,#drawerIn').forEach(revealConsoleTab);
+});
+function activateConsolePanel(root,id){
+  if(!CONSOLE_SECTIONS.some(function(p){return id==='sec-'+p[0];}))return false;
+  if(consoleActiveSection!==id&&typeof cancelMapInteraction==='function')cancelMapInteraction();
+  consoleActiveSection=id;applyConsolePanels(root);
+  if(id==='sec-grid'){
+    renderGridAll();
+    requestAnimationFrame(function(){var host=root.querySelector('#consMap');if(host){fitMapBox(host);if(isOnlineMap())fitOnlineMap(host);}});
+  }
+  return true;
+}
 function consoleFold(key,label,description,content){
   var fold=document.createElement('details');fold.className='setup-section';fold.dataset.fold=key;
   var summary=document.createElement('summary');summary.textContent=label;
@@ -4909,20 +4992,15 @@ function consoleFold(key,label,description,content){
 }
 function organizeConsole(root){
   var cons=root.querySelector('.cons');if(!cons)return;
-  var alarm=root.querySelector('#btnManned'),quickHeading=root.querySelector('#sec-quick h2');
-  if(alarm&&quickHeading)quickHeading.appendChild(alarm);
+  var alarm=root.querySelector('#btnManned'),emergency=root.querySelector('.console-emergency');
+  if(alarm&&emergency)emergency.appendChild(alarm);
+  var brief=root.querySelector('.operation-brief'),nav=root.querySelector('.ct-nav');
+  var workspaceBar=document.createElement('div');workspaceBar.className='console-workspace-bar';
+  brief.before(workspaceBar);workspaceBar.appendChild(brief);workspaceBar.appendChild(nav);
   var timeMode=root.querySelector('#evTimeMode'),targets=root.querySelector('.quick-targets');
   if(timeMode&&targets)targets.appendChild(timeMode.closest('label'));
   var sections=['quick','drone','batt','grid','safety','mission','subject','crew','data'];
   sections.forEach(function(id){var sec=root.querySelector('#sec-'+id);if(sec)cons.appendChild(sec);});
-  [['mission','상황 설정','상황명 · 출동시각 · 현장 좌표 · 지휘부 지시'],
-   ['subject','실종자 정보 설정','인상착의 · 최종목격 · 이동 추정 기준'],
-   ['crew','인원 관리','투입 · 교대 종료 · 역할'],
-   ['data','화면 설정 · 데이터 관리','표출 배율 · 보관 파일 · 내보내기 · 복구']].forEach(function(p){
-    var sec=root.querySelector('#sec-'+p[0]);if(!sec)return;
-    var anchor=document.createComment('section');sec.replaceWith(anchor);
-    anchor.replaceWith(consoleFold(p[0],p[1],p[2],sec));
-  });
   var grid=root.querySelector('#sec-grid .grid2');
   if(grid&&grid.children.length===2){
     var setup=grid.children[1];grid.classList.add('grid-editor-columns');
@@ -4940,12 +5018,15 @@ function organizeConsole(root){
     cons.insertBefore(start,root.querySelector('#sec-quick'));
   }
   if(mapExpandedTarget==='consMap')mountMapDialog('consMap',true);
+  applyConsolePanels(root);
 }
 function scrollToSection(root,target){
+  var panel=target.closest('.sec[id^="sec-"]');
+  if(panel)activateConsolePanel(root,panel.id);
   for(var parent=target.parentElement;parent&&parent!==root;parent=parent.parentElement){
     if(parent.tagName==='DETAILS'){parent.open=true;if(parent.dataset.fold)consoleFolds[parent.dataset.fold]=true;}
   }
-  var bar=root.querySelector('.cons-top');
+  var bar=root.querySelector('.console-workspace-bar')||root.querySelector('.cons-top');
   var mobile=root.querySelector('.operation-brief');
   var pad=(bar&&getComputedStyle(bar).position==='sticky'?bar.getBoundingClientRect().height:
     mobile&&getComputedStyle(mobile).display!=='none'?mobile.getBoundingClientRect().height:0)+10;
@@ -4953,9 +5034,6 @@ function scrollToSection(root,target){
   if(host) host.scrollTop=Math.max(0,host.scrollTop+tTop-host.getBoundingClientRect().top-pad);
   else window.scrollTo(0,Math.max(0,window.scrollY+tTop-pad));
   var heading=target.querySelector('h2');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
-  root.querySelectorAll('.ct-nav button,.mobile-nav button').forEach(function(b){
-    if(b.getAttribute('data-sec')===target.id)b.setAttribute('aria-current','location');else b.removeAttribute('aria-current');
-  });
 }
 
 /* 배열 순번은 삭제·정렬 후 다른 대상을 가리킨다. 렌더 시점의 엔터티 ID와
@@ -5351,25 +5429,23 @@ function consoleHtml(){
     + '<button class="btn primary" id="btnOpenDisplay">표출 화면 열기</button>'
     + (MODE==='display' ? '<button class="btn" id="btnCloseDrawer">닫기 (Esc)</button>' : '')
     + '<div class="ct-kpi" id="ctKpi">'+consoleKpiCells()+'</div>'
-    + '<nav class="ct-nav" aria-label="섹션 이동">'
-      + [['quick','즉시조작'],['mission','상황'],['subject','실종자'],['drone','드론'],
-         ['batt','배터리'],['crew','인원'],['grid','수색구역'],['safety','안전·기상'],['data','데이터']]
-        .map(function(p){
-          return '<button type="button" data-act="nav" data-sec="sec-'+p[0]+'">'+p[1]+'</button>';
+    + '<nav class="ct-nav" role="tablist" aria-label="입력 메뉴">'
+      + CONSOLE_SECTIONS.map(function(p){
+          return '<button type="button" role="tab" id="tab-'+p[0]+'" aria-controls="sec-'+p[0]+'" aria-selected="'+(consoleActiveSection==='sec-'+p[0])+'" tabindex="'+(consoleActiveSection==='sec-'+p[0]?0:-1)+'" data-act="nav" data-sec="sec-'+p[0]+'"'+(p[0]==='ai'?' data-ai-action="section"':'')+'>'+p[1]+'</button>';
         }).join('')
     + '</nav>'
     + '</div>';
 
   var verdict=flightVerdict(new Date());
-  h+='<div class="operation-brief">'+consolePriorityHtml()+'<div class="mobile-verdict"><button type="button" data-act="verdictnav" data-sec="verdictHelp" id="mobileVerdictText">'
-    +esc(verdict.txt+' · '+verdict.why[0])+'</button></div></div>'+verdictHelpHtml()
+  h+='<div class="operation-brief">'+consolePriorityHtml()+'<div class="console-alert-row"><div class="mobile-verdict"><button type="button" data-act="verdictnav" data-sec="verdictHelp" id="mobileVerdictText">'
+    +esc(verdict.txt+' · '+verdict.why[0])+'</button></div><div class="console-emergency"></div></div></div>'+verdictHelpHtml()
     +'<nav class="mobile-nav" aria-label="주요 화면 이동">'
       +'<button type="button" data-act="nav" data-sec="sec-quick">조작</button>'
       +'<button type="button" data-act="nav" data-sec="sec-grid">지도</button>'
       +'<button type="button" data-act="nav" data-sec="sec-drone">기체</button>'
       +'<button type="button" id="btnMoreNav" aria-expanded="false" aria-controls="mobileMore">더보기</button></nav>'
     +'<div id="mobileMore" class="mobile-more" hidden>'
-      +[['safety','안전·기상'],['batt','배터리 자원'],['crew','인원'],['mission','상황·지시'],['subject','실종자'],['data','화면·데이터']].map(function(p){
+      +[['safety','안전·기상'],['batt','배터리 자원'],['crew','인원'],['mission','상황·지시'],['subject','실종자'],['ai','AI 후보'],['data','화면·데이터']].map(function(p){
         return '<button class="btn" type="button" data-act="nav" data-sec="sec-'+p[0]+'">'+p[1]+'</button>';
       }).join('')+'</div>';
 
@@ -5721,6 +5797,17 @@ function bindConsole(root){
   var first = !root.__delegated;
   root.__delegated = true;
 
+  /* 수동 활성화 탭: 방향키로 메뉴를 살펴보고 Enter/Space로 선택한다. */
+  if(first)root.addEventListener('keydown',function(ev){
+    var tab=ev.target.closest('[role="tab"]');if(!tab||!root.contains(tab))return;
+    if(!['ArrowLeft','ArrowRight','Home','End'].includes(ev.key))return;
+    var tabs=Array.prototype.slice.call(tab.parentElement.querySelectorAll('[role="tab"]'));
+    var index=tabs.indexOf(tab),next=ev.key==='Home'?0:ev.key==='End'?tabs.length-1:
+      (index+(ev.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    ev.preventDefault();tabs.forEach(function(button,i){button.tabIndex=i===next?0:-1;});
+    tabs[next].focus();
+  });
+
   /* 입력 */
   if(first) root.addEventListener('input', function(ev){
     var el = ev.target, path = el.getAttribute && el.getAttribute('data-path');
@@ -5911,6 +5998,7 @@ function bindConsole(root){
       if(target){
         if(target.tagName==='DETAILS'){target.open=true;consoleFolds[target.dataset.fold]=true;}
         scrollToSection(root,target);
+        if(b.getAttribute('role')==='tab')b.focus({preventScroll:true});
         var path=b.getAttribute('data-path-target'),field=path?root.querySelector('[data-path="'+path+'"]'):null;
         if(field)field.focus({preventScroll:true});
         else if(target.tagName==='DETAILS')target.querySelector('summary').focus({preventScroll:true});
@@ -7051,7 +7139,7 @@ function aiSectionHtml(){
   });
   var pages=Math.max(1,Math.ceil(filtered.length/20));aiPage=Math.max(0,Math.min(aiPage,pages-1));
   var html='<h2>AI 사진 후보 <span class="hint">고유 인원 아님 · 사진 GPS는 촬영 위치</span></h2>'
-    +'<div class="row-tools"><button type="button" class="btn primary" data-ai-action="import"'+(!ownsEditorLock()?' disabled':'')+'>AI 후보 불러오기</button>'
+    +'<div class="sec-b"><div class="row-tools"><button type="button" class="btn primary" data-ai-action="import"'+(!ownsEditorLock()?' disabled':'')+'>AI 후보 불러오기</button>'
     +'<input type="file" data-ai-file accept=".json,application/json" hidden>'
     +'<button type="button" class="btn" data-ai-action="folder"'+(!ownsEditorLock()?' disabled':'')+'>자동 읽기 폴더 연결</button>'
     +'<button type="button" class="btn" data-ai-action="folder-stop"'+(!aiFolder.session?' disabled':'')+'>연결 해제</button>'
@@ -7077,7 +7165,7 @@ function aiSectionHtml(){
       +'<button type="button" class="btn sm" data-ai-action="response" data-ai-key="'+esc(key)+'"'+(!ownsEditorLock()?' disabled':'')+'>대응 저장</button></div></article>';
   });
   if(!filtered.length)html+='<p class="note">표시할 사진 후보가 없습니다. 탐지 프로그램에서 내보낸 파일을 불러오세요.</p>';
-  return html+'<div class="row-tools"><button type="button" class="btn sm" data-ai-action="previous"'+(!aiPage?' disabled':'')+'>이전 후보</button><span>'+(aiPage+1)+' / '+pages+'쪽</span><button type="button" class="btn sm" data-ai-action="next"'+(aiPage+1>=pages?' disabled':'')+'>다음 후보</button></div>';
+  return html+'<div class="row-tools"><button type="button" class="btn sm" data-ai-action="previous"'+(!aiPage?' disabled':'')+'>이전 후보</button><span>'+(aiPage+1)+' / '+pages+'쪽</span><button type="button" class="btn sm" data-ai-action="next"'+(aiPage+1>=pages?' disabled':'')+'>다음 후보</button></div></div>';
 }
 function aiMount(root){
   var cons=root&&root.querySelector('.cons');if(!cons)return;
@@ -7087,6 +7175,7 @@ function aiMount(root){
   var section=root.querySelector('#sec-ai');
   if(!section){section=document.createElement('section');section.id='sec-ai';section.className='sec';var grid=root.querySelector('#sec-grid');if(grid)grid.after(section);else cons.appendChild(section);}
   section.innerHTML=aiSectionHtml();
+  applyConsolePanels(root);
   var fileInput=section.querySelector('[data-ai-file]');fileInput.onchange=function(event){
     event.stopPropagation();var file=fileInput.files&&fileInput.files[0];fileInput.value='';if(file)aiReadFile(file);
   };
@@ -7094,8 +7183,6 @@ function aiMount(root){
     if(row.dataset.aiKey!==focusedKey)return;var input=row.querySelector('[data-ai-response="'+field+'"]');
     if(input){input.focus({preventScroll:true});if(field==='note')input.setSelectionRange(start,end);}
   });
-  var nav=root.querySelector('.cons-nav,.section-nav,nav');
-  if(nav&&!nav.querySelector('[data-ai-action="section"]')){var b=document.createElement('button');b.type='button';b.dataset.aiAction='section';b.textContent='AI 후보';nav.appendChild(b);}
   aiWarm();
 }
 function aiRenderPins(host){
@@ -7179,7 +7266,7 @@ document.addEventListener('click',function(e){
     if(action==='import')button.closest('#sec-ai').querySelector('[data-ai-file]').click();
     if(action==='folder')aiFolderConnect();
     if(action==='folder-stop')aiFolderStop();
-    if(action==='section'){var root=button.closest('#consoleRoot,#drawerIn'),section=root.querySelector('#sec-ai'),bar=root.querySelector('.cons-top');if(bar)section.style.scrollMarginTop=(bar.getBoundingClientRect().height+12)+'px';section.scrollIntoView({block:'start'});}
+    if(action==='section'&&!button.hasAttribute('data-act')){var root=button.closest('#consoleRoot,#drawerIn');scrollToSection(root,root.querySelector('#sec-ai'));}
     if(action==='detail')aiShowDetail(button.dataset.aiKey);
     if(action==='response')aiSaveResponse(button.dataset.aiKey);
     if(action==='previous'||action==='next'){aiPage+=action==='next'?1:-1;aiRenderAll();}

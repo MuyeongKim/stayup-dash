@@ -2,6 +2,7 @@
 'use strict';
 
 async function runUiUxFixes(){
+  await uxConsoleTabs();
   await uxRepeatedActions();
   await uxMapPinKeyboard();
   await uxQuickRecordAndValidation();
@@ -10,6 +11,60 @@ async function runUiUxFixes(){
   await uxDroneRiskVisibility();
   await uxMobileNavigation();
   await uxFarView();
+}
+
+async function uxConsoleTabs(){
+  await reload();W.loadSample();await wait(100);
+  group('UI/UX · 선택한 입력 메뉴만 표시하고 기존 내용 보존');
+  var root=W.document.getElementById('consoleRoot');
+  function visiblePanels(){return Array.prototype.slice.call(root.querySelectorAll('[role="tabpanel"]')).filter(function(p){return p.getClientRects().length>0;});}
+  var tabs=root.querySelectorAll('[role="tab"]');
+  ok('처음에는 즉시조작만 표시하고 열 개 메뉴를 각각 입력 영역과 연결한다',
+    tabs.length===10&&visiblePanels().length===1&&visiblePanels()[0].id==='sec-quick'
+    &&Array.prototype.every.call(tabs,function(tab){var panel=root.querySelector('#'+tab.getAttribute('aria-controls'));return panel&&panel.getAttribute('aria-labelledby')===tab.id;}));
+  var quick=uxInput('#evText','전환 후에도 남아야 하는 기록 초안');
+  gotoSection('sec-mission');
+  var title=uxInput('[data-path="mission.title"]','메뉴 전환 보존 검증');
+  gotoSection('sec-drone');
+  ok('메뉴를 누르면 해당 입력 영역 하나만 표시하고 선택 메뉴를 강조한다',
+    visiblePanels().length===1&&visiblePanels()[0].id==='sec-drone'
+    &&root.querySelector('[role="tab"][aria-selected="true"]').id==='tab-drone');
+  gotoSection('sec-quick');
+  ok('탭 전환은 입력 DOM을 교체하지 않고 작성 중 빠른기록을 보존한다',
+    root.querySelector('#evText')===quick&&quick.value==='전환 후에도 남아야 하는 기록 초안');
+  gotoSection('sec-mission');
+  ok('다른 메뉴를 다녀와도 상황 입력값과 기존 입력 요소를 보존한다',
+    root.querySelector('[data-path="mission.title"]')===title&&title.value==='메뉴 전환 보존 검증');
+  var saved=W.exportPayload(true),savedRevision=W.S.meta.revision;
+  W.renderConsole(root);
+  ok('화면을 다시 그려도 선택한 메뉴·입력값을 유지하고 상황 리비전을 바꾸지 않는다',
+    visiblePanels().length===1&&visiblePanels()[0].id==='sec-mission'
+    &&root.querySelector('[data-path="mission.title"]').value==='메뉴 전환 보존 검증'
+    &&W.exportPayload(true)===saved&&W.S.meta.revision===savedRevision);
+  var selected=root.querySelector('#tab-mission');selected.focus();
+  selected.dispatchEvent(new W.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+  ok('방향키는 다음 메뉴로 포커스만 옮겨 작성 영역을 갑자기 바꾸지 않는다',
+    W.document.activeElement.id==='tab-subject'&&visiblePanels()[0].id==='sec-mission');
+  W.document.activeElement.click();
+  ok('키보드로 선택한 메뉴를 활성화하면 한 영역만 표시한다',
+    visiblePanels().length===1&&visiblePanels()[0].id==='sec-subject');
+  var tabState=W.exportPayload(true);
+  W.CONSOLE_SECTIONS.forEach(function(p){gotoSection('sec-'+p[0]);});
+  ok('모든 메뉴를 오가도 기존 사건·기체·수색구역·후보·설정을 바꾸지 않는다',W.exportPayload(true)===tabState);
+  ok('다른 메뉴에서도 유인기 경보·우선 지시·안전 판정을 숨기지 않는다',
+    ['#btnManned','#consolePriority','#mobileVerdictText'].every(function(selector){return root.querySelector(selector).getClientRects().length>0;})
+    &&!root.querySelector('#sec-quick').contains(root.querySelector('#btnManned')));
+  gotoSection('sec-grid');
+  ok('숨겨졌던 지도 탭을 열면 실제 조작 면적을 복원한다',
+    root.querySelector('#consMap').getBoundingClientRect().width>100&&root.querySelector('#consMap').getBoundingClientRect().height>100);
+  gotoSection('sec-ai');W.renderConsole(root);
+  ok('동적으로 다시 그린 AI 후보도 선택 상태를 유지하며 중복 메뉴를 만들지 않는다',
+    visiblePanels().length===1&&visiblePanels()[0].id==='sec-ai'
+    &&root.querySelectorAll('#tab-ai').length===1&&root.querySelector('#tab-ai').getAttribute('aria-selected')==='true');
+  var activeBefore=W.exportPayload(true);W.releaseEditorLock();
+  gotoSection('sec-batt');
+  ok('읽기 전용 창도 권한·상황 기록 변경 없이 메뉴를 전환할 수 있다',
+    visiblePanels()[0].id==='sec-batt'&&!W.ownsEditorLock()&&W.exportPayload(true)===activeBefore);
 }
 
 function uxInput(selector,value,eventName){
@@ -154,8 +209,8 @@ async function uxVerdictGuidance(){
   if(!action)throw new Error('좌표 미확인 판정의 상황 입력 바로가기 없음');
   action.focus();action.click();await wait(30);
   var target=root.querySelector('#sec-mission'),active=W.document.activeElement;
-  ok('판정 해결 버튼은 접힌 입력 영역을 열고 해당 입력 또는 제목에 포커스를 둔다',
-    root.querySelector('details[data-fold="mission"]').open&&target.contains(active));
+  ok('판정 해결 버튼은 해당 입력 탭을 열고 입력 또는 제목에 포커스를 둔다',
+    !target.hidden&&target.getClientRects().length>0&&target.contains(active));
 }
 
 async function uxCanonicalValueUpdates(){
