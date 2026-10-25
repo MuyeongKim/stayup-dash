@@ -653,6 +653,7 @@ textarea{resize:vertical;min-height:52px}
 .f3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 @media (max-width:760px){.f4,.f3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.weather-observation{grid-template-columns:1fr}}
 .sens-pick{display:flex;gap:5px;flex-wrap:wrap}
 .sens-pick button{font-size:11.5px;padding:3px 7px}
 
@@ -5160,9 +5161,12 @@ function suggestRegisteredPilots(root){
     tools.appendChild(hint);input.closest('.f3').after(tools);input.setAttribute('aria-describedby',hint.id);
   });
 }
-function focusAddedField(root,path){
+function focusConsoleField(root,path){
   var field=root.querySelector('[data-path="'+path+'"]');if(!field)return;
-  scrollToSection(root,field.closest('label')||field);field.focus({preventScroll:true});
+  var target=field.closest('label')||field;
+  scrollToSection(root,target);
+  if(field.disabled){target.tabIndex=-1;target.focus({preventScroll:true});}
+  else field.focus({preventScroll:true});
 }
 function organizeConsole(root){
   var cons=root.querySelector('.cons');if(!cons)return;
@@ -5462,6 +5466,7 @@ function verdictDestination(reason){
   if(/조종자|통신불량/.test(reason))return {sec:'drone',path:'',label:'기체·조종자 확인'};
   if(/지속풍 한계/.test(reason))return {sec:'safety',path:'safety.windLimit',label:'지속풍 한계 입력'};
   if(/돌풍 한계/.test(reason))return {sec:'safety',path:'safety.gustLimit',label:'돌풍 한계 입력'};
+  if(/^기상 관측/.test(reason))return {sec:'safety',path:'weather.observedAt',label:'관측값·시각 재확인'};
   if(/기상|풍속|돌풍|강수/.test(reason))return {sec:'safety',path:'weather.wind',label:'현장 기상 확인'};
   return {sec:'safety',path:'',label:'안전·승인 확인'};
 }
@@ -5885,11 +5890,11 @@ function consoleHtml2(){
         + fld('비행금지구역 해당','safety.noFly','checkbox')+'</div>'
     + '</div>'
     + fld('동시 운용 인접기관','safety.agencies','text','placeholder="경찰 드론(서편), 산림청 헬기 대기"')
-    + '<div class="f2" style="margin-top:10px">'
+    + '<div class="f2 weather-observation" style="margin-top:10px">'
       + '<div style="padding-top:6px">'+fld('기상 자동 갱신 (인터넷 연결 시)','weather.auto','checkbox')
         + '<button class="btn sm" data-act="wxnow" style="margin-top:4px">지금 갱신</button></div>'
       + '<label class="f"><span>관측시각</span><input type="datetime-local" data-path="weather.observedAt" value="'
-        +(S.weather.observedAt?localDateTime(new Date(S.weather.observedAt)):'')+'"></label>'
+        +(S.weather.observedAt?localDateTime(new Date(S.weather.observedAt)):'')+'"><span class="hint">새로 관측한 기상값과 함께 입력하세요.</span></label>'
     + '</div>'
     + '<div class="f4">'+fld('풍속 m/s','weather.wind','number','step="0.1" min="0" max="80"')
       + fld('돌풍 m/s','weather.gust','number','step="0.1" min="0" max="100"')
@@ -6157,14 +6162,14 @@ function bindConsole(root){
     S.drones.push({ id:uid(), name:(S.drones.length+1)+'호기', model:'', status:'ready',
       battery:100, tookOffAt:'', endurance:25, zone:'', alt:'', pilot:'', observer:'',
       sorties:0, sensors:['EO','IR'] });
-    if(commit())focusAddedField(root,'drones.'+addedIndex+'.pilot');
+    if(commit())focusConsoleField(root,'drones.'+addedIndex+'.pilot');
   };
   var acr = root.querySelector('#btnAddCrew');
   if(acr) acr.onclick = function(){
     if(!ensureEditor())return;
     var addedIndex=S.crew.length;
     S.crew.push({ id:uid(), name:'', role:'조종', inAt: localDateTime(new Date()), outAt:'' });
-    if(commit())focusAddedField(root,'crew.'+addedIndex+'.name');
+    if(commit())focusConsoleField(root,'crew.'+addedIndex+'.name');
   };
 
   /* 액션 버튼 위임 */
@@ -6195,7 +6200,7 @@ function bindConsole(root){
         if(b.getAttribute('role')==='tab')b.focus({preventScroll:true});
         if(target.id==='consolePriority')target.focus({preventScroll:true});
         var path=b.getAttribute('data-path-target'),field=path?root.querySelector('[data-path="'+path+'"]'):null;
-        if(field)field.focus({preventScroll:true});
+        if(field)focusConsoleField(root,path);
         else if(target.tagName==='DETAILS')target.querySelector('summary').focus({preventScroll:true});
       }
       return;
