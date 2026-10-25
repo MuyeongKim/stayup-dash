@@ -5833,7 +5833,7 @@ function consoleHtml2(){
       + '<button class="btn sm" data-act="battswap">재고 교체 반영 1개 (완료→소진)</button>'
       + '<button class="btn sm" data-act="battdone">충전완료 1개 (충전중→완료)</button>'
     + '</div>'
-    + '<div class="note">지속 운용 가능시간 = 충전완료 개수 × 평균 항속 ÷ 동시 운용 대수. 2시간 미만이면 주의색으로 바뀝니다.</div>'
+    + '<div class="note">재고는 항목별 0~999개입니다. 옮겨 갈 항목이 999개이면 수량 이동을 반영하지 않고 안내합니다. 지속 운용 가능시간 = 충전완료 개수 × 평균 항속 ÷ 동시 운용 대수. 2시간 미만이면 주의색으로 바뀝니다.</div>'
     + '</div></div>';
 
   /* --- 인원 --- */
@@ -6293,16 +6293,20 @@ function bindConsole(root){
     }
     else if(act === 'batt'){
       var k2 = b.getAttribute('data-k');
-      S.batteries[k2] = Math.max(0, intv(S.batteries[k2],0) + intv(b.getAttribute('data-v'),0));
+      var nextCount=Math.max(0,intv(S.batteries[k2],0)+intv(b.getAttribute('data-v'),0));
+      if(nextCount>999){alert('재고는 항목별 최대 999개입니다. 수량을 늘리지 않았습니다. 실제 수량과 입력값을 확인하세요.');return;}
+      S.batteries[k2]=nextCount;
       commit();
     }
     else if(act === 'battswap'){
       if(intv(S.batteries.ready,0) > 0){
+        if(intv(S.batteries.empty,0)>=999){alert('소진 재고가 최대 999개여서 교체 수량을 이동하지 않았습니다. 충전완료·소진 수량을 확인하세요.');return;}
         S.batteries.ready--; S.batteries.empty = intv(S.batteries.empty,0)+1; commit();
       }else alert('충전완료 재고가 없어 교체를 반영하지 않았습니다. 실제 수량을 확인해 충전완료에 입력하세요. 기체 잔량·상태는 그대로입니다.');
     }
     else if(act === 'battdone'){
       if(intv(S.batteries.charging,0) > 0){
+        if(intv(S.batteries.ready,0)>=999){alert('충전완료 재고가 최대 999개여서 완료 수량을 이동하지 않았습니다. 충전중·충전완료 수량을 확인하세요.');return;}
         S.batteries.charging--; S.batteries.ready = intv(S.batteries.ready,0)+1; commit();
       }else alert('충전중 재고가 없어 완료 처리를 하지 않았습니다. 실제 충전 중인 수량을 확인하세요. 기체 잔량·상태는 그대로입니다.');
     }
