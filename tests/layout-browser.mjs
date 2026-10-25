@@ -175,6 +175,48 @@ try{
   await page.reload();await page.waitForFunction(()=>typeof S!=='undefined'&&mapPayloadReady());
   check('새로고침 후 후보·대응·지시 복원',await page.evaluate(()=>S.ai.candidates[0].responseNote==='기존 대응 기록 보존 <img src=x>'&&S.mission.priorityOrder.includes('D–E열')));
   await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(out,'console-1366.png'),fullPage:false});
+  const longPriority='가상 훈련 지시입니다. 북쪽 구역을 먼저 확인하고 확인 결과를 지상팀과 공유하세요. 원본 지도에서 위치를 다시 대조하세요. '.repeat(2).slice(0,80);
+  await page.evaluate(text=>{S.mission.priorityOrder=text;onboardingOpen=false;commit();},longPriority);
+  const lowViewState=await page.evaluate(()=>exportPayload(true));
+  const inputGeometry=()=>page.evaluate(()=>{
+    const rect=e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height};};
+    const field=document.querySelector('[data-path="mission.title"]'),status=document.querySelector('.mobile-verdict'),nav=document.querySelector('.ct-nav'),bottom=document.querySelector('.mobile-nav');
+    const b=rect(bottom),s=rect(status),n=rect(nav),f=rect(field);
+    return {active:document.activeElement===field,field:f,status:s,nav:n,bottom:b.height?b.top:innerHeight,viewport:innerHeight};
+  });
+  async function focusTitleByKeyboard(){
+    await page.locator('#tab-mission').click();
+    for(let i=0;i<12;i++){await page.keyboard.press('Tab');if(await page.locator('[data-path="mission.title"]').evaluate(e=>e===document.activeElement))break;}
+  }
+  for(const [w,h] of [[390,400],[320,400],[844,400]]){
+    await page.setViewportSize({width:w,height:h});
+    await page.waitForFunction(()=>parseFloat(document.querySelector('.cons').style.getPropertyValue('--compact-verdict-height'))>0);
+    await focusTitleByKeyboard();const g=await inputGeometry();
+    check(`${w}×${h}: 키보드 포커스 입력칸 전체가 상하 고정 영역 사이에 보임`,g.active&&g.field.top>=Math.max(g.status.bottom,g.nav.bottom)-1&&g.field.bottom<=g.bottom+1,g);
+    await page.screenshot({path:path.join(out,`compact-input-${w}.png`),fullPage:false});
+    await page.locator('.compact-priority-link').click();
+    check(`${w}×${h}: 현재 지시 버튼으로 원문 전체와 포커스에 접근`,await page.locator('#consolePriority').evaluate((e,text)=>e===document.activeElement&&e.querySelector('[data-priority-text]').textContent===text,longPriority));
+    check(`${w}×${h}: 짧은 화면 보기 조작은 업무 상태를 바꾸지 않음`,await page.evaluate(()=>exportPayload(true))===lowViewState);
+  }
+  await page.setViewportSize({width:390,height:844});
+  check('일반 휴대 화면 높이에서는 단축 지시 버튼을 숨겨 메뉴 가림 방지',!await page.locator('.compact-priority-link').isVisible());
+  await page.locator('#tab-mission').click();
+  await page.locator('details[data-fold="mission-details"]>summary').click();
+  const editing=page.locator('[data-path="mission.orders"]');await editing.fill('화면 축소 중에도 보존할 가상 지시 전문');
+  const editBefore=await editing.evaluate(e=>({value:e.value,start:e.selectionStart,end:e.selectionEnd})),resizeState=await page.evaluate(()=>exportPayload(true));
+  await page.setViewportSize({width:390,height:400});
+  await page.waitForFunction(()=>parseFloat(document.querySelector('.cons').style.getPropertyValue('--compact-verdict-height'))>0);
+  await page.waitForFunction(()=>{const e=document.querySelector('[data-path="mission.orders"]'),r=e.getBoundingClientRect(),n=document.querySelector('.ct-nav').getBoundingClientRect(),b=document.querySelector('.mobile-nav').getBoundingClientRect();return r.top>=n.bottom-1&&r.bottom<=b.top+1;},null,{timeout:2000}).catch(()=>{});
+  const editGeometry=await editing.evaluate(e=>{const r=e.getBoundingClientRect(),n=document.querySelector('.ct-nav').getBoundingClientRect(),b=document.querySelector('.mobile-nav').getBoundingClientRect();return {top:r.top,bottom:r.bottom,nav:n.bottom,limit:b.top,active:e===document.activeElement};});
+  check('작성 중 세로 공간이 줄어도 포커스 영역이 가리지 않음',editGeometry.active&&editGeometry.top>=editGeometry.nav-1&&editGeometry.bottom<=editGeometry.limit+1,editGeometry);
+  check('작성 중 화면 축소가 텍스트·커서 위치를 바꾸지 않음',await editing.evaluate((e,v)=>e.value===v.value&&e.selectionStart===v.start&&e.selectionEnd===v.end,editBefore));
+  check('작성 중 화면 축소는 업무 상태와 리비전을 바꾸지 않음',await page.evaluate(()=>exportPayload(true))===resizeState);
+  await page.setViewportSize({width:390,height:400});
+  await page.evaluate(()=>{S.safety.manned=true;commit();});await focusTitleByKeyboard();
+  const urgent=await inputGeometry();
+  check('짧은 화면에서도 유인기 즉시 착륙 사유와 입력 위치 유지',await page.locator('.mobile-verdict').evaluate(e=>e.dataset.verdictLevel==='danger'&&e.textContent.includes('유인기 진입')&&e.textContent.includes('즉시 착륙'))&&urgent.status.top>=0&&urgent.status.bottom<=400&&urgent.field.top>=urgent.nav.bottom-1&&urgent.field.bottom<=urgent.bottom+1,urgent);
+  await page.setViewportSize({width:1366,height:768});
+  check('일반 노트북 높이로 돌아오면 기존 전체 공통 영역 고정 복귀',await page.locator('.console-workspace-bar').evaluate(e=>getComputedStyle(e).position==='sticky')&&!await page.locator('.compact-priority-link').isVisible());
   if(!process.argv.includes('--skip-regression')){
     // The regression suite intentionally corrupts/purges storage; isolate it
     // from the normal two-window scenario rather than sharing its origin data.

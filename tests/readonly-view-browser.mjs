@@ -49,6 +49,11 @@ try{
       await owner.evaluate(()=>{S.mission.title='';commit();});await viewer.waitForFunction(()=>S.mission.title==='');
       check('원격 입력 갱신으로 안내를 다시 그려도 편집 잠금과 보기 허용 유지',!await viewer.locator('[data-onboard-action="new"]').isEnabled()&&!await viewer.locator('[data-onboard-action="import"]').isEnabled()&&await viewer.locator('[data-onboard-action="close"]').isEnabled()&&await theme.isEnabled());
       await viewer.screenshot({path:path.join(out,'readonly-guide.png'),fullPage:false});
+      const lowBefore=await viewer.evaluate(()=>exportPayload(true));
+      await viewer.setViewportSize({width:390,height:400});
+      await viewer.locator('.compact-priority-link').click();
+      check('짧은 읽기 전용 화면에서도 현재 지시 원문 접근 허용',await viewer.locator('#consolePriority').evaluate(e=>e===document.activeElement&&e.querySelector('[data-priority-text]').textContent.length>0));
+      check('짧은 읽기 전용 보기 조작도 편집권·업무 상태 유지',await viewer.evaluate(v=>!ownsEditorLock()&&exportPayload(true)===v,lowBefore)&&await owner.evaluate(v=>ownsEditorLock()&&exportPayload(true)===v,lowBefore));
     }
     check('페이지 실행 오류 없음',errors.length===0);
   }

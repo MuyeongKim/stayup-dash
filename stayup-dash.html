@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
 <title>STAY UP 현장 상황판</title>
 <!--
   ============================================================================
@@ -1264,6 +1264,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .practice-notice{font-size:14px;line-height:1.6;padding:12px;border-left:4px solid var(--info);background:var(--surface2)}
 .practice-notice a{color:var(--info);font-weight:750}
 .pilot-roster-picker{width:320px;max-width:100%}
+.cons .mobile-verdict .compact-priority-link{display:none}
 [data-theme="light"] .cons-top,[data-theme="light"] .console-workspace-bar,[data-theme="light"] .mobile-nav{background:#F2F5F8}
 [data-theme="light"] .console-alert-row .mobile-verdict button{background:#FFF;color:var(--text)}
 [data-theme="light"] .ct-nav button,[data-theme="light"] .mobile-nav button,[data-theme="light"] .mobile-more button{color:var(--text)}
@@ -1309,6 +1310,18 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
   .preparation-list li{grid-template-columns:minmax(0,1fr) auto;gap:8px}
   .preparation-list li>.btn{grid-column:1/-1;min-height:44px;text-align:left}
   .onboarding-next{flex-wrap:wrap}.onboarding-next>.btn{width:100%}
+}
+/* 짧은 휴대 화면에서는 전체 지시를 문서에서 읽고 상태·메뉴만 고정한다. */
+@media(max-width:1000px) and (max-height:600px){
+  .cons{padding-top:calc(var(--compact-verdict-height,52px) + 14px)}
+  .cons .console-workspace-bar,.cons .console-workspace-bar .operation-brief,.cons .console-alert-row{display:contents;position:static}
+  .cons .console-alert-row .mobile-verdict{display:flex;position:fixed;top:0;left:10px;right:10px;width:auto;gap:6px;z-index:66;padding:4px 0;background:var(--bg)}
+  .cons #mobileVerdictText{flex:1;min-width:0;width:auto}
+  .cons .mobile-verdict .compact-priority-link{display:block;flex:0 0 74px;width:auto;white-space:nowrap}
+  .cons .mobile-verdict[data-verdict-level="danger"] #mobileVerdictText{color:var(--danger);border-color:var(--danger);font-weight:800}
+  .cons .ct-nav{position:sticky;top:var(--compact-verdict-height,52px);z-index:65;background:var(--bg)}
+  .cons .console-emergency{margin:8px 0}
+  .cons input,.cons select,.cons textarea{scroll-margin-top:calc(var(--compact-verdict-height,52px) + 76px);scroll-margin-bottom:72px}
 }
 </style>
 </head>
@@ -5070,7 +5083,21 @@ function applyConsolePanels(root){
     else more.removeAttribute('aria-current');
   }
   updateNextStep(root);
+  syncCompactConsole(root);
   revealConsoleTab(root);
+}
+function syncCompactConsole(root){
+  var cons=root.querySelector('.cons'),status=root.querySelector('.mobile-verdict');if(!cons||!status)return;
+  var height=getComputedStyle(status).position==='fixed'?Math.ceil(status.getBoundingClientRect().height):0;
+  var value=height+'px';if(cons.style.getPropertyValue('--compact-verdict-height')!==value)cons.style.setProperty('--compact-verdict-height',value);
+}
+function revealCompactInput(root){
+  var cons=root.querySelector('.cons'),status=root.querySelector('.mobile-verdict'),field=document.activeElement;
+  if(!cons||!status||!cons.contains(field)||!/^(INPUT|TEXTAREA|SELECT)$/.test(field.tagName)||getComputedStyle(status).position!=='fixed')return;
+  var nav=root.querySelector('.ct-nav'),bottom=root.querySelector('.mobile-nav'),r=field.getBoundingClientRect();
+  var top=Math.max(status.getBoundingClientRect().bottom,nav?nav.getBoundingClientRect().bottom:0);
+  var b=bottom&&bottom.getBoundingClientRect(),limit=b&&b.height?b.top:innerHeight;
+  if(r.top<top+4||r.bottom>limit-4)field.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
 }
 function revealConsoleTab(root){
   var tab=root.querySelector('[role="tab"][aria-selected="true"]'),nav=tab&&tab.parentElement;
@@ -5080,7 +5107,8 @@ function revealConsoleTab(root){
   else if(box.right>bar.right)nav.scrollLeft+=box.right-bar.right+2;
 }
 window.addEventListener('resize',function(){
-  document.querySelectorAll('#consoleRoot,#drawerIn').forEach(revealConsoleTab);
+  document.querySelectorAll('#consoleRoot,#drawerIn').forEach(function(root){syncCompactConsole(root);revealConsoleTab(root);});
+  requestAnimationFrame(function(){document.querySelectorAll('#consoleRoot,#drawerIn').forEach(revealCompactInput);});
 });
 function activateConsolePanel(root,id){
   if(!CONSOLE_SECTIONS.some(function(p){return id==='sec-'+p[0];}))return false;
@@ -5166,9 +5194,11 @@ function scrollToSection(root,target){
     if(parent.tagName==='DETAILS'){parent.open=true;if(parent.dataset.fold)consoleFolds[parent.dataset.fold]=true;}
   }
   var bar=root.querySelector('.console-workspace-bar')||root.querySelector('.cons-top');
-  var mobile=root.querySelector('.operation-brief');
+  syncCompactConsole(root);
+  var mobile=root.querySelector('.mobile-verdict'),nav=root.querySelector('.ct-nav');
   var pad=(bar&&getComputedStyle(bar).position==='sticky'?bar.getBoundingClientRect().height:
-    mobile&&getComputedStyle(mobile).display!=='none'?mobile.getBoundingClientRect().height:0)+10;
+    (mobile&&getComputedStyle(mobile).position==='fixed'?mobile.getBoundingClientRect().height:0)
+    +(nav&&getComputedStyle(nav).position==='sticky'?nav.getBoundingClientRect().height:0))+10;
   var host=scrollHost(target), tTop=target.getBoundingClientRect().top;
   if(host) host.scrollTop=Math.max(0,host.scrollTop+tTop-host.getBoundingClientRect().top-pad);
   else window.scrollTo(0,Math.max(0,window.scrollY+tTop-pad));
@@ -5445,6 +5475,7 @@ function verdictHelpHtml(){
 function refreshVerdictHelp(){
   var v=flightVerdict(new Date()),reason=v.txt+' · '+v.why[0];
   ['consoleVerdictReason','mobileVerdictText'].forEach(function(id){var el=$(id);if(el&&el.textContent!==reason)el.textContent=reason;});
+  document.querySelectorAll('.mobile-verdict').forEach(function(el){el.dataset.verdictLevel=v.lv;});
   var count=$('verdictCount');if(count)count.textContent=v.lv==='ok'?'판정 근거 보기':'확인할 항목 '+v.why.length+'개';
   var reasons=$('verdictReasons'),key=JSON.stringify(v);
   if(reasons&&reasons.dataset.key!==key&&!reasons.contains(document.activeElement)){
@@ -5455,7 +5486,7 @@ function refreshConsoleKpi(){
   var host = document.getElementById('ctKpi');
   if(host) host.innerHTML = consoleKpiCells();
   refreshVerdictHelp();refreshMapWorkspaceUi();refreshPriorityInstructions();
-  document.querySelectorAll('#consoleRoot,#drawerIn').forEach(renderOnboarding);
+  document.querySelectorAll('#consoleRoot,#drawerIn').forEach(function(root){renderOnboarding(root);syncCompactConsole(root);});
 }
 
 function paintPalette(){
@@ -5581,8 +5612,8 @@ function consoleHtml(){
     + '</div>';
 
   var verdict=flightVerdict(new Date());
-  h+='<div class="operation-brief">'+consolePriorityHtml()+'<div class="console-alert-row"><div class="mobile-verdict"><button type="button" data-act="verdictnav" data-sec="verdictHelp" id="mobileVerdictText">'
-    +esc(verdict.txt+' · '+verdict.why[0])+'</button></div><div class="console-emergency"></div></div></div>'+verdictHelpHtml()
+  h+='<div class="operation-brief">'+consolePriorityHtml()+'<div class="console-alert-row"><div class="mobile-verdict" data-verdict-level="'+esc(verdict.lv)+'"><button type="button" data-act="verdictnav" data-sec="verdictHelp" id="mobileVerdictText">'
+    +esc(verdict.txt+' · '+verdict.why[0])+'</button><button class="btn compact-priority-link" type="button" data-act="nav" data-sec="consolePriority" aria-controls="consolePriority">현재 지시</button></div><div class="console-emergency"></div></div></div>'+verdictHelpHtml()
     +'<nav class="mobile-nav" aria-label="주요 화면 이동">'
       +'<button type="button" data-act="nav" data-sec="sec-quick">조작</button>'
       +'<button type="button" data-act="nav" data-sec="sec-grid">지도</button>'
@@ -6150,6 +6181,7 @@ function bindConsole(root){
         if(target.tagName==='DETAILS'){target.open=true;consoleFolds[target.dataset.fold]=true;}
         scrollToSection(root,target);
         if(b.getAttribute('role')==='tab')b.focus({preventScroll:true});
+        if(target.id==='consolePriority')target.focus({preventScroll:true});
         var path=b.getAttribute('data-path-target'),field=path?root.querySelector('[data-path="'+path+'"]'):null;
         if(field)field.focus({preventScroll:true});
         else if(target.tagName==='DETAILS')target.querySelector('summary').focus({preventScroll:true});
