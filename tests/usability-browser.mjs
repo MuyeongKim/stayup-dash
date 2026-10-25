@@ -61,6 +61,13 @@ try{
   await live.locator('[data-sec="offlinePreparation"]').click();
   check('백업에서 지역 지도 준비로 바로 이동하고 입력값 보존',await live.locator('#tab-grid').getAttribute('aria-selected')==='true'&&await live.locator('details[data-fold="map-setup"]').evaluate(e=>e.open)&&await live.locator('#offlinePreparation h3').evaluate(e=>e===document.activeElement)&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
   check('빈 지도 준비 상태는 범위 누락과 환경에 맞는 다음 행동 명시',await live.locator('[data-offline-preparation="range"]').innerText().then(t=>t.includes('범위 미입력'))&&await live.locator('[data-offline-preparation="next"]').innerText().then(t=>process.argv.includes('--file')?t.includes('HTTPS'):t.includes('수색 범위')));
+  await live.locator('[data-sec="mapSourceSelect"]').click();
+  check('배경 선택 이동은 해당 선택칸에 초점을 두고 상황 보존',await live.locator('#mapSourceSelect').evaluate(e=>e===document.activeElement)&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
+  await live.locator('#mapSourceSelect').selectOption('offline');await live.locator('[data-sec="onlineAreaSetup"]').click();
+  check('새 범위 이동은 상세와 입력 위치만 열고 범위를 생성하지 않음',await live.locator('#onlineAreaSetup').evaluate(e=>e.open&&e.querySelector('summary')===document.activeElement)&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
+  await live.locator('#onlineLat').fill('35.89');await live.locator('#onlineLon').fill('127.21');await live.locator('#onlineWidth').fill('2');
+  await live.locator('[data-sec="photoGeoSetup"]').click();
+  check('사진 보정 이동도 작성 중 좌표·배경 초안과 전체 상황 보존',await live.locator('#photoGeoSetup').evaluate(e=>e===document.activeElement)&&await live.locator('#onlineLat').inputValue()==='35.89'&&await live.locator('#onlineLon').inputValue()==='127.21'&&await live.locator('#onlineWidth').inputValue()==='2'&&await live.locator('#mapSourceSelect').inputValue()==='offline'&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
   await live.locator('#tab-data').click();
   const beforeTheme=await live.evaluate(()=>exportPayload(true));
   await live.locator('[data-theme-target="console"][data-theme-value="dark"]').click();
@@ -153,11 +160,11 @@ try{
   check('연습 자동 기상 조회는 외부 전송 없음',requests.length===0,requests);
   check('연습은 실제 폴더·자동 보관 파일 권한을 요청하지 않음',await practice.evaluate(async()=>{let pick=0,save=0;window.showDirectoryPicker=()=>{pick++;throw Error('호출 금지');};window.showSaveFilePicker=()=>{save++;throw Error('호출 금지');};await aiFolderConnect();pickAutoSaveFile();return !pick&&!save&&autoSaveLabel().includes('안 함');}));
   const displayPopup=context.waitForEvent('page');await live.locator('#btnOpenDisplay').click();const display=await displayPopup;observe(display);
-  await display.waitForFunction(()=>S.mission.title==='실제 기록 보존 검증용 가상 상황');
+  await display.waitForFunction(()=>typeof S==='object'&&S.mission.title==='실제 기록 보존 검증용 가상 상황');
   check('실제 조작·표출 연결에 연습 제목이 섞이지 않음',await display.locator('#hMission').innerText()==='실제 기록 보존 검증용 가상 상황');
   await display.locator('#displayThemeToggle').click();
   check('표출 야간 테마는 조작 주간 테마와 독립적으로 적용',await display.locator('#board').getAttribute('data-theme')==='dark'&&await live.locator('.cons').getAttribute('data-theme')==='light');
-  await display.reload();await display.waitForFunction(()=>S.mission.title==='실제 기록 보존 검증용 가상 상황');
+  await display.reload();await display.waitForFunction(()=>typeof S==='object'&&S.mission.title==='실제 기록 보존 검증용 가상 상황');
   check('테마는 다시 열어도 유지되며 업무 상태를 변경하지 않음',await display.locator('#board').getAttribute('data-theme')==='dark'&&await live.evaluate(v=>exportPayload(true)===v,operational.state));
   check('연습 메시지를 실제 표출 연결로 받아들이지 않음',await live.evaluate(()=>{const f=document.createElement('iframe');document.body.appendChild(f);const before=peer;window.dispatchEvent(new MessageEvent('message',{data:{ch:'stayup',type:'hello',practice:true},origin:location.origin,source:f.contentWindow}));const same=peer===before;f.remove();return same;}));
   await practice.locator('[data-onboard-action="close"]').click();await practice.locator('#tab-grid').click();await addMap(practice);

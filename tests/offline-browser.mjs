@@ -207,6 +207,7 @@ try {
   assert.match(await page.locator('[data-offline-preparation="map"]').innerText(), /재시작 회귀검사 지도/);
   assert.match(await page.locator('[data-offline-preparation="app"]').innerText(), /앱 파일 저장됨/);
   assert.match(await page.locator('[data-offline-preparation="next"]').innerText(), /인터넷을 끈 뒤/);
+  assert.ok(await page.locator('[data-offline-range-links]').isHidden());
   pass('prepared range, linked map and verified app cache show a separate offline-restart check as the next action');
   const packSelect = page.locator('[data-offline-pack-select]');
   const names = await packSelect.locator('option').allTextContents();
