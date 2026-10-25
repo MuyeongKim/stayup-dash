@@ -641,6 +641,7 @@ textarea{resize:vertical;min-height:52px}
 .recent-event .re-text{min-width:0;overflow-wrap:anywhere}
 .event-filters{display:grid;grid-template-columns:minmax(180px,2fr) repeat(2,minmax(110px,1fr));gap:8px;margin-bottom:8px}
 .event-pages{justify-content:space-between;margin-top:8px}
+[data-event-results]:focus-visible{outline:2px solid var(--info);outline-offset:3px}
 .event-voided .re-text{text-decoration:line-through;color:var(--muted)}
 #evEntityWrap{flex:0 1 160px;min-width:0}#evEntityWrap:empty{display:none}#evEntityWrap select{width:100%}
 @media(max-width:600px){.event-filters{grid-template-columns:1fr 1fr}.event-filters>.f:first-child{grid-column:1/-1}}
@@ -5560,7 +5561,7 @@ function eventHistoryRows(){
   }).sort(function(a,b){return b.t-a.t||num(b.recordedAt,b.t)-num(a.recordedAt,a.t);});
   var pages=Math.max(1,Math.ceil(filtered.length/EVENT_PAGE_SIZE));eventHistory.page=clamp(intv(eventHistory.page,0),0,pages-1);
   var start=eventHistory.page*EVENT_PAGE_SIZE;
-  return '<div class="note" role="status">검색 '+filtered.length+'건 / 전체 '+S.events.length+'건 · 일반 '+ordinaryEventCount()
+  return '<div class="note" data-event-results tabindex="-1" role="status" aria-label="기록 검색 결과 · '+(eventHistory.page+1)+' / '+pages+'쪽 · '+filtered.length+'건">검색 '+filtered.length+'건 / 전체 '+S.events.length+'건 · 일반 '+ordinaryEventCount()
     +' / 긴급 '+(S.events.length-ordinaryEventCount())+'건 · '+(eventHistory.page+1)+' / '+pages+'쪽</div>'
     +(filtered.length?filtered.slice(start,start+EVENT_PAGE_SIZE).map(eventRowHtml).join(''):'<div class="note">조건에 맞는 기록이 없습니다.</div>')
     +'<div class="row-tools event-pages"><button class="btn sm" data-act="eventpage" data-page="'+(eventHistory.page-1)+'"'+(eventHistory.page===0?' disabled':'')+'>이전 기록 쪽</button>'
@@ -5581,6 +5582,10 @@ function eventHistoryHtml(){
 }
 function renderEventHistory(root){
   var rows=root.querySelector('#eventHistoryRows');if(rows)rows.innerHTML=eventHistoryRows();
+}
+function focusEventHistoryResults(root){
+  var result=root.querySelector('[data-event-results]');if(!result)return;
+  scrollToSection(root,result);result.focus({preventScroll:true});
 }
 function bindEventHistory(root){
   [['eventSearch','query','input'],['eventTypeFilter','type','change'],['eventStatusFilter','status','change']].forEach(function(p){
@@ -6173,7 +6178,7 @@ function bindConsole(root){
         : '다른 조작 창의 편집권이 아직 유효합니다. 그 창을 닫고 최대 15초 후 다시 시도하세요.');
       return;
     }
-    if(act==='eventpage'){eventHistory.page=intv(b.getAttribute('data-page'),0);renderEventHistory(root);return;}
+    if(act==='eventpage'){eventHistory.page=intv(b.getAttribute('data-page'),0);renderEventHistory(root);focusEventHistoryResults(root);return;}
     if(act==='confirmmapreview'){
       if(!ensureEditor())return;
       if(!confirm('원본 지도에서 구역·핀·좌표 보정값을 실제 위치와 대조했나요? 잘못된 값은 직접 수정해야 하며 이 버튼은 좌표를 자동 보정하지 않습니다.'))return;
@@ -6278,10 +6283,11 @@ function bindConsole(root){
       w.lat=cst.lat;w.lon=cst.lon;w.confirmed=true;w.confirmedAt=Date.now();w.error='';commit();
     }
     else if(act==='voidevent'||act==='correctevent'){
-      var eid=b.getAttribute('data-eid'),oe=null;
+      var fromHistory=!!b.closest('#eventHistory'),eid=b.getAttribute('data-eid'),oe=null;
       S.events.forEach(function(e){if(e.id===eid)oe=e;});if(!oe||oe.voided)return;
       if(!requireEventSlots(act==='correctevent'?2:1,act==='correctevent'?'기록 정정':'기록 취소',oe.emergency===true))return;
       var reason=prompt(act==='correctevent'?'정정 사유를 입력하세요.':'취소 사유를 입력하세요.','오입력');
+      if(reason===null)return;
       if(!reason||!reason.trim()){alert('감사기록을 위해 사유가 필요합니다.');return;}
       if(act==='correctevent'){
         var ntx=prompt('올바른 내용을 입력하세요. 대상·시각·구역 변경은 취소 후 새로 기록하세요.',oe.text);if(ntx==null||!ntx.trim())return;
@@ -6292,7 +6298,7 @@ function bindConsole(root){
         oe.voided=true;oe.voidedAt=Date.now();oe.voidReason=reason.trim();
         addEvent('correction',shortDateTime(oe.t)+' 기록 취소 · '+reason.trim(),oe.zone,true,undefined,{emergency:oe.emergency===true,gridGeneration:oe.gridGeneration});
       }
-      commit();
+      if(commit()&&fromHistory)focusEventHistoryResults(root);
     }
     else if(act==='refpick'){setPinMode(b.getAttribute('data-r'),root);}
     else if(act==='geoapply'){
