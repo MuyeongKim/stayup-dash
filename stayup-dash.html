@@ -997,6 +997,11 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .online-settings .f{margin-top:8px}
 .offline-settings{margin:12px 0;padding:14px;border:1px solid var(--border2);border-radius:6px}
 .offline-settings h3{margin:0 0 8px;font-size:15px}
+.data-task{padding:14px;border:1px solid var(--border2);border-radius:6px;margin-bottom:12px}
+.data-task h3{margin:0 0 8px;font-size:15px}
+.preparation-steps{margin:10px 0;padding-left:24px;font-size:14px;line-height:1.65}
+.preparation-steps li{padding:3px 0;overflow-wrap:anywhere}
+.preparation-steps span{display:block;color:var(--muted)}
 .offline-settings .offline-status{font-size:13px;line-height:1.6;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere}
 .offline-map-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:13px/1.5 system-ui,sans-serif;padding:8px 10px;border-left:3px solid var(--info);background:var(--surface2);margin-top:8px}
 .offline-map-status[hidden]{display:none}
@@ -3710,6 +3715,22 @@ function updateOfflineUi(){
   document.querySelectorAll('[data-offline-shell-status]').forEach(function(el){el.textContent=offlineShell.message||(offlineShell.ready?'앱 오프라인 준비 완료':'앱 재시작을 위한 오프라인 준비가 필요합니다.');});
   var controlsDisabled=!!offlineJob||!ownsEditorLock();
   document.querySelectorAll('[data-offline-busy]').forEach(function(el){el.disabled=controlsDisabled;});
+  var pack=selectedOfflinePack(),requirement=offlineRequirements(),hasRange=geoOK();
+  var preparation={
+    range:hasRange?'좌표 범위 입력됨 · 실제 위치와 대조하세요.':'범위 미입력 · 사진 좌표 보정 또는 새 수색 범위 만들기를 먼저 하세요.',
+    map:pack?'현재 범위의 지도 연결됨 · '+offlinePackName(pack):offlineCatalogLoaded?'현재 범위에 연결한 지도 없음':'보관함 확인 중…',
+    app:offlineShell.ready?'앱 파일 저장됨 · 오프라인 재시작 확인 필요':offlineShell.waiting?'새 앱 파일 저장됨 · 모든 상황판 창을 닫고 다시 여세요.':'앱 파일 준비 필요 · 지도 미리 저장에 앱 준비도 포함됩니다.'
+  };
+  if(!ownsEditorLock())preparation.next='읽기 전용 창입니다. 편집 중인 창에서 지도와 앱을 준비하세요.';
+  else if(requirement)preparation.next=requirement;
+  else if(!hasRange)preparation.next='지도·격자 설정에서 사진 좌표를 보정하거나 새 수색 범위를 만드세요.';
+  else if(offlineCatalogError)preparation.next=offlineCatalogError;
+  else if(!offlineCatalogLoaded)preparation.next='저장한 지역 지도 보관함을 확인하는 중입니다.';
+  else if(!pack)preparation.next='이 범위를 미리 저장하거나 지도 파일을 가져오세요. 보관함에 있다면 범위를 확인해 저장 지도 사용을 누르세요.';
+  else if(!offlineShell.ready)preparation.next='앱 오프라인 준비 상태를 확인하세요. 재시작 안내가 있으면 모든 상황판 창을 닫고 같은 주소로 다시 여세요.';
+  else if(S.grid.source!=='offline')preparation.next='아래 목록에서 연결된 지도를 고르고 저장 지도 사용을 누르세요.';
+  else preparation.next='인터넷을 끈 뒤 같은 주소에서 다시 열어 지도·핀·구역이 나오는지 확인하세요.';
+  document.querySelectorAll('[data-offline-preparation]').forEach(function(el){var text=preparation[el.dataset.offlinePreparation];if(el.textContent!==text)el.textContent=text;});
   document.querySelectorAll('[data-offline-action="cancel"]').forEach(function(el){el.hidden=!offlineJob;});
   document.querySelectorAll('[data-offline-map-status]').forEach(function(el){
     var text=offlineWorkspaceText(),span=el.querySelector('span');span.textContent=text;el.hidden=!text;
@@ -3733,8 +3754,10 @@ function updateOfflineUi(){
   }
 }
 function offlineMapPanel(){
-  return '<section class="offline-settings" aria-label="오프라인 지역 지도"><h3>오프라인 지역 지도</h3>'
+  return '<section class="offline-settings" id="offlinePreparation" aria-label="오프라인 지역 지도"><h3>오프라인 지역 지도 준비</h3>'
     +'<p class="note">현재 수색 범위의 일반 지도를 미리 저장합니다. 핀·칠한 구역·담당·기록을 유지하며, 통신이 끊기면 저장한 지도로 전환합니다. 오프라인 배경은 Protomaps / OpenStreetMap이며 네이버·구글·위성 지도와 다릅니다.</p>'
+    +'<ol class="preparation-steps"><li><b>수색 범위 확인</b><span data-offline-preparation="range"></span></li><li><b>지역 지도 저장·연결</b><span data-offline-preparation="map"></span></li><li><b>앱 파일 준비·재시작 확인</b><span data-offline-preparation="app"></span></li></ol>'
+    +'<p class="note"><b>다음 할 일:</b> <span data-offline-preparation="next"></span></p>'
     +'<p id="offlineEstimate" class="note"></p><p class="note">지도당 최대 4,096개 타일·100 MB, 보관함 최대 12개입니다. 정확한 용량은 다운로드 중 확인합니다.</p>'
     +'<label class="f"><span>저장 세부 수준</span><select id="offlineLevel" data-offline-busy>'
     +[[12,'넓은 지역 · 단계 12'],[14,'기본 · 단계 14'],[15,'상세 · 단계 15']].map(function(a){return '<option value="'+a[0]+'"'+(offlineLevel===a[0]?' selected':'')+'>'+a[1]+'</option>';}).join('')+'</select></label>'
@@ -5223,7 +5246,7 @@ function scrollToSection(root,target){
   var host=scrollHost(target), tTop=target.getBoundingClientRect().top;
   if(host) host.scrollTop=Math.max(0,host.scrollTop+tTop-host.getBoundingClientRect().top-pad);
   else window.scrollTo(0,Math.max(0,window.scrollY+tTop-pad));
-  var heading=target.querySelector('h2');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
+  var heading=target.querySelector('h2,h3');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
 }
 
 /* 배열 순번은 삭제·정렬 후 다른 대상을 가리킨다. 렌더 시점의 엔터티 ID와
@@ -5919,15 +5942,13 @@ function consoleHtml2(){
 
   /* --- 화면 · 데이터 --- */
   h += '<div class="sec" id="sec-data"><h2>화면 설정 · 데이터</h2><div class="sec-b">'
-    + sel('표출 구성','ui.viewPreset',[['standard','기본 · 전체 정보'],['far','원거리 · 핵심 정보']])
-    + '<div class="note">원거리는 판정·위험 기체·수색구역·우선 지시를 크게 보여줍니다. 기체 제원과 인원 상세는 조작 패널에서 확인하세요.</div>'
-    + '<div class="f2">'
-      + '<label class="f"><span>표출 화면 배율 ('+num(S.ui.scale,1).toFixed(2)+')</span>'
-        + '<input type="range" min="0.75" max="1.5" step="0.05" data-path="ui.scale" value="'+num(S.ui.scale,1)+'"></label>'
-      + '<label class="f"><span>야간 밝기 저감 ('+Math.round(num(S.ui.dim,0)*100)+'%)</span>'
-        + '<input type="range" min="0" max="1" step="0.05" data-path="ui.dim" value="'+num(S.ui.dim,0)+'"></label>'
-    + '</div>'
-    + '<div class="row-tools">'
+    + '<section class="data-task" aria-label="지금 상황 백업"><h3>1. 지금 상황을 파일로 백업</h3>'
+    + '<p class="note">아래 버튼으로 상황·사진·핀·구역·기록을 JSON 파일에 보관합니다. 다운로드 목록에서 실제 파일을 확인하세요. 브라우저 저장·복구본과 별도의 파일입니다.</p>'
+    + '<div class="row-tools"><button class="btn primary" data-act="export">JSON 내보내기</button>'
+      + '<button class="btn" data-act="report">활동일지 복사</button></div>'
+    + '<p class="note">저장 지역 지도의 본체는 상황 JSON에 포함되지 않습니다. 지역 지도를 쓴다면 지도 파일도 따로 보관하세요.</p>'
+    + '<button class="btn" data-act="nav" data-sec="offlinePreparation">지역 지도 파일 보관으로</button></section>'
+    + '<section class="data-task" aria-label="자동 보관 설정"><h3>2. 작업 중 자동 보관 설정</h3><div class="row-tools">'
       + fld('자동 보관','ui.autoSave','checkbox')
       + (typeof window.showSaveFilePicker==='function'
           ? '<button class="btn primary" data-act="autofile">보관 파일 지정…</button>' : '')
@@ -5936,19 +5957,27 @@ function consoleHtml2(){
     + '<div class="note">자동 보관을 켜두면 지정한 파일에 변경분을 덮어씁니다. 창을 다시 열면 보관 파일도 다시 지정하세요. '
       + '약 30초마다 변경을 확인합니다. 파일을 지정하지 않으면 첫 변경 확인 때 JSON 다운로드를 요청하고, 이후 변경 시 최소 '+AUTOSAVE_MIN+'분 간격으로 요청합니다. '
       + '다운로드 목록에서 실제 파일 생성을 확인하세요. 브라우저 저장소와 자동 복구본은 브라우저 데이터 삭제 시 함께 사라질 수 있습니다.</div>'
-    + '<div class="row-tools">'
-      + '<button class="btn" data-act="export">JSON 내보내기</button>'
-      + '<button class="btn" data-act="import">JSON 불러오기</button>'
-      + '<button class="btn" data-act="report">활동일지 복사</button>'
+    + '</section><section class="data-task" aria-label="불러오기와 복구"><h3>3. 저장 파일 불러오기·이전 상태 복구</h3>'
+    + '<p class="note">내려받은 상황 파일은 JSON 불러오기로 엽니다. 이 브라우저의 이전 상태는 상황명·시각을 보고 복구본을 선택하세요. 지도 파일은 위의 지역 지도 파일 보관으로 이동해 가져옵니다.</p>'
+    + '<div class="row-tools"><button class="btn" data-act="import">JSON 불러오기</button>'
       + recoveryChoiceHtml()
       + '<button class="btn" data-act="recover"'+(recoveryCandidates().length?'':' disabled')+'>선택한 복구본 적용</button>'
-      + '<button class="btn" data-act="sample">샘플 상황 넣기</button>'
-      + '<button class="btn danger" data-act="reset">전체 초기화</button>'
+    + '</div></section><section class="data-task" aria-label="상황 종료와 삭제"><h3>4. 백업 확인 후 초기화·종료</h3>'
+    + '<div class="row-tools"><button class="btn danger" data-act="reset">전체 초기화</button>'
       + '<button class="btn danger" data-act="purge">출동 종료 · 개인정보 완전 삭제</button>'
     + '</div>'
     + '<div class="note" data-reset-help><b>전체 초기화</b>는 현재 상황을 비우고 복구본을 유지합니다. <b>개인정보 완전 삭제</b>는 사진·지도·복구본까지 삭제합니다.</div>'
     + '<input type="file" id="importFile" accept=".json,application/json" hidden>'
-    + '<div class="note">저장 성공 여부를 상단에서 확인하세요. JSON에는 이름·좌표·지도 등 개인정보가 암호화되지 않은 평문으로 포함됩니다. 승인된 위치에 보관한 사실을 확인한 뒤 완전 삭제하세요.</div>'
+    + '<div class="note">저장 성공 여부를 상단에서 확인하세요. JSON에는 이름·좌표·지도 등 개인정보가 암호화되지 않은 평문으로 포함됩니다. 승인된 위치에 보관한 사실을 확인한 뒤 완전 삭제하세요.</div></section>'
+    + '<section class="data-task" aria-label="표출 화면 설정"><h3>표출 화면 설정</h3>'
+    + sel('표출 구성','ui.viewPreset',[['standard','기본 · 전체 정보'],['far','원거리 · 핵심 정보']])
+    + '<div class="note">원거리는 판정·위험 기체·수색구역·우선 지시를 크게 보여줍니다. 기체 제원과 인원 상세는 조작 패널에서 확인하세요.</div>'
+    + '<div class="f2">'
+      + '<label class="f"><span>표출 화면 배율 ('+num(S.ui.scale,1).toFixed(2)+')</span>'
+        + '<input type="range" min="0.75" max="1.5" step="0.05" data-path="ui.scale" value="'+num(S.ui.scale,1)+'"></label>'
+      + '<label class="f"><span>야간 밝기 저감 ('+Math.round(num(S.ui.dim,0)*100)+'%)</span>'
+        + '<input type="range" min="0" max="1" step="0.05" data-path="ui.dim" value="'+num(S.ui.dim,0)+'"></label>'
+    + '</div><button class="btn" data-act="sample">샘플 상황 넣기</button></section>'
     + '</div></div>';
   return h;
 }

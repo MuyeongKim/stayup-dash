@@ -203,6 +203,11 @@ try {
   assertMapRendered(await inspectMap(page), mission.offlineId);
   pass('the actual app, local tile database and MapLibre canvas render together with anchored pins and painted cells');
   await page.locator('details[data-fold="map-setup"]>summary').click();
+  assert.match(await page.locator('[data-offline-preparation="range"]').innerText(), /좌표 범위 입력됨/);
+  assert.match(await page.locator('[data-offline-preparation="map"]').innerText(), /재시작 회귀검사 지도/);
+  assert.match(await page.locator('[data-offline-preparation="app"]').innerText(), /앱 파일 저장됨/);
+  assert.match(await page.locator('[data-offline-preparation="next"]').innerText(), /인터넷을 끈 뒤/);
+  pass('prepared range, linked map and verified app cache show a separate offline-restart check as the next action');
   const packSelect = page.locator('[data-offline-pack-select]');
   const names = await packSelect.locator('option').allTextContents();
   assert.ok(names.some(name => name.startsWith('재시작 회귀검사 지도 · ')));
