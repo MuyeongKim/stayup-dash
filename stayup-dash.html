@@ -1212,6 +1212,104 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
   .cons .console-panel .sec-b{padding:12px}
 }
 </style>
+<style>
+/* 주간 입력 화면: 기존 탭 구조·경보 의미를 유지하고 면과 글자의 밝기를 분리한다. */
+:root{color-scheme:dark;--panel:var(--surface);--text2:var(--muted)}
+:is(.cons,.board,.map-dialog,.ai-detail)[data-theme="light"]{
+  color-scheme:light;--bg:#F2F5F8;--surface:#FFFFFF;--surface2:#EDF2F7;--surface3:#DFE8F0;
+  --border:#C5D2DE;--border2:#A8BDCF;--control-border:#627C92;--text:#182F42;
+  --muted:#425C72;--muted2:#4D6478;--ok:#157442;--warn:#815600;--danger:#B52130;--info:#086A9D;
+  --tab-selected:#CBE9FC;--tab-on-selected:#123D59;--panel-heading:#DCECF7;
+  --panel:var(--surface);--text2:var(--muted);color:var(--text);
+}
+:is(.cons,.board)[data-theme="dark"]{color-scheme:dark;color:var(--text)}
+body[data-page-theme="light"]{background:#F2F5F8;color:#182F42}
+body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimmer{opacity:0}
+.cons{font-size:16px}
+.cons .note{font-size:14px;line-height:1.65}
+.cons .note b{color:var(--text)}
+.cons input,.cons select,.cons textarea{font-size:16px;min-height:44px}
+.cons input[type="checkbox"]{min-height:0}
+.cons label.f>span{font-size:14px;line-height:1.5}
+.cons .console-panel label.f{margin-bottom:14px}
+.cons .ct-nav button{font-size:15px}
+.cons .console-panel>h2{letter-spacing:0}
+.view-theme{display:flex;align-items:center;gap:3px;border:1px solid var(--control-border);border-radius:7px;padding:3px;font:700 13px/1.3 system-ui}
+.view-theme>span{padding:0 5px;color:var(--muted)}
+.view-theme button{font:inherit;min-height:32px;padding:5px 9px;border:0;border-radius:4px;background:transparent;color:var(--text);cursor:pointer}
+.view-theme button[aria-pressed="true"]{background:var(--tab-selected);color:var(--tab-on-selected);box-shadow:inset 0 -3px 0 var(--info)}
+.theme-toggle{font:700 13px/1.3 system-ui;min-height:32px;cursor:pointer;padding:5px 7px;border:1px solid var(--control-border);border-radius:5px;color:var(--text);background:var(--surface2)}
+.clock-tools{display:flex;align-items:stretch;gap:5px;margin-top:6px;width:100%}
+.clock-tools .theme-toggle{flex:0 0 40px;padding:4px;min-height:44px}
+.hdr-clock .clock-tools .audio-arm{flex:1;min-width:0;margin:0;padding:4px}
+@media(min-width:1001px) and (max-height:900px){.board .hdr{grid-template-columns:210px minmax(0,1fr) 130px}}
+.onboarding-guide{margin:0 0 20px;padding:20px;border:1px solid var(--border2);border-radius:10px;background:var(--surface)}
+.onboarding-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.onboarding-heading h2{font-size:23px;line-height:1.4;margin:4px 0 14px;letter-spacing:-.02em}
+.guide-eyebrow{font-size:13px;font-weight:800;color:var(--info)}
+.start-actions{display:flex;gap:8px;flex-wrap:wrap}
+.start-actions .btn{min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
+.guide-progress{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 0;font-weight:800}
+.guide-progress strong{color:var(--info)}
+.guide-progress>span{font-size:13px;font-weight:500;color:var(--muted)}
+.preparation-list{list-style:none;margin:0;padding:0}
+.preparation-list li{display:grid;grid-template-columns:minmax(0,1fr) auto 150px;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--border)}
+.preparation-list h3{font-size:16px;margin:0 0 5px}
+.preparation-list p{font-size:14px;line-height:1.5;margin:0;color:var(--muted)}
+.step-status{font-size:13px;font-weight:750;color:var(--muted)}
+.is-done .step-status{color:var(--ok)}
+.onboarding-next{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);margin:16px 0}
+.onboarding-next>span{font-size:14px;color:var(--muted)}
+.practice-badge{font:800 13px/1.4 system-ui;padding:5px 9px;border:2px dashed var(--info);border-radius:5px;color:var(--info);background:var(--surface2)}
+.practice-notice{font-size:14px;line-height:1.6;padding:12px;border-left:4px solid var(--info);background:var(--surface2)}
+.practice-notice a{color:var(--info);font-weight:750}
+[data-theme="light"] .cons-top,[data-theme="light"] .console-workspace-bar,[data-theme="light"] .mobile-nav{background:#F2F5F8}
+[data-theme="light"] .console-alert-row .mobile-verdict button{background:#FFF;color:var(--text)}
+[data-theme="light"] .ct-nav button,[data-theme="light"] .mobile-nav button,[data-theme="light"] .mobile-more button{color:var(--text)}
+[data-theme="light"] .console-panel>h2,[data-theme="light"] .sec>h2,[data-theme="light"] .card-h h2{color:var(--text)}
+[data-theme="light"] .console-panel>h2 .hint,[data-theme="light"] .console-panel label.f>span{color:var(--muted)}
+.cons[data-theme="light"] .console-panel input:not([type="checkbox"]):not([type="range"]):not([type="color"]),.cons[data-theme="light"] .console-panel select,.cons[data-theme="light"] .console-panel textarea{background:#FFF;color:var(--text)}
+[data-theme="light"] input::placeholder,[data-theme="light"] textarea::placeholder{color:#586F83;opacity:1}
+[data-theme="light"] .btn.on,[data-theme="light"] .sync-pill:not(.off):not(.bad){background:#E2F3E8;color:#135E36;border-color:#2D7850}
+[data-theme="light"] .btn.danger,[data-theme="light"] .save-pill.bad,[data-theme="light"] .sync-pill.bad,[data-theme="light"] .warn-strip.danger{background:#FFF0F2;color:#9F2030;border-color:#B63443}
+[data-theme="light"] .save-pill{background:#E3F1FC;color:#175778;border-color:#5C86A4}
+[data-theme="light"] .sync-pill.off,[data-theme="light"] .warn-strip,[data-theme="light"] .map-review-notice{background:#FFF3CC;color:#624600;border-color:#A77C00}
+[data-theme="light"] .field-error,[data-theme="light"] .map-msg .err{color:#A8202D}
+[data-theme="light"] .map-msg .ok{color:#11683A}[data-theme="light"] .map-msg .warn{color:#775000}
+[data-theme="light"] .paste-zone{background:#F7FAFD;color:var(--muted)}
+[data-theme="light"] .legend span,[data-theme="light"] .tk-right,[data-theme="light"] .d-crew,[data-theme="light"] .log-row .lt,[data-theme="light"] .crew-row .cr{color:var(--muted)}
+[data-theme="light"] .tag,[data-theme="light"] .log-row .lk{color:#24475F}
+[data-theme="light"] .tag.hot{color:#A8202D;background:#FFF0F2;border-color:#B63443}
+[data-theme="light"] .tag.cool{color:#125C85;background:#E1F1FC;border-color:#59849F}
+[data-theme="light"] .log-row.k-found .lk,[data-theme="light"] .log-row.k-accident .lk{background:#FFE1E5;color:#922335}
+[data-theme="light"] .log-row.k-heat .lk{background:#FFF0BD;color:#704F00}
+[data-theme="light"] .log-row.k-order .lk{background:#D9EFFF;color:#164D71}
+[data-theme="light"] .log-row.k-found .lx{color:#9F2030}
+[data-theme="light"] .pb.on{background:#CCE8FA;color:#123D59;border-color:#086A9D}
+[data-theme="light"] .pb.p1.on{background:#FFE7A2;color:#594100}
+[data-theme="light"] .pb.p2.on{background:#BCE7CF;color:#15482C}
+[data-theme="light"] .pb.p3.on{background:#FFD4D9;color:#842332}
+[data-theme="light"] .kpi.lv-crit,[data-theme="light"] .sf.danger{background:#FFF0F2;border-color:var(--danger);animation:none}
+[data-theme="light"] .kpi.lv-crit .kpi-v{color:var(--danger)}
+[data-theme="light"] .drone.st-flying{background:#EFF8F2}[data-theme="light"] .drone.st-flying.low{background:#FFF8E2}
+[data-theme="light"] .drone.st-flying.crit{background:#FFF0F2;animation:none}
+[data-theme="light"] .crew-row.tired{background:#FFF3CC}
+[data-theme="light"] .drone-risk-summary{background:#FFF6DB;border-color:#A77C00}
+[data-theme="light"] .drone-risk-heading,[data-theme="light"] .drone-risk-item{color:#624600;background:#FFF0BF;border-color:#A77C00}
+[data-theme="light"] .drone-risk-item.danger{color:#9F2030;background:#FFF0F2;border-color:#B63443}
+[data-theme="light"] .gcell{background:rgba(239,245,249,.83);color:#213E53;border-color:#607D91}
+[data-theme="light"] .gcell.s1{background:rgba(255,231,157,.8);color:#594100;border-color:#956D00}
+[data-theme="light"] .gcell.s2{background:rgba(186,232,206,.8);color:#15482C;border-color:#237347}
+[data-theme="light"] .gcell.s3{background:rgba(255,211,213,.8);color:#842332;border-color:#AE293B}
+[data-theme="light"] .cons-map,[data-theme="light"] .mapwrap{background:#E0E9F0}
+@media(max-width:600px){
+  .onboarding-guide{padding:14px}
+  .onboarding-heading{flex-wrap:wrap}.onboarding-heading h2{font-size:20px}
+  .preparation-list li{grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  .preparation-list li>.btn{grid-column:1/-1;min-height:44px;text-align:left}
+  .onboarding-next{flex-wrap:wrap}.onboarding-next>.btn{width:100%}
+}
+</style>
 </head>
 <body>
 <a class="skip-priority" href="#consolePriority">현재 우선 지시로 건너뛰기</a>
@@ -1256,7 +1354,8 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
     <div class="hdr-clock">
       <div class="clock num" id="hClock">--:--:--</div>
       <div class="cdate" id="hDate">&nbsp;</div>
-      <button class="audio-arm" id="audioArm" type="button" hidden>&#9654;&#65038; 경보음 준비</button>
+      <div class="clock-tools"><button class="theme-toggle" id="displayThemeToggle" type="button">야간</button>
+      <button class="audio-arm" id="audioArm" type="button" hidden>&#9654;&#65038; 경보음 준비</button></div>
     </div>
   </header>
 
@@ -1345,20 +1444,26 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 /* ==========================================================================
    S1. 상수 · 기본 상태
    ========================================================================== */
-var KEY     = 'stayup.dash.v1';
-var MAPKEY  = 'stayup.dash.map.v1';
-var SNAPKEY = 'stayup.dash.snapshots.v1';
-var RECOVERY_KEY = 'stayup.dash.recovery.v1';
-var LOCKKEY = 'stayup.dash.editor.v1';
-var EPOCHKEY = 'stayup.dash.epoch.v1';
-var PURGE_LOCKKEY = 'stayup.dash.purge.v1';
-var MAP_PREFIX = 'stayup.dash.map.v2.';
+var PRACTICE_MODE = new URLSearchParams(location.search).get('practice')==='1';
+var STORAGE_PREFIX = PRACTICE_MODE ? 'stayup.practice.' : 'stayup.dash.';
+var KEY     = STORAGE_PREFIX+'v1';
+var MAPKEY  = STORAGE_PREFIX+'map.v1';
+var SNAPKEY = STORAGE_PREFIX+'snapshots.v1';
+var RECOVERY_KEY = STORAGE_PREFIX+'recovery.v1';
+var LOCKKEY = STORAGE_PREFIX+'editor.v1';
+var EPOCHKEY = STORAGE_PREFIX+'epoch.v1';
+var PURGE_LOCKKEY = STORAGE_PREFIX+'purge.v1';
+var MAP_PREFIX = STORAGE_PREFIX+'map.v2.';
+var VIEW_KEY = PRACTICE_MODE ? 'stayup.practice.view.v1' : 'stayup.view.v1';
+var viewPreferences={consoleTheme:'light',displayTheme:'light'};
+try{var savedView=JSON.parse(localStorage.getItem(VIEW_KEY)||'null');if(savedView)['consoleTheme','displayTheme'].forEach(function(k){if(['light','dark'].includes(savedView[k]))viewPreferences[k]=savedView[k];});}catch(e){}
+var onboardingOpen=false;
 var APP_VERSION = '1.2.14';
 var STATE_VERSION = 3;
 /* 지도 이미지는 IndexedDB 에, 그 밖의 상태는 localStorage 에 둔다.
    localStorage 는 약 5MB 라 지도를 1,600px 로 줄여야 했고, 그러면 정사영상을 쓸
    이유가 사라진다. IndexedDB 가 막힌 환경에서는 종전 값으로 그대로 되돌아간다. */
-var IDB_NAME = 'stayup.dash', IDB_STORE = 'maps', IDB_VER = 1;
+var IDB_NAME = PRACTICE_MODE ? 'stayup.practice' : 'stayup.dash', IDB_STORE = 'maps', IDB_VER = 1;
 var MAX_IMPORT_BYTES = 24 * 1024 * 1024;   /* 커진 지도가 JSON 왕복이 되도록 */
 var MAX_IMAGE_BYTES = 60 * 1024 * 1024;    /* 읽기 전 원본 상한 */
 var MAX_MAP_CHARS = 12 * 1024 * 1024;      /* IndexedDB 사용 시 */
@@ -1426,12 +1531,12 @@ function defaultState(){
       ctrlZone:false, noFly:false, approval:'unknown', nightApproval:false,
       windLimit:12, gustLimit:12, manned:false, agencies:''
     },
-    weather:{ auto:true, temp:null, wind:null, gust:null, precip:null,
+    weather:{ auto:!PRACTICE_MODE, temp:null, wind:null, gust:null, precip:null,
               rain:null, stamp:null, observedAt:0, lastAttemptAt:0,
               error:'', src:'none', confirmed:false, confirmedAt:0, lat:null, lon:null },
     /* paintS: 칠할 상태 0~3, null 이면 상태를 건드리지 않음
        paintBy: 칠할 담당, null 이면 담당을 건드리지 않음 */
-    ui:{ scale:1, dim:0, viewPreset:'standard', ackFound:0, paintS:2, paintBy:null, autoSave:true }
+    ui:{ scale:1, dim:0, viewPreset:'standard', ackFound:0, paintS:2, paintBy:null, autoSave:!PRACTICE_MODE }
   };
 }
 var S = defaultState();
@@ -2131,7 +2236,7 @@ function purgeIncidentData(){
   }
   function finishLocalPurge(){
     var keys=[],failed=[];
-    try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf('stayup.dash.')===0||k===ONLINE_KEYS_KEY)&&k!==EPOCHKEY&&k!==PURGE_LOCKKEY)keys.push(k);}}
+    try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf(STORAGE_PREFIX)===0||k===ONLINE_KEYS_KEY)&&k!==EPOCHKEY&&k!==PURGE_LOCKKEY)keys.push(k);}}
     catch(e){failed.push('저장목록');}
     keys.forEach(function(k){try{localStorage.removeItem(k);if(localStorage.getItem(k)!==null)failed.push(k);}catch(e){failed.push(k);}});
     S=defaultState();S.meta.epoch=SESSION_EPOCH;MAPDATA=null;mapVerLoaded=-1;mapIdLoaded=null;lastSnapshotUpdated=-1;lastSeenUpdated=0;STARTUP_WARNINGS=[];lastSweep=null;
@@ -2285,7 +2390,7 @@ function ensureEditor(){
    유지되므로, '*' 로 두면 그 순간부터 실종자 성명·좌표·지도가 외부 출처로 넘어간다. */
 var PEER_ORIGIN = location.protocol==='file:' ? '*' : location.origin;
 function sendPeer(msg){
-  msg=msg||{}; msg.ch='stayup'; msg.sender=TAB_ID;
+  msg=msg||{}; msg.ch='stayup'; msg.sender=TAB_ID; msg.practice=PRACTICE_MODE;
   try{ if(peer&&!peer.closed){peer.postMessage(msg,PEER_ORIGIN);return true;} }catch(e){}
   try{ if(window.opener&&!window.opener.closed){window.opener.postMessage(msg,PEER_ORIGIN);return true;} }catch(e){}
   return false;
@@ -2504,6 +2609,7 @@ function commitMap(dataUrl,meta,newId,opSeq,opEpoch,fileSeq){
 
 window.addEventListener('message',function(ev){
   var m=ev.data; if(!m||m.ch!=='stayup'||ev.source===window) return;
+  if(!!m.practice!==PRACTICE_MODE)return;
   var expectedOrigin=location.protocol==='file:'?'null':location.origin;
   if(ev.origin!==expectedOrigin)return;
   if(m.type==='hello'){
@@ -2844,7 +2950,7 @@ function renderHeader(){
   $('hClock').textContent = p2(now.getHours())+':'+p2(now.getMinutes())+':'+p2(now.getSeconds());
   var wd = ['일','월','화','수','목','금','토'][now.getDay()];
   $('hDate').textContent = (now.getMonth()+1)+'월 '+now.getDate()+'일 ('+wd+')';
-  $('hMission').textContent = S.mission.title || '상황명 미입력';
+  $('hMission').textContent = (PRACTICE_MODE?'[연습] ':'')+(S.mission.title || '상황명 미입력');
   $('hLoc').textContent = S.mission.location || '수색 장소 미입력';
 
   function put(vId, sId, kId, k){
@@ -3330,7 +3436,7 @@ var onlineSDK = (function () {
 })();
 
 /* 온라인 배경은 선택한 경우에만 SDK를 불러온다. 출동 데이터와 인증 설정은 분리한다. */
-var ONLINE_KEYS_KEY='stayup.onlineKeys.v1';
+var ONLINE_KEYS_KEY=PRACTICE_MODE?'stayup.practice.onlineKeys.v1':'stayup.onlineKeys.v1';
 var onlineHosts=Object.create(null);
 function isOnlineMap(){return ['naver','google','offline'].indexOf(S.grid.source)>=0;}
 function onlineSourceName(source){return {image:'사진·오프라인',naver:'네이버지도',google:'구글지도',offline:'저장한 지역 지도'}[source]||'사진·오프라인';}
@@ -3530,7 +3636,7 @@ document.addEventListener('click',function(ev){
 window.addEventListener('storage',function(ev){if(ev.key===ONLINE_KEYS_KEY){Object.keys(onlineHosts).forEach(destroyOnlineHost);renderGridAll();}});
 
 /* 지역 지도는 출동 기록과 별도 보관한다. 자동 전환은 창의 보기만 바꾼다. */
-var OFFLINE_CATALOG_KEY='stayup.offline.catalog.v1';
+var OFFLINE_CATALOG_KEY=PRACTICE_MODE?'stayup.practice.offline.catalog.v1':'stayup.offline.catalog.v1';
 var offlinePacks=[],offlineCatalogLoaded=false,offlineCatalogError='',offlineFallback=false,offlineFallbackScope='';
 var offlineJob=null,offlineMessage='',offlineLevel=14;
 var offlineShell={ready:false,waiting:false,build:'',message:''};
@@ -3697,7 +3803,7 @@ async function purgeOfflineMaps(){
   var engine=offlineEngine();if(engine)await engine.purge();
   else {
     var databases=indexedDB.databases?await indexedDB.databases():null;
-    if(!databases||databases.some(function(db){return db.name==='stayup-offline-regions-v1';}))throw new Error('지역 지도 구성 파일이 없어 저장 지도 삭제를 확인하지 못했습니다. 전체 폴더를 복원하거나 브라우저 사이트 데이터를 삭제하세요.');
+    if(!databases||databases.some(function(db){return db.name===(PRACTICE_MODE?'stayup-practice-offline-regions-v1':'stayup-offline-regions-v1');}))throw new Error('지역 지도 구성 파일이 없어 저장 지도 삭제를 확인하지 못했습니다. 전체 폴더를 복원하거나 브라우저 사이트 데이터를 삭제하세요.');
   }
   offlinePacks=[];offlineFallback=false;offlineMessage='';signalOfflineCatalog();updateOfflineUi();
 }
@@ -4740,6 +4846,7 @@ function mountMapDialog(hostId,restore){
   if(mapDialog&&mapDialog.isConnected&&mapDialog.open)return;
   mapExpandPlaceholder=document.createComment('map-workspace');workspace.before(mapExpandPlaceholder);
   var dialog=document.createElement('dialog');dialog.className='map-dialog';dialog.setAttribute('aria-label','지도 크게 보기');
+  dialog.dataset.theme=hostId==='consMap'?viewPreferences.consoleTheme:viewPreferences.displayTheme;
   dialog.innerHTML='<div class="map-dialog-head"><h2>지도 크게 보기</h2><button type="button" class="btn" data-map-action="close">지도 닫기</button></div><div class="map-dialog-status" role="status"></div><div class="map-dialog-alert" hidden><div role="alert" data-map-alert-text></div><button type="button" class="btn" data-map-action="close">지도 닫고 전체 상태 확인</button></div>';
   var parent=host.closest('#consoleRoot,#drawerIn')||$('board');parent.appendChild(dialog);dialog.appendChild(workspace);mapDialog=dialog;
   dialog.addEventListener('cancel',function(ev){ev.preventDefault();if(pinMode)setPinMode(null);else closeMapWorkspace();});
@@ -4803,6 +4910,7 @@ function renderAll(){
   applyUi();
 }
 function applyUi(){
+  applyViewPreferences();
   document.documentElement.style.setProperty('--s', num(S.ui.scale,1));
   document.documentElement.style.setProperty('--dim', num(S.ui.dim,0));
   $('board').classList.toggle('large-type',num(S.ui.scale,1)>1.15);
@@ -4960,7 +5068,7 @@ function applyConsolePanels(root){
     if(root.querySelector('.mobile-more [data-sec="'+consoleActiveSection+'"]'))more.setAttribute('aria-current','location');
     else more.removeAttribute('aria-current');
   }
-  var start=root.querySelector('.operator-start');if(start)start.hidden=consoleActiveSection!=='sec-quick';
+  updateNextStep(root);
   revealConsoleTab(root);
 }
 function revealConsoleTab(root){
@@ -4999,6 +5107,12 @@ function organizeConsole(root){
   brief.before(workspaceBar);workspaceBar.appendChild(brief);workspaceBar.appendChild(nav);
   var timeMode=root.querySelector('#evTimeMode'),targets=root.querySelector('.quick-targets');
   if(timeMode&&targets)targets.appendChild(timeMode.closest('label'));
+  var missionBody=root.querySelector('#sec-mission .sec-b'),advanced=document.createElement('div');
+  var comm=missionBody.querySelector('[data-path="mission.trs"]').closest('.f3');
+  ['mission.briefing','mission.orders'].forEach(function(path){advanced.appendChild(missionBody.querySelector('[data-path="'+path+'"]').closest('label'));});
+  advanced.insertBefore(comm,advanced.firstChild);
+  var missionDetails=consoleFold('mission-details','상세 설정 · 통신·브리핑·지시 전문','기본 입력 뒤 필요한 항목을 추가하세요.',advanced);
+  missionDetails.classList.add('settings-fold');missionBody.appendChild(missionDetails);
   var sections=['quick','drone','batt','grid','safety','mission','subject','crew','data'];
   sections.forEach(function(id){var sec=root.querySelector('#sec-'+id);if(sec)cons.appendChild(sec);});
   var grid=root.querySelector('#sec-grid .grid2');
@@ -5010,14 +5124,8 @@ function organizeConsole(root){
     if(Object.prototype.hasOwnProperty.call(consoleFolds,fold.dataset.fold))fold.open=consoleFolds[fold.dataset.fold];
     fold.addEventListener('toggle',function(){consoleFolds[fold.dataset.fold]=fold.open;});
   });
-  if(!S.mission.title||!coordinateStatus().confirmed){
-    var start=document.createElement('div');start.className='operator-start';
-    start.innerHTML='출동 준비: 상황과 현장 좌표를 먼저 확인하세요. 설정은 상단 메뉴에서 언제든 다시 열 수 있습니다.'
-      +'<div class="row-tools"><button class="btn" data-act="nav" data-sec="sec-mission">상황·좌표 입력</button>'
-      +'<button class="btn" data-act="nav" data-sec="sec-subject">실종자 정보 입력</button></div>';
-    cons.insertBefore(start,root.querySelector('#sec-quick'));
-  }
   if(mapExpandedTarget==='consMap')mountMapDialog('consMap',true);
+  renderOnboarding(root);
   applyConsolePanels(root);
 }
 function scrollToSection(root,target){
@@ -5082,6 +5190,7 @@ function renderConsole(root){
   root.querySelectorAll('details[data-fold]').forEach(function(fold){consoleFolds[fold.dataset.fold]=fold.open;});
   root.innerHTML = consoleHtml();
   organizeConsole(root);
+  applyViewPreferences();
   root.hidden = false;
   bindConsole(root);
   if(typeof restoreFieldErrors==='function')restoreFieldErrors(root);
@@ -5315,6 +5424,7 @@ function refreshConsoleKpi(){
   var host = document.getElementById('ctKpi');
   if(host) host.innerHTML = consoleKpiCells();
   refreshVerdictHelp();refreshMapWorkspaceUi();refreshPriorityInstructions();
+  document.querySelectorAll('#consoleRoot,#drawerIn').forEach(renderOnboarding);
 }
 
 function paintPalette(){
@@ -5418,10 +5528,13 @@ function consoleHtml(){
   h += '<div class="cons-top">'
     + '<h1 class="ct-brand"><span>STAY UP</span> 조작 패널 <span class="app-version">v'+esc(APP_VERSION)+'</span></h1>'
     + '<div class="ct-mode">'+(editor?'편집권 보유':'읽기 전용')+'</div>'
+    +(PRACTICE_MODE?'<strong class="practice-badge">연습 공간 · 가상 데이터</strong>':'')
+    +'<button class="btn" type="button" data-onboard-action="toggle" aria-expanded="'+onboardingOpen+'" aria-controls="onboardingGuide">처음 사용 안내</button>'
+    +themeControls('console')
     + '<div class="spacer"></div>'
     + '<div class="save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad')+'" id="savePill">'
       +(SAVE_STATUS.ok?(SAVE_STATUS.backupOk?'저장·복구 정상':'저장 정상 · 복구본 실패'):'저장 실패')+'</div>'
-    + '<div class="save-pill'+((!S.ui.autoSave||autoSaveErr)?' bad':'')+'" id="autoSavePill">'
+    + '<div class="save-pill'+(!PRACTICE_MODE&&(!S.ui.autoSave||autoSaveErr)?' bad':'')+'" id="autoSavePill">'
       + esc(autoSaveLabel())+'</div>'
     + '<div class="sync-pill'+(peerConnected()?'':' off')+'" id="syncPill">'
       + (peerConnected() ? '표출 화면 연결됨' : '표출 화면 미연결')+'</div>'
@@ -5796,6 +5909,7 @@ function bindConsole(root){
   /* 위임 리스너는 root 당 한 번만 붙인다 (재렌더 시 중복 누적 방지) */
   var first = !root.__delegated;
   root.__delegated = true;
+  if(PRACTICE_MODE)root.querySelectorAll('[data-path="ui.autoSave"],[data-act="autofile"]').forEach(function(el){el.disabled=true;});
 
   /* 수동 활성화 탭: 방향키로 메뉴를 살펴보고 Enter/Space로 선택한다. */
   if(first)root.addEventListener('keydown',function(ev){
@@ -5873,7 +5987,7 @@ function bindConsole(root){
   var od = root.querySelector('#btnOpenDisplay');
   if(od) od.onclick = function(){
     var url = location.href.split('#')[0] + '#display';
-    peer = window.open(url, 'stayup_display', 'width=1600,height=900');
+    peer = window.open(url, PRACTICE_MODE?'stayup_practice_display':'stayup_display', 'width=1600,height=900');
     if(!peer){ alert('팝업이 차단되었습니다. 주소창의 팝업 차단을 허용해 주세요.'); return; }
     setTimeout(function(){
       broadcast();
@@ -6439,6 +6553,7 @@ function cancelWeatherRequest(){
   wxController=null;wxBusy=false;
 }
 function fetchWeather(manualTrigger){
+  if(PRACTICE_MODE){if(manualTrigger)alert('연습 공간에서는 외부 기상을 자동 조회하지 않습니다. 가상 관측값으로 입력·확인 과정을 연습하세요.');return;}
   if(!ownsEditorLock())return;
   if(wxBusy){if(manualTrigger)alert('기상 갱신이 이미 진행 중입니다.');return;}
   if(!manualTrigger&&!S.weather.auto)return;
@@ -6503,6 +6618,7 @@ function fetchWeather(manualTrigger){
    S11. 내보내기 · 활동일지 · 샘플
    ========================================================================== */
 function download(name, text, type){
+  if(PRACTICE_MODE)name='연습-'+name;
   var blob = new Blob([text], {type: type || 'application/json;charset=utf-8'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name;
@@ -6563,6 +6679,7 @@ function autoSaveWorth(){
     || S.drones.length || S.crew.length || S.subject.name);
 }
 function autoSaveLabel(){
+  if(PRACTICE_MODE)return '연습 · 자동 보관 안 함';
   if(!S.ui.autoSave) return '자동 보관 꺼짐';
   if(autoSaveErr) return '자동 보관 실패 · '+autoSaveErr;
   var how = autoSaveHandle ? '파일' : '다운로드';
@@ -6573,9 +6690,10 @@ function autoSaveLabel(){
 function refreshAutoSavePill(){
   var el = document.getElementById('autoSavePill'); if(!el) return;
   el.textContent = autoSaveLabel();
-  el.className = 'save-pill' + ((!S.ui.autoSave || autoSaveErr) ? ' bad' : '');
+  el.className = 'save-pill' + (!PRACTICE_MODE&&(!S.ui.autoSave || autoSaveErr) ? ' bad' : '');
 }
 function pickAutoSaveFile(){
+  if(PRACTICE_MODE){alert('연습 공간에서는 실제 파일 자동 보관을 사용하지 않습니다. 연습 결과는 JSON 내보내기로 따로 보관하세요.');return;}
   if(typeof window.showSaveFilePicker !== 'function'){
     alert('이 환경에서는 보관 파일을 지정할 수 없습니다. 자동 보관은 다운로드로 진행됩니다.');
     return;
@@ -6598,6 +6716,7 @@ function pickAutoSaveFile(){
   });
 }
 function autoSaveTick(){
+  if(PRACTICE_MODE)return;
   /* 편집권을 가진 창만 보관한다. 두 창이 동시에 쓰면 파일이 서로를 덮는다. */
   if(!S.ui.autoSave || autoSaveBusy || !ownsEditorLock() || !autoSaveWorth()) return;
   var rev = S.meta.revision, now = Date.now();
@@ -6779,7 +6898,7 @@ function loadSample(){
   s.grid.cells['A1'].by = '지상'; s.grid.cells['B1'].by = '수색견';
   s.safety = { ctrlZone:false, noFly:false, approval:'done', nightApproval:true,
     windLimit:12,gustLimit:12,manned:false, agencies:'경찰 드론(서편 능선), 산림청 헬기 대기' };
-  s.weather = { auto:true, temp:24.6, wind:4.2, gust:7.8, precip:20, rain:false,
+  s.weather = { auto:!PRACTICE_MODE, temp:24.6, wind:4.2, gust:7.8, precip:20, rain:false,
     stamp:localDateTime(now),observedAt:now.getTime(),lastAttemptAt:0,error:'',src:'manual',
     confirmed:true,confirmedAt:now.getTime(),lat:35.8899,lon:127.2211 };
   var evs = [
@@ -7036,6 +7155,7 @@ function aiFolderCurrent(session){
   return aiFolder.session===session&&lifecycleCurrent(session.seq,session.epoch)&&ownsEditorLock();
 }
 async function aiFolderConnect(){
+  if(PRACTICE_MODE){aiFolder.message='연습 공간은 실제 자동 읽기 폴더에 연결하지 않습니다. 연습용 후보 파일을 수동으로 불러오세요.';aiFolderRefresh();return false;}
   if(!ensureEditor())return false;
   if(typeof window.showDirectoryPicker!=='function'||!window.isSecureContext){
     aiFolder.message='폴더 자동 읽기는 Chrome·Edge의 파일 직접 실행 또는 HTTPS·localhost에서 사용하세요. 수동 불러오기는 계속 사용할 수 있습니다.';aiFolderRefresh();return false;
@@ -7141,7 +7261,7 @@ function aiSectionHtml(){
   var html='<h2>AI 사진 후보 <span class="hint">고유 인원 아님 · 사진 GPS는 촬영 위치</span></h2>'
     +'<div class="sec-b"><div class="row-tools"><button type="button" class="btn primary" data-ai-action="import"'+(!ownsEditorLock()?' disabled':'')+'>AI 후보 불러오기</button>'
     +'<input type="file" data-ai-file accept=".json,application/json" hidden>'
-    +'<button type="button" class="btn" data-ai-action="folder"'+(!ownsEditorLock()?' disabled':'')+'>자동 읽기 폴더 연결</button>'
+    +'<button type="button" class="btn" data-ai-action="folder"'+(!ownsEditorLock()||PRACTICE_MODE?' disabled':'')+'>자동 읽기 폴더 연결</button>'
     +'<button type="button" class="btn" data-ai-action="folder-stop"'+(!aiFolder.session?' disabled':'')+'>연결 해제</button>'
     +'<label>표시 <select data-ai-filter aria-label="AI 후보 표시 필터">'
     +[['active','확인할 후보'],['all','전체'],['unreviewed','미확인'],['person','사람 맞음'],['hold','보류'],['false_positive','오탐'],['withdrawn','원본에서 빠진 후보']].map(function(p){return '<option value="'+p[0]+'"'+(aiFilter===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+'</select></label></div>'
@@ -7220,6 +7340,7 @@ function aiRenderAll(){
 function aiShowDetail(key){
   var c=S.ai.candidates.filter(function(v){return aiKey(v)===key;})[0];if(!c)return;
   var dialog=document.createElement('dialog');dialog.className='ai-detail';
+  dialog.dataset.theme=viewPreferences.consoleTheme;
   dialog.innerHTML='<h2>AI 사진 후보 · '+esc(AI_REVIEWS[c.review])+'</h2><p>'+esc(c.file)+' · '+esc(c.id)+'</p>'
     +(c.thumbnailId?'<img data-ai-image="'+esc(c.thumbnailId)+'" alt="후보 주변 축소 이미지" hidden>':'<p>후보 이미지 없음</p>')
     +'<p>'+esc(aiLocation(c).text)+(c.gps?' · '+c.gps.lat.toFixed(6)+', '+c.gps.lon.toFixed(6):'')+'</p>'
@@ -7354,6 +7475,7 @@ function openDrawer(){
   drawerLastFocus=document.activeElement;
   $('drawer').hidden = false;
   renderConsole($('drawerIn'));
+  applyViewPreferences();
   setTimeout(function(){var b=$('drawerIn').querySelector('#btnCloseDrawer');if(b)b.focus();},0);
 }
 function closeDrawer(){
@@ -7361,6 +7483,7 @@ function closeDrawer(){
   $('drawer').hidden = true;
   destroyOnlineHost('consMap');
   $('drawerIn').innerHTML = '';
+  applyViewPreferences();
   var back=drawerLastFocus;drawerLastFocus=null;
   if(back&&back.focus&&document.contains(back))back.focus();
 }
@@ -7414,6 +7537,102 @@ document.addEventListener('keydown', function(ev){
   }
 });
 
+/* 보기와 첫 사용 안내는 업무 상태·백업 형식과 분리한다. */
+function hasIncidentContent(){
+  return !!(S.mission.title||S.mission.location||S.subject.name||S.drones.length||S.crew.length||S.events.length||S.grid.hasMap||Object.keys(S.grid.cells).length||S.ai.runs.length);
+}
+function themeControls(target){
+  return '<div class="view-theme" role="group" aria-label="'+(target==='console'?'조작':'표출')+' 화면 테마"><span>'+(target==='console'?'조작':'표출')+'</span>'
+    +[['light','주간'],['dark','야간']].map(function(p){return '<button type="button" data-theme-target="'+target+'" data-theme-value="'+p[0]+'" aria-pressed="'+(viewPreferences[target+'Theme']===p[0])+'">'+p[1]+'</button>';}).join('')+'</div>';
+}
+function applyViewPreferences(){
+  document.body.dataset.pageTheme=viewPreferences[MODE==='display'?'displayTheme':'consoleTheme'];
+  document.querySelectorAll('.cons').forEach(function(el){el.dataset.theme=viewPreferences.consoleTheme;});
+  $('board').dataset.theme=viewPreferences.displayTheme;
+  document.querySelectorAll('[data-theme-target]').forEach(function(button){button.setAttribute('aria-pressed',String(viewPreferences[button.dataset.themeTarget+'Theme']===button.dataset.themeValue));});
+  var toggle=$('displayThemeToggle');if(toggle){toggle.textContent=viewPreferences.displayTheme==='light'?'야간':'주간';toggle.setAttribute('aria-label','표출 화면 '+(viewPreferences.displayTheme==='light'?'야간':'주간')+' 테마로 전환');}
+  document.body.classList.toggle('light-console-open',!$('drawer').hidden&&viewPreferences.consoleTheme==='light');
+}
+function setViewTheme(target,value){
+  if(!['console','display'].includes(target)||!['light','dark'].includes(value))return;
+  viewPreferences[target+'Theme']=value;
+  try{localStorage.setItem(VIEW_KEY,JSON.stringify(viewPreferences));}catch(e){alert('테마는 이번 창에 적용했습니다. 브라우저 저장이 차단되어 다시 열면 기본값으로 돌아갑니다.');}
+  applyViewPreferences();
+}
+window.addEventListener('storage',function(ev){
+  if(ev.key!==VIEW_KEY)return;
+  try{var p=JSON.parse(ev.newValue||'null');if(p)['consoleTheme','displayTheme'].forEach(function(k){if(['light','dark'].includes(p[k]))viewPreferences[k]=p[k];});applyViewPreferences();}catch(e){}
+});
+function workspaceURL(practice){
+  var url=new URL(location.href);url.hash='';
+  if(practice)url.searchParams.set('practice','1');else url.searchParams.delete('practice');
+  return url.href;
+}
+function preparationSteps(){
+  var coordinates=coordinateStatus(),v=flightVerdict(new Date());
+  var crewReady=S.crew.some(function(c){return c.role==='조종'&&String(c.name||'').trim();});
+  var registrationReady=S.drones.some(function(d){return String(d.name||'').trim()&&String(d.pilot||'').trim()&&S.crew.some(function(c){return c.role==='조종'&&String(c.name||'').trim()===String(d.pilot||'').trim();});});
+  var mapReady=!!S.grid.hasMap||S.grid.source==='offline'&&!!selectedOfflinePack()
+    ||isOnlineMap()&&onlineMapReady($('consMap'));
+  return [
+    {sec:'mission',title:'1. 상황 입력',hint:'상황명과 현장 좌표를 입력하고 확인하세요.',done:!!S.mission.title.trim()&&coordinates.confirmed,label:'상황 입력'},
+    {sec:crewReady?'drone':'crew',title:'2. 인원·기체 등록',hint:'인원을 먼저 등록한 뒤 기체의 조종자를 연결하세요.',done:registrationReady,label:crewReady?'기체 등록':'인원 등록'},
+    {sec:'grid',title:'3. 지도 준비',hint:'지도·현장 사진을 넣거나 저장한 지역 지도를 선택하세요.',done:!!mapReady,label:'지도 준비'},
+    {sec:'safety',title:'4. 안전정보 확인',hint:v.lv==='ok'?'입력된 제한사항이 없습니다. 실제 승인과 현장 조건을 확인하세요.':v.why[0],done:v.lv==='ok',label:'확인할 항목 보기'}
+  ];
+}
+function renderOnboarding(root){
+  var cons=root.querySelector('.cons');if(!cons)return;
+  var guide=root.querySelector('#onboardingGuide');
+  if(!guide){guide=document.createElement('section');guide.id='onboardingGuide';guide.className='onboarding-guide';guide.setAttribute('aria-labelledby','onboardingTitle');cons.querySelector('.cons-top').after(guide);}
+  guide.hidden=!onboardingOpen;
+  root.querySelectorAll('[data-onboard-action="toggle"]').forEach(function(b){b.setAttribute('aria-expanded',String(onboardingOpen));});
+  var steps=preparationSteps(),done=steps.filter(function(s){return s.done;}).length;
+  var key=JSON.stringify([steps,PRACTICE_MODE,hasIncidentContent()]);
+  if(guide.dataset.content!==key){
+    guide.dataset.content=key;
+    guide.innerHTML='<div class="onboarding-heading"><div><span class="guide-eyebrow">'+(PRACTICE_MODE?'실제 기록과 분리된 연습':'처음 사용 안내')+'</span><h2 id="onboardingTitle">'+(hasIncidentContent()?'지금 할 일을 순서대로 확인하세요':'처음이라면 여기서 시작하세요')+'</h2></div><button class="btn" type="button" data-onboard-action="close">안내 접기</button></div>'
+      +(PRACTICE_MODE?'<p class="practice-notice">연습 데이터만 사용합니다. 실제 상황·지도·복구본과 표출 연결은 분리되어 있으며 자동 보관·자동 폴더 읽기는 사용하지 않습니다. <a href="'+esc(workspaceURL(false))+'" target="_blank" rel="noopener">실제 상황 화면 열기</a></p>':'<div class="start-actions"><button class="btn primary" type="button" data-onboard-action="new">새 상황 시작</button><button class="btn" type="button" data-onboard-action="import">저장한 상황 불러오기</button><a class="btn" href="'+esc(workspaceURL(true))+'" target="_blank" rel="noopener">가상 데이터로 연습하기 ↗</a></div><p class="note">'+(hasIncidentContent()?'저장된 내용이 있습니다. 이어서 사용하려면 아래 항목이나 원하는 메뉴를 누르세요.':'입력은 자동으로 이 브라우저에 저장됩니다. 상황을 옮기거나 종료할 때는 파일로 백업하세요.')+'</p>')
+      +'<div class="guide-progress">기본 입력 현황 <strong>'+done+' / 4</strong><span>입력 현황과 실제 비행 승인은 별개입니다.</span></div>'
+      +'<ol class="preparation-list">'+steps.map(function(s){return '<li class="'+(s.done?'is-done':'')+'"><div><h3>'+s.title+'</h3><p>'+esc(s.hint)+'</p></div><span class="step-status">'+(s.done?'✓ 입력 확인':s.sec==='safety'?'사유 확인':'미완료')+'</span><button class="btn" type="button" data-act="nav" data-sec="sec-'+s.sec+'">'+s.label+'</button></li>';}).join('')+'</ol><p class="note">실종자 정보는 <b>실종자</b> 메뉴에서 입력합니다. 확인하지 못한 정보는 빈칸으로 두고, 입력된 값만으로 수색 종료나 비행 가능 여부를 확정하지 마세요.</p>';
+  }
+  updateNextStep(root);
+}
+function updateNextStep(root){
+  var cons=root.querySelector('.cons');if(!cons)return;
+  var next=root.querySelector('.onboarding-next');if(!next){next=document.createElement('div');next.className='onboarding-next';cons.appendChild(next);}
+  next.hidden=!onboardingOpen;
+  var order=['mission','subject','crew','drone','grid','safety','quick'],at=order.indexOf(consoleActiveSection.slice(4));
+  var id=at<0||at===order.length-1?'mission':order[at+1],item=CONSOLE_SECTIONS.filter(function(p){return p[0]===id;})[0];
+  var text='다음: '+item[1];
+  if(next.dataset.target!==id){next.dataset.target=id;next.innerHTML='<span>안내에 따라 준비하거나 메뉴를 직접 선택할 수 있습니다.</span><button class="btn primary" type="button" data-act="nav" data-sec="sec-'+id+'">'+text+'</button>';}
+}
+async function startNewIncident(root){
+  if(!ensureEditor())return false;
+  if(hasIncidentContent()){
+    if(!confirm('현재 상황이 있습니다. 먼저 현재 상황 JSON을 다운로드한 뒤 새 상황을 시작할까요?'))return false;
+    if(!exportJson())return false;
+    if(!confirm('다운로드 목록에서 백업 파일이 생성되고 보관됐는지 확인했나요? 확인한 경우에만 새 상황을 만듭니다.'))return false;
+    if(!saveRecoveryPoint('새 상황 시작 전')){alert('복구본을 만들지 못해 새 상황 시작을 중단했습니다.');return false;}
+    var seq=++fileMutationSeq;
+    if(!await applyStateWithMap(defaultState(),null,stateLifecycleSeq,SESSION_EPOCH,seq))return false;
+  }
+  onboardingOpen=true;consoleActiveSection='sec-mission';renderConsole(root);
+  scrollToSection(root,root.querySelector('#sec-mission'));
+  var title=root.querySelector('[data-path="mission.title"]');if(title)title.focus({preventScroll:true});
+  return true;
+}
+document.addEventListener('click',function(ev){
+  var theme=ev.target.closest('[data-theme-target]');
+  if(theme){setViewTheme(theme.dataset.themeTarget,theme.dataset.themeValue);return;}
+  if(ev.target.closest('#displayThemeToggle')){setViewTheme('display',viewPreferences.displayTheme==='light'?'dark':'light');return;}
+  var b=ev.target.closest('[data-onboard-action]');if(!b)return;
+  var root=b.closest('#consoleRoot,#drawerIn');if(!root)return;
+  if(b.dataset.onboardAction==='new'){startNewIncident(root);return;}
+  if(b.dataset.onboardAction==='import'){scrollToSection(root,root.querySelector('#sec-data'));root.querySelector('#importFile').click();return;}
+  onboardingOpen=b.dataset.onboardAction==='toggle'?!onboardingOpen:false;renderOnboarding(root);
+});
+
 /* ==========================================================================
    S13. 부팅
    ========================================================================== */
@@ -7421,6 +7640,7 @@ function boot(){
   /* 지도 축소 상한이 저장소에 따라 달라진다. 첫 지도를 넣기 전에 알아 둔다. */
   idbOpen().then(function(){}, function(){});
   loadLocal();
+  onboardingOpen=!hasIncidentContent();
   document.documentElement.setAttribute('data-app-version', APP_VERSION);
   var versionEl = $('appVersion');
   if(versionEl) versionEl.textContent = 'v'+APP_VERSION;
@@ -7434,7 +7654,7 @@ function boot(){
     try{
       if(window.opener && !window.opener.closed){
         peer = window.opener;
-        window.opener.postMessage({ch:'stayup', type:'hello'}, PEER_ORIGIN);
+        window.opener.postMessage({ch:'stayup', type:'hello',practice:PRACTICE_MODE}, PEER_ORIGIN);
       }
     }catch(e){}
   } else {
@@ -7447,6 +7667,11 @@ function boot(){
 
   applyUi();
   renderAll();initOfflineMaps();
+  if(PRACTICE_MODE){
+    document.title='[연습] '+document.title;
+    var label=$('displayPriorityLabel');if(label)label.textContent='[연습] 현재 우선 지시';
+    if(MODE==='console'&&!hasIncidentContent())loadSample();
+  }
   if(STARTUP_WARNINGS.length)showSystemAlert(STARTUP_WARNINGS.join(' · '));
   var arm=$('audioArm');if(arm){arm.onclick=primeAudio;updateAudioArm();}
   if(MOTION_QUERY&&MOTION_QUERY.addEventListener)MOTION_QUERY.addEventListener('change',renderTicker);

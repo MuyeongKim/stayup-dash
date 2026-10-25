@@ -4,7 +4,8 @@
  */
 (function (global) {
   'use strict';
-  var DB_NAME = 'stayup-offline-regions-v1';
+  var DB_NAME = global.location && /(?:^|[?&])practice=1(?:&|$)/.test(global.location.search||'')
+    ? 'stayup-practice-offline-regions-v1' : 'stayup-offline-regions-v1';
   var SOURCE_URL = 'https://data.source.coop/protomaps/openstreetmap/v4.pmtiles';
   var LIMITS = Object.freeze({ maxZoom: 15, maxTiles: 4096, maxBytes: 100 * 1024 * 1024,
     maxTileBytes: 2 * 1024 * 1024, maxFileBytes: 145 * 1024 * 1024, maxPacks: 12 });
