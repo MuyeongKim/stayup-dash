@@ -2134,7 +2134,8 @@ function recoveryChoiceHtml(){
   var cs=recoveryCandidates();
   if(!cs.length)return '<select id="recoveryPick" aria-label="복구본 선택" disabled><option>복구본 없음</option></select>';
   return '<select id="recoveryPick" aria-label="복구본 선택">'+cs.map(function(c){
-    return '<option value="'+esc(c.key)+'">'+esc(c.kind+' · '+shortDateTime(c.t)+' · '+(c.reason||'복구본'))+'</option>';
+    var title=sanText(c.record.state.mission&&c.record.state.mission.title,80)||'상황명 없음';
+    return '<option value="'+esc(c.key)+'">'+esc(c.kind+' · '+title+' · '+shortDateTime(c.t)+' · '+(c.reason||'복구본'))+'</option>';
   }).join('')+'</select>';
 }
 /* 이벤트가 한도(MAX_EVENTS)에 가까우면 상태 사본 5개가 localStorage 할당량을 넘는다.
@@ -2230,7 +2231,7 @@ function restoreRecovery(choiceKey){
       return applyStateWithMap(r.state,map,opSeq,opEpoch,fileSeq);
     }).then(function(ok){
       if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))return false;
-      alert(ok ? '직전 작업을 복구했습니다.' : '복구 실패: 복구 상태를 저장하지 못했습니다.');
+      alert(ok ? '선택한 복구본을 적용했습니다. 상황·지도·최근 기록을 확인하세요.' : '복구 실패: 복구 상태를 저장하지 못했습니다.');
       return ok;
     }).catch(function(e){
       if(lifecycleCurrent(opSeq,opEpoch)&&fileMutationCurrent(fileSeq))alert('복구 실패: '+(e&&e.message?e.message:e));
@@ -5936,6 +5937,7 @@ function consoleHtml2(){
       + '<button class="btn danger" data-act="reset">전체 초기화</button>'
       + '<button class="btn danger" data-act="purge">출동 종료 · 개인정보 완전 삭제</button>'
     + '</div>'
+    + '<div class="note" data-reset-help><b>전체 초기화</b>는 현재 상황을 비우고 복구본을 유지합니다. <b>개인정보 완전 삭제</b>는 사진·지도·복구본까지 삭제합니다.</div>'
     + '<input type="file" id="importFile" accept=".json,application/json" hidden>'
     + '<div class="note">저장 성공 여부를 상단에서 확인하세요. JSON에는 이름·좌표·지도 등 개인정보가 암호화되지 않은 평문으로 포함됩니다. 승인된 위치에 보관한 사실을 확인한 뒤 완전 삭제하세요.</div>'
     + '</div></div>';
@@ -6357,11 +6359,11 @@ function bindConsole(root){
       }
     }
     else if(act === 'reset'){
-      if(confirm('모든 데이터를 지웁니다. 계속할까요?')){
+      if(confirm('현재 상황 입력을 빈 상태로 초기화할까요?\n초기화 전 상태를 복구본에 보관하며 기존 복구본도 유지합니다.')){
         if(!saveRecoveryPoint('전체 초기화 전')){alert('복구본을 만들 수 없어 초기화를 중단했습니다.');return;}
         var resetSeq=++fileMutationSeq;
         applyStateWithMap(defaultState(),null,stateLifecycleSeq,SESSION_EPOCH,resetSeq).then(function(ok){
-          if(ok) alert('초기화했습니다. 직전 작업은 복구 버튼으로 되돌릴 수 있습니다.');
+          if(ok) alert('현재 상황을 초기화했습니다. 복구본을 고른 뒤 선택한 복구본 적용으로 되돌릴 수 있습니다.');
         });
       }
     }
