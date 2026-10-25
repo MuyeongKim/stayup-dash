@@ -1263,6 +1263,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .practice-badge{font:800 13px/1.4 system-ui;padding:5px 9px;border:2px dashed var(--info);border-radius:5px;color:var(--info);background:var(--surface2)}
 .practice-notice{font-size:14px;line-height:1.6;padding:12px;border-left:4px solid var(--info);background:var(--surface2)}
 .practice-notice a{color:var(--info);font-weight:750}
+.pilot-roster-picker{width:320px;max-width:100%}
 [data-theme="light"] .cons-top,[data-theme="light"] .console-workspace-bar,[data-theme="light"] .mobile-nav{background:#F2F5F8}
 [data-theme="light"] .console-alert-row .mobile-verdict button{background:#FFF;color:var(--text)}
 [data-theme="light"] .ct-nav button,[data-theme="light"] .mobile-nav button,[data-theme="light"] .mobile-more button{color:var(--text)}
@@ -5085,6 +5086,7 @@ function activateConsolePanel(root,id){
   if(!CONSOLE_SECTIONS.some(function(p){return id==='sec-'+p[0];}))return false;
   if(consoleActiveSection!==id&&typeof cancelMapInteraction==='function')cancelMapInteraction();
   consoleActiveSection=id;applyConsolePanels(root);
+  if(id==='sec-drone')suggestRegisteredPilots(root);
   if(id==='sec-grid'){
     renderGridAll();
     requestAnimationFrame(function(){var host=root.querySelector('#consMap');if(host){fitMapBox(host);if(isOnlineMap())fitOnlineMap(host);}});
@@ -5097,6 +5099,34 @@ function consoleFold(key,label,description,content){
   if(description){var hint=document.createElement('span');hint.textContent=description;summary.appendChild(hint);}
   fold.appendChild(summary);fold.appendChild(content);fold.open=!!consoleFolds[key];
   return fold;
+}
+function suggestRegisteredPilots(root){
+  var section=root.querySelector('#sec-drone');if(!section)return;
+  root.querySelectorAll('[data-pilot-options],[data-pilot-hint]').forEach(function(el){el.remove();});
+  var names=[];
+  S.crew.forEach(function(c){var name=String(c.name||'').trim();if(c.role==='조종'&&!c.outAt&&name&&names.indexOf(name)<0)names.push(name);});
+  section.querySelectorAll('[data-path$=".pilot"]').forEach(function(input,index){
+    var tools=document.createElement('div');tools.className='pilot-roster-tools';tools.dataset.pilotOptions='';
+    if(names.length){
+      var label=document.createElement('label');label.className='f pilot-roster-picker';
+      var caption=document.createElement('span');caption.textContent='등록된 조종자';label.appendChild(caption);
+      var picker=document.createElement('select');picker.dataset.pilotTarget=input.dataset.path;
+      picker.disabled=!ownsEditorLock();
+      var drone=S.drones[+input.dataset.path.split('.')[1]];
+      picker.setAttribute('aria-label',(drone&&drone.name||'기체')+' 등록 조종자 선택');
+      var empty=document.createElement('option');empty.value='';empty.textContent='명부에서 고르기';empty.disabled=true;empty.selected=!names.includes(input.value);picker.appendChild(empty);
+      names.forEach(function(name){var option=document.createElement('option');option.value=name;option.textContent=name;option.selected=name===input.value;picker.appendChild(option);});
+      picker.onchange=function(){input.value=picker.value;input.dispatchEvent(new Event('input',{bubbles:true}));if(input.isConnected){input.dispatchEvent(new Event('change',{bubbles:true}));input.focus({preventScroll:true});}};
+      label.appendChild(picker);tools.appendChild(label);
+    }
+    var hint=document.createElement('p');hint.className='note';hint.id=root.id+'-pilot-hint-'+index;
+    hint.textContent=names.length?'명부에서 고르면 조종자 별칭이 입력됩니다. 입력칸에서 직접 수정할 수도 있습니다.':'먼저 인원 메뉴에서 조종자를 등록하세요. 직접 입력할 때도 인원 명부와 같은 별칭을 사용합니다.';
+    tools.appendChild(hint);input.closest('.f3').after(tools);input.setAttribute('aria-describedby',hint.id);
+  });
+}
+function focusAddedField(root,path){
+  var field=root.querySelector('[data-path="'+path+'"]');if(!field)return;
+  scrollToSection(root,field.closest('label')||field);field.focus({preventScroll:true});
 }
 function organizeConsole(root){
   var cons=root.querySelector('.cons');if(!cons)return;
@@ -5115,6 +5145,7 @@ function organizeConsole(root){
   missionDetails.classList.add('settings-fold');missionBody.appendChild(missionDetails);
   var sections=['quick','drone','batt','grid','safety','mission','subject','crew','data'];
   sections.forEach(function(id){var sec=root.querySelector('#sec-'+id);if(sec)cons.appendChild(sec);});
+  suggestRegisteredPilots(root);
   var grid=root.querySelector('#sec-grid .grid2');
   if(grid&&grid.children.length===2){
     var setup=grid.children[1];grid.classList.add('grid-editor-columns');
@@ -6075,16 +6106,18 @@ function bindConsole(root){
   var adr = root.querySelector('#btnAddDrone');
   if(adr) adr.onclick = function(){
     if(!ensureEditor())return;
+    var addedIndex=S.drones.length;
     S.drones.push({ id:uid(), name:(S.drones.length+1)+'호기', model:'', status:'ready',
       battery:100, tookOffAt:'', endurance:25, zone:'', alt:'', pilot:'', observer:'',
       sorties:0, sensors:['EO','IR'] });
-    commit();
+    if(commit())focusAddedField(root,'drones.'+addedIndex+'.pilot');
   };
   var acr = root.querySelector('#btnAddCrew');
   if(acr) acr.onclick = function(){
     if(!ensureEditor())return;
+    var addedIndex=S.crew.length;
     S.crew.push({ id:uid(), name:'', role:'조종', inAt: localDateTime(new Date()), outAt:'' });
-    commit();
+    if(commit())focusAddedField(root,'crew.'+addedIndex+'.name');
   };
 
   /* 액션 버튼 위임 */

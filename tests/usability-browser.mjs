@@ -62,10 +62,15 @@ try{
   check('주간 입력 글자·라벨 대비 4.5:1 이상 및 16px 크기',palette.text>=4.5&&palette.label>=4.5&&palette.font>=16&&palette.scheme==='light',palette);
   await live.screenshot({path:path.join(out,'mission-light.png'),fullPage:false});
   await live.locator('#tab-crew').click();await live.locator('#btnAddCrew').click();
+  check('인원 추가 뒤 새 성명 입력에 실제 포커스 연결',await live.locator('[data-path="crew.0.name"]').evaluate(e=>e===document.activeElement));
   await live.locator('#tab-drone').click();await live.locator('#btnAddDrone').click();
+  check('기체 추가 뒤 조종자 입력이 고정 영역 아래에 보이며 포커스 연결',await live.locator('[data-path="drones.0.pilot"]').evaluate(e=>e===document.activeElement&&e.getBoundingClientRect().top>=document.querySelector('.console-workspace-bar').getBoundingClientRect().bottom));
   check('빈 인원·기체 행만 추가한 것은 등록 완료로 표시하지 않음',await live.evaluate(()=>!preparationSteps()[1].done));
   await live.locator('#tab-crew').click();await live.locator('[data-path="crew.0.name"]').fill('조종 A');
-  await live.locator('#tab-drone').click();await live.locator('[data-path="drones.0.pilot"]').fill('조종 A');
+  await live.locator('#tab-drone').click();
+  check('등록한 조종자 별칭을 선택 목록과 연결하고 수동 입력도 유지',await live.locator('[data-path="drones.0.pilot"]').evaluate(e=>{const list=document.querySelector('[data-pilot-target="'+e.dataset.path+'"]');return e.tagName==='INPUT'&&list&&[...list.options].some(o=>o.value==='조종 A')&&e.value==='';}));
+  await live.locator('[data-pilot-target="drones.0.pilot"]').selectOption('조종 A');
+  await live.screenshot({path:path.join(out,'pilot-suggestions.png'),fullPage:false});
   check('조종자 별칭을 연결한 기체는 기본 등록 확인에 반영',await live.evaluate(()=>preparationSteps()[1].done));
   await addMap(live);
   const operational=await live.evaluate(()=>({state:exportPayload(true),map:MAPDATA,epoch:localStorage.getItem(EPOCHKEY)}));
