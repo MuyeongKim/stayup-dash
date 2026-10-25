@@ -304,7 +304,7 @@ b,strong{font-weight:700}
 }
 .gridlayer{position:absolute;inset:0;display:grid;gap:2px;padding:2px}
 .gcell{
-  position:relative;border-radius:.2rem;display:flex;align-items:center;justify-content:center;
+  position:relative;border-radius:.2rem;display:flex;flex-direction:column;gap:1px;align-items:center;justify-content:center;
   font-size:1.18rem;font-weight:800;letter-spacing:.02em;
   border:1px solid rgba(143,163,184,.28);
   background:rgba(7,10,14,.16);color:rgba(233,240,247,.62);
@@ -320,9 +320,14 @@ b,strong{font-weight:700}
 .gcell.s3{background:rgba(239,68,68,.22);border-color:var(--danger);color:#FECACA;
   border-style:double;border-width:.22rem}
 .gcell .by{
-  position:absolute;top:.1rem;right:.2rem;font-size:.88rem;font-weight:700;
-  opacity:.9;letter-spacing:0;
+  font-size:.88rem;font-weight:700;letter-spacing:0;
 }
+/* 사진·지도와 채움 농도에 관계없이 구역명·담당을 읽을 수 있도록 글자 뒤만 가린다. */
+.gcell .cell-id,.gcell .by{
+  background:#0B1219;color:#F3F7FB;text-shadow:none;opacity:1;
+  border-radius:2px;line-height:1.2;padding:0 3px;pointer-events:none;
+}
+.gcell .by{padding:0 2px}
 .gcell.act{outline:.14rem solid var(--accent);outline-offset:-.14rem}
 .pin{
   position:absolute;width:0;height:0;pointer-events:none;z-index:5;
@@ -3974,7 +3979,7 @@ function cancelMapInteraction(){
       var id=el.getAttribute('data-cell');if(!pending.touched[id])return;
       var cur=S.grid.cells[id]||{s:0,by:''};el.className='gcell s'+(cur.s||0);
       el.setAttribute('aria-label',id+' '+CELL_ST[cur.s||0]+(cur.by?' 담당 '+cur.by:' 담당 없음'));
-      el.innerHTML=id+(cur.by?'<span class="by">'+esc(cur.by)+'</span>':'');
+      el.innerHTML='<span class="cell-id">'+id+'</span>'+(cur.by?'<span class="by">'+esc(cur.by)+'</span>':'');
     });
   }
   if(gesture&&gesture.host){
@@ -4210,7 +4215,7 @@ function buildGrid(host, interactive){
       html += '<'+tag+(interactive?' type="button"':' role="img"')+' class="gcell s'+(cel.s||0)+'" data-cell="'+id+'"'
             + ' aria-label="'+id+' '+CELL_ST[cel.s||0]+(cel.by?' 담당 '+esc(cel.by):' 담당 없음')+'"'
             + (interactive ? ' title="선택된 동작 실행" tabindex="'+(id===gridFocusId?'0':'-1')+'"' : '')
-            + '>'+id+(cel.by ? '<span class="by">'+esc(cel.by)+'</span>' : '')+'</'+tag+'>';
+            + '><span class="cell-id">'+id+'</span>'+(cel.by ? '<span class="by">'+esc(cel.by)+'</span>' : '')+'</'+tag+'>';
     }
   }
   html += '</div>';
