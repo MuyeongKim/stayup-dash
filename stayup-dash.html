@@ -5689,7 +5689,7 @@ function consoleHtml(){
       + '입력한 내용이 새로고침 후 사라지고, 표출 화면과의 동기화도 불안정합니다. '
       + '<b>Chrome 또는 Edge</b>로 열어 주세요. (Safari는 file:// 에서 저장을 막습니다)</div>';
   }
-  if(!editor&&STORAGE_OK) h+='<div class="warn-strip danger"><b>다른 조작 창이 편집 중입니다.</b> 이 창에서는 안내 확인·화면 테마 변경과 내용 보기가 가능합니다. 입력하려면 기존 창이 닫힌 뒤 편집권을 가져오세요.</div>';
+  if(!editor&&STORAGE_OK) h+='<div class="warn-strip danger" data-editor-help><b>이 창은 읽기 전용입니다.</b> 입력하려면 기존 조작 창을 닫은 뒤 <b>편집권 가져오기</b>를 누르세요. 닫은 창의 잠금이 남으면 최대 '+Math.ceil(LOCK_LEASE_MS/1000)+'초 기다린 뒤 다시 누르세요. 안내 확인·화면 테마 변경과 내용 보기는 계속할 수 있습니다.</div>';
   if(STARTUP_WARNINGS.length)h+='<div class="warn-strip danger">'+esc(STARTUP_WARNINGS.join(' · '))+'</div>';
 
   /* --- 즉시 조작(가장 많이 쓰는 것 위로) --- */

@@ -35,6 +35,10 @@ try{
     check('읽기 전용에서도 처음 사용 안내 버튼 활성화',flags.guide);
     check('읽기 전용에서도 보기 테마 버튼 활성화',flags.theme);
     if(flags.guide&&flags.theme){
+      check('읽기 전용 안내에 기존 창 종료·편집권 버튼·15초 대기 명시',await viewer.locator('[data-editor-help]').innerText().then(t=>t.includes('기존 조작 창을 닫은 뒤')&&t.includes('편집권 가져오기')&&t.includes('15초')));
+      let denied='';viewer.once('dialog',async d=>{denied=d.message();await d.accept();});
+      await viewer.locator('[data-act="takecontrol"]').click();
+      check('소유 창이 열려 있으면 편집권 요청도 거절하고 원본 유지',denied.includes('다른 조작 창')&&await viewer.evaluate(v=>!ownsEditorLock()&&exportPayload(true)===v,before)&&await owner.evaluate(v=>ownsEditorLock()&&exportPayload(true)===v,before));
       await toggle.click();check('편집권 없이 안내를 펼칠 수 있음',await viewer.locator('#onboardingGuide').isVisible());
       check('새 상황·파일 불러오기 동작은 잠금 유지',!await viewer.locator('[data-onboard-action="new"]').isEnabled()&&!await viewer.locator('[data-onboard-action="import"]').isEnabled());
       await viewer.locator('[data-onboard-action="close"]').click();check('안내 접기 허용',!await viewer.locator('#onboardingGuide').isVisible());
@@ -60,6 +64,13 @@ try{
       await viewer.locator('.compact-priority-link').click();
       check('짧은 읽기 전용 화면에서도 현재 지시 원문 접근 허용',await viewer.locator('#consolePriority').evaluate(e=>e===document.activeElement&&e.querySelector('[data-priority-text]').textContent.length>0));
       check('짧은 읽기 전용 보기 조작도 편집권·업무 상태 유지',await viewer.evaluate(v=>!ownsEditorLock()&&exportPayload(true)===v,lowBefore)&&await owner.evaluate(v=>ownsEditorLock()&&exportPayload(true)===v,lowBefore));
+      await viewer.setViewportSize({width:1366,height:900});await viewer.locator('#tab-mission').click();
+      const beforeTransfer=await viewer.evaluate(()=>exportPayload(true));
+      await owner.close({runBeforeUnload:true});
+      await viewer.waitForFunction(()=>{var lock=readEditorLock();return !lock||lock.expires<=Date.now();},null,{timeout:18000});
+      check('기존 창 종료 뒤에도 입력 재개 전까지 정확한 읽기 전용 안내 유지',await viewer.locator('[data-editor-help]').innerText().then(t=>t.includes('이 창은 읽기 전용입니다')&&!t.includes('다른 조작 창이 편집 중입니다'))&&await viewer.evaluate(v=>!ownsEditorLock()&&exportPayload(true)===v,beforeTransfer));
+      await viewer.locator('[data-act="takecontrol"]').click();
+      check('명시적 편집권 전환 뒤 입력을 열고 기존 전체 내용 유지',await viewer.evaluate(v=>ownsEditorLock()&&exportPayload(true)===v,beforeTransfer)&&await viewer.locator('[data-path="mission.title"]').isEnabled()&&!await viewer.locator('[data-editor-help]').count());
     }
     check('페이지 실행 오류 없음',errors.length===0);
   }
