@@ -1278,6 +1278,16 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .guide-eyebrow{font-size:13px;font-weight:800;color:var(--info)}
 .start-actions{display:flex;gap:8px;flex-wrap:wrap}
 .start-actions .btn{min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
+.cons.is-start{max-width:760px;padding-top:20px;padding-bottom:24px}
+.cons.is-start .cons-top>:not(.ct-brand):not(.ct-mode):not([data-act="takecontrol"]):not(.save-pill.bad):not(#btnCloseDrawer){display:none!important}
+.cons.is-start .console-workspace-bar,.cons.is-start .console-panel,.cons.is-start .mobile-nav,.cons.is-start .mobile-more,.cons.is-start #verdictHelp,.cons.is-start .onboarding-next{display:none!important}
+.cons.is-start .onboarding-guide{margin-top:24px;padding:28px}
+.cons.is-start .onboarding-heading h2{font-size:28px;margin-bottom:24px}
+.cons.is-start .start-actions{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.start-option:first-child{grid-column:1/-1}
+.cons.is-start .start-option .btn{width:100%;justify-content:center;min-height:52px;font-size:16px}
+.start-option p{font-size:14px;line-height:1.6;color:var(--muted);margin:8px 0 0}
+.cons.is-start .start-storage-note{margin-top:24px;border-top:1px solid var(--border);padding-top:16px}
 .guide-progress{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 0;font-weight:800}
 .guide-progress strong{color:var(--info)}
 .guide-progress>span{font-size:13px;font-weight:500;color:var(--muted)}
@@ -1340,6 +1350,9 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 [data-theme="light"] .gcell.s3{background:rgba(255,211,213,.8);color:#842332;border-color:#AE293B}
 [data-theme="light"] .cons-map,[data-theme="light"] .mapwrap{background:#E0E9F0}
 @media(max-width:600px){
+  .cons.is-start{padding-top:14px}.cons.is-start .onboarding-guide{padding:18px;margin-top:14px}
+  .cons.is-start .onboarding-heading h2{font-size:23px;margin-bottom:18px}
+  .cons.is-start .start-actions{grid-template-columns:1fr;gap:16px}
   .onboarding-guide{padding:14px}
   .onboarding-heading{flex-wrap:wrap}.onboarding-heading h2{font-size:20px}
   .preparation-list li{grid-template-columns:minmax(0,1fr) auto;gap:8px}
@@ -7808,30 +7821,33 @@ function renderOnboarding(root){
   var cons=root.querySelector('.cons');if(!cons)return;
   var guide=root.querySelector('#onboardingGuide');
   if(!guide){guide=document.createElement('section');guide.id='onboardingGuide';guide.className='onboarding-guide';guide.setAttribute('aria-labelledby','onboardingTitle');cons.querySelector('.cons-top').after(guide);}
-  guide.hidden=!onboardingOpen;
   root.querySelectorAll('[data-onboard-action="toggle"]').forEach(function(b){b.setAttribute('aria-expanded',String(onboardingOpen));});
   var steps=preparationSteps(),done=steps.filter(function(s){return s.done;}).length;
   var editor=ownsEditorLock(),editDisabled=editor?'':' disabled';
   var at=CONSOLE_FLOW.findIndex(function(step){return 'sec-'+step.id===consoleActiveSection;});
-  var welcome=!guidedStarted&&!hasIncidentContent(),step=CONSOLE_FLOW[at];
+  var welcome=!guidedStarted&&!hasIncidentContent()&&!S.safety.manned,step=CONSOLE_FLOW[at];
+  cons.classList.toggle('is-start',welcome&&MODE==='console');
+  guide.hidden=welcome?false:!onboardingOpen;
   var startNote='입력은 이 브라우저에 자동 저장됩니다. '+(S.ui.autoSave?'자동 백업 파일이 내려받아질 수 있습니다. ':'')+'마지막에는 백업 파일을 직접 확인하세요.';
   if(!editor)startNote='이 창은 보기 전용입니다. 다른 입력 창을 닫은 뒤 이 창에서 입력하기를 누르면 이어서 입력할 수 있습니다.';
   var key=JSON.stringify([steps,PRACTICE_MODE,hasIncidentContent(),editor,consoleActiveSection,welcome,startNote]);
   function fold(name,label,body){return '<details class="guide-detail" data-onboard-fold="'+name+'"'+(consoleFolds[name]?' open':'')+'><summary id="'+name+'-summary">'+label+'</summary><div>'+body+'</div></details>';}
   if(guide.dataset.content!==key){
     guide.dataset.content=key;
-    var actions='<div class="start-actions"><button class="btn'+(welcome?' primary':'')+'" type="button" data-onboard-action="new"'+editDisabled+'>새 수색 준비</button><button class="btn" type="button" data-onboard-action="import"'+editDisabled+'>백업 파일 열기</button><a class="btn" href="'+esc(workspaceURL(true))+'" target="_blank" rel="noopener">예제로 연습하기 ↗</a></div>';
+    var newButton='<button class="btn'+(welcome?' primary':'')+'" type="button" data-onboard-action="new"'+editDisabled+'>새 수색 준비</button>';
+    var importButton='<button class="btn" type="button" data-onboard-action="import"'+editDisabled+'>백업 파일 열기</button>';
+    var practiceLink='<a class="btn" href="'+esc(workspaceURL(true))+'" target="_blank" rel="noopener">예제로 연습하기 ↗</a>';
+    var actions='<div class="start-actions">'+(welcome?'<div class="start-option">'+newButton+'<p>처음부터 안내에 따라 상황과 수색 인원을 입력합니다.</p></div><div class="start-option">'+importButton+'<p>저장해 둔 상황 백업 파일로 이어서 작업합니다.</p></div><div class="start-option">'+practiceLink+'<p>실제 기록과 분리된 가상 자료로 사용법을 익힙니다.</p></div>':newButton+importButton+practiceLink)+'</div>';
     var practice='<p class="practice-notice">연습 자료입니다. 실제 작업의 기록·사진·지도와 분리됩니다. 자동 백업·자동 폴더 읽기는 사용하지 않습니다. <a href="'+esc(workspaceURL(false))+'" target="_blank" rel="noopener">실제 작업 화면 열기</a></p>';
-    var title=welcome?'처음이라면 새 수색을 준비하세요':step?step.title:'추가 기능 · '+(CONSOLE_SECTIONS.find(function(p){return 'sec-'+p[0]===consoleActiveSection;})||['','준비'])[1];
+    var title=welcome?'수색 준비를 시작하세요':step?step.title:'추가 기능 · '+(CONSOLE_SECTIONS.find(function(p){return 'sec-'+p[0]===consoleActiveSection;})||['','준비'])[1];
     var eyebrow=PRACTICE_MODE?'실제 기록과 분리된 연습':welcome?'준비부터 백업까지':step?'준비 순서 '+(at+1)+' / '+CONSOLE_FLOW.length:'필요할 때 사용하는 기능';
-    var body='<div class="onboarding-heading"><div><span class="guide-eyebrow">'+esc(eyebrow)+'</span><h2 id="onboardingTitle">'+esc(title)+'</h2></div><button class="btn" type="button" data-onboard-action="close">순서 안내 닫기</button></div>';
-    if(welcome){body+=actions+'<p class="note">상황 → 대상자 → 인원 → 드론 → 지도 → 안전 → 기록 → 백업 순서로 따라가세요.</p>';}
+    var body='<div class="onboarding-heading"><div><span class="guide-eyebrow">'+esc(eyebrow)+'</span><h2 id="onboardingTitle">'+esc(title)+'</h2></div>'+(welcome?'':'<button class="btn" type="button" data-onboard-action="close">순서 안내 닫기</button>')+'</div>';
+    if(welcome){body+=actions;}
     else body+='<p class="guide-current-hint">'+esc(step?step.hint:'현재 내용을 유지하며 필요한 기능을 사용할 수 있습니다. 준비를 이어가려면 첫 단계로 이동하세요.')+'</p><button class="btn sm" type="button" data-act="nav" data-sec="sec-mission">첫 단계로</button>';
-    body+=PRACTICE_MODE?practice:'<p class="note">'+esc(startNote)+'</p>';
+    body+=PRACTICE_MODE?practice:'<p class="note'+(welcome?' start-storage-note':'')+'">'+esc(startNote)+'</p>';
     if(!welcome&&!PRACTICE_MODE)body+=fold('guide-start-options','다른 상황 열기·연습하기',actions);
     var readiness='<ol class="preparation-list">'+steps.map(function(s){return '<li class="'+(s.done?'is-done':'')+'"><div><h3>'+s.title+'</h3><p>'+esc(s.hint)+'</p></div><span class="step-status">'+(s.done?'입력 확인':s.sec==='safety'?'확인 필요':'아직 입력 전')+'</span><button class="btn" type="button" data-act="nav" data-sec="sec-'+s.sec+'">'+s.label+'</button></li>';}).join('')+'</ol>';
-    body+=fold('guide-readiness','입력한 내용 다시 확인하기','<div class="guide-progress">기본 항목 <strong>'+done+' / 4</strong><span>실제 비행 승인과는 별개입니다.</span></div>'+readiness);
-    if(!PRACTICE_MODE)body+=fold('guide-storage','자동 백업과 파일 확인 방법','<p class="note">자동 백업은 약 30초마다 변경을 확인합니다. 켜두면 첫 변경 확인 때, 이후 변경 시 최소 '+AUTOSAVE_MIN+'분 간격으로 백업 파일 내려받기를 요청합니다. 파일을 선택하면 그 파일에 저장합니다. 다운로드 목록에서 실제 파일을 확인하세요.</p><button class="btn" type="button" data-act="nav" data-sec="sec-data">백업·자동 저장 설정</button>');
+    if(!welcome&&['sec-safety','sec-data'].includes(consoleActiveSection))body+=fold('guide-readiness','입력한 내용 다시 확인하기','<div class="guide-progress">기본 항목 <strong>'+done+' / 4</strong><span>실제 비행 승인과는 별개입니다.</span></div>'+readiness);
     guide.innerHTML=body;
     guide.querySelectorAll('[data-onboard-fold]').forEach(function(el){el.ontoggle=function(){consoleFolds[el.dataset.onboardFold]=el.open;};});
   }
@@ -7873,7 +7889,7 @@ document.addEventListener('click',function(ev){
   var b=ev.target.closest('[data-onboard-action]');if(!b)return;
   var root=b.closest('#consoleRoot,#drawerIn');if(!root)return;
   if(b.dataset.onboardAction==='new'){startNewIncident(root);return;}
-  if(b.dataset.onboardAction==='import'){if(!ensureEditor())return;scrollToSection(root,root.querySelector('#sec-data'));root.querySelector('#importFile').click();return;}
+  if(b.dataset.onboardAction==='import'){if(!ensureEditor())return;if(!root.querySelector('.cons.is-start'))scrollToSection(root,root.querySelector('#sec-data'));root.querySelector('#importFile').click();return;}
   onboardingOpen=b.dataset.onboardAction==='toggle'?!onboardingOpen:false;renderOnboarding(root);
 });
 

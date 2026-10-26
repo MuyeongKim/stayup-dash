@@ -26,7 +26,7 @@ try{
   // Keep fake coordinates and browser downloads out of background timers.
   await page.evaluate(()=>{S.weather.auto=false;S.ui.autoSave=false;commitLight();});
   check('처음에는 상황 입력을 선택하고 쉬운 시작 버튼 제공',await page.locator('#tab-mission').getAttribute('aria-selected')==='true'&&await page.locator('[data-onboard-action="new"]').innerText()==='새 수색 준비');
-  check('처음 안내의 상세 정보는 접힌 상태',await page.locator('[data-onboard-fold]').evaluateAll(es=>es.every(e=>!e.open)));
+  check('빈 시작 화면은 세 선택만 제공하고 입력 영역·메뉴·추가 설정은 숨김',await page.locator('[data-onboard-fold]').count()===0&&await page.locator('[role="tabpanel"]:visible').count()===0&&!await page.locator('.console-workspace-bar').isVisible());
   await page.screenshot({path:path.join(out,'start-1366.png'),scale:'css'});
   await page.locator('[data-onboard-action="new"]').click();
   check('시작하면 첫 입력에 초점을 두고 순서 1/8 표시',await page.locator('[data-path="mission.title"]').evaluate(e=>e===document.activeElement)&&await page.locator('.onboarding-next').innerText().then(t=>t.includes('1 / 8')));
