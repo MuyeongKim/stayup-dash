@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "build": "7b05e9f7ced9b925ef4d7c83",
+  "build": "0664efb8b113b8ddc1fa950a",
   "assets": [
     {
       "path": "stayup-dash.html",
-      "sha256": "a75de602188f65e6714b4bab6ca1309971e7c51ed7a5b4770aae6c525bae296f"
+      "sha256": "cd4365d25d0e24a1ef5727c2b8b8997f7221dcef16b4f31ed8474165995da941"
     },
     {
       "path": "offline-map-engine.js",
-      "sha256": "82217abcf46b0198d315558e8318d2706b7c98427cbb334421225b2098aa6c2b"
+      "sha256": "8f9c05d11edd7ae796f8ba3daa6fc1703663dd62103f24dc185c11d0750a9a72"
     },
     {
       "path": "vendor/maplibre-gl-5.24.0.js",

@@ -40,7 +40,7 @@ async function prepare(page,practice,name,color,cell){
   await page.locator('#mapFileInput').setInputFiles({name:'가상-'+(practice?'연습':'실제')+'-사진.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await page.waitForFunction(()=>S.grid.hasMap&&mapPayloadReady());
   await page.locator('[data-act="pin"][data-p="last"]').click();await page.locator('#consMap [data-cell="'+cell+'"]').press('Enter');await data(page);
 }
-async function exportFile(page,name){const ready=page.waitForEvent('download',d=>!d.suggestedFilename().includes('자동보관'));await page.locator('[data-act="export"]').click();const file=await ready;const destination=path.join(out,name+'.json');await file.saveAs(destination);return {path:destination,name:file.suggestedFilename(),data:JSON.parse(await readFile(destination,'utf8'))};}
+async function exportFile(page,name){const ready=page.waitForEvent('download',d=>!d.suggestedFilename().includes('자동보관'));await page.locator('#sec-data [data-act="export"]').click();const file=await ready;const destination=path.join(out,name+'.json');await file.saveAs(destination);return {path:destination,name:file.suggestedFilename(),data:JSON.parse(await readFile(destination,'utf8'))};}
 async function importFile(page,file,name){await data(page);await page.locator('#importFile').setInputFiles(file);await page.waitForFunction(name=>S.mission.title===name&&mapPayloadReady(),name);}
 async function display(page){const ready=page.waitForEvent('popup');await page.locator('#btnOpenDisplay').click();const view=await ready;await view.waitForFunction(()=>typeof S==='object'&&S.grid.hasMap&&mapPayloadReady());return view;}
 try{
@@ -59,7 +59,7 @@ try{
   check('초기화 안내는 현재 상황을 비우고 복구본을 유지함을 명시',dialogs.some(d=>d.mode==='live'&&d.type==='confirm'&&d.message.includes('빈 상태')&&d.message.includes('복구본'))&&await live.locator('[data-reset-help]').innerText().then(t=>t.includes('복구본을 유지')&&t.includes('사진·지도·복구본까지 삭제')));
   await liveView.waitForFunction(()=>!S.mission.title);
   check('실제 초기화는 연습 원본·사진·표출을 바꾸지 않음',await payload(practice)===practiceOriginal&&await practiceView.evaluate(()=>S.mission.title==='가상 연습 B'&&mapPayloadReady()));
-  const automatic=await choice(live,'가상 실제 A','가상 자동 기준 A'),manual=await choice(live,'가상 실제 A 수정본','전체 초기화 전');
+  const automatic=await choice(live,'가상 실제 A','가상 자동 기준 A'),manual=await choice(live,'가상 실제 A 수정본','현재 상황 비우기 전');
   check('복구 목록에 과거 자동본과 직전 작업본의 상황명·사유를 구분',!!automatic&&!!manual&&automatic.value!==manual.value&&automatic.label.includes('자동'));
   await restore(live,'가상 실제 A','가상 자동 기준 A');
   check('직전 수정본 대신 선택한 과거 자동본의 모든 내용·사진·핀을 복원',await sameContent(live,liveOriginal));
@@ -75,7 +75,7 @@ try{
   check('연습 초기화는 실제 상황·사진·표출을 유지',await payload(live)===liveRestored&&await liveView.evaluate(()=>S.mission.title==='가상 실제 A'&&mapPayloadReady()));
   const names=await practice.locator('#recoveryPick').innerText();
   check('연습 복구 목록에 실제 상황의 복구본을 섞지 않음',names.includes('가상 연습 B')&&!names.includes('가상 실제 A'));
-  await restore(practice,'가상 연습 B','전체 초기화 전');
+  await restore(practice,'가상 연습 B','현재 상황 비우기 전');
   check('연습의 작업 전 복구는 연습 사진·인원·기체만 복원',await sameContent(practice,practiceOriginal)&&await payload(live)===liveRestored);
   await practiceView.waitForFunction(()=>S.mission.title==='가상 연습 B'&&mapPayloadReady());
   check('복구와 파일 불러오기 후 두 표출의 사진·핀 분리 유지',await liveView.evaluate(()=>MAPDATA)===liveFile.data.map&&await practiceView.evaluate(()=>MAPDATA)===practiceFile.data.map&&isDeepStrictEqual(await liveView.evaluate(()=>S.grid.pinLast),liveFile.data.grid.pinLast)&&isDeepStrictEqual(await practiceView.evaluate(()=>S.grid.pinLast),practiceFile.data.grid.pinLast));

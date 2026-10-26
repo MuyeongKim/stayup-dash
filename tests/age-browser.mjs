@@ -47,7 +47,7 @@ try{
   }
   await page.locator('[data-path="ui.viewPreset"]').selectOption('standard');
   check('연령·보기 변경 후 다른 실종자·운용 상태 필드는 유지',isDeepStrictEqual(await otherFields(page),originalOther));
-  const downloaded=page.waitForEvent('download');await page.locator('[data-act="export"]').click();const file=await downloaded;const savedPath=path.join(out,'age-zero.json');await file.saveAs(savedPath);const exported=JSON.parse(await readFile(savedPath,'utf8'));
+  const downloaded=page.waitForEvent('download');await page.locator('#sec-data [data-act="export"]').click();const file=await downloaded;const savedPath=path.join(out,'age-zero.json');await file.saveAs(savedPath);const exported=JSON.parse(await readFile(savedPath,'utf8'));
   check('실제 JSON 다운로드에도 연령은 숫자 0으로 보관',exported.subject.age===0&&typeof exported.subject.age==='number');
   await page.locator('#tab-subject').click();await input.fill('82');await page.locator('#tab-data').click();await page.locator('#importFile').setInputFiles(savedPath);await page.waitForFunction(()=>S.subject.age===0);await display.waitForFunction(()=>S.subject.age===0);
   check('기존 숫자 0을 가진 JSON 재불러오기도 표출·보고서에 0세로 복원',await display.locator('#subjBody .ag').innerText()==='0세'&&(await report(page)).includes('/ 0세 /'));

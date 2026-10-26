@@ -272,8 +272,8 @@
     if (!file || typeof file.text !== 'function' || file.size > LIMITS.maxFileBytes) throw error('지도 파일은 145 MB 이하만 가져올 수 있습니다.');
     var input; try { input = JSON.parse(await file.text()); } catch (_) { throw error('지도 파일을 읽을 수 없습니다.'); }
     if(input&&input.format!=='stayup-offline-region'){
-      if(input.format==='stayup-ai-candidates')throw error('AI 후보 파일은 AI 후보 메뉴의 AI 후보 불러오기로 여세요.');
-      if(input.meta&&input.mission&&input.grid)throw error('상황 백업 파일은 데이터 메뉴의 JSON 불러오기로 여세요.');
+      if(input.format==='stayup-ai-candidates')throw error('AI 후보 파일은 탐지 사진 메뉴의 탐지 사진 불러오기로 여세요.');
+      if(input.meta&&input.mission&&input.grid)throw error('상황 백업 파일은 백업·설정 메뉴의 백업 파일 열기로 여세요.');
     }
     var m = input && input.manifest;
     if (input.format !== 'stayup-offline-region' || input.version !== 1 || !m || !/^region-[a-zA-Z0-9-]{8,100}$/.test(m.id || '') || !validBbox(m.bbox) || m.minZoom !== 0 || !Number.isInteger(m.maxZoom) || !/^[a-f0-9]{64}$/.test(m.sha256 || '') || !m.source || m.source.license !== 'ODbL-1.0' || typeof m.source.url !== 'string' || m.source.url.length > 2048 || typeof m.source.attribution !== 'string' || m.source.attribution.length > 256 || !Array.isArray(input.tiles)) throw error('지원하는 STAY UP 지역 지도 파일이 아닙니다.');

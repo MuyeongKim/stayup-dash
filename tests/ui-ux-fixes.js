@@ -19,9 +19,10 @@ async function uxConsoleTabs(){
   var root=W.document.getElementById('consoleRoot');
   function visiblePanels(){return Array.prototype.slice.call(root.querySelectorAll('[role="tabpanel"]')).filter(function(p){return p.getClientRects().length>0;});}
   var tabs=root.querySelectorAll('[role="tab"]');
-  ok('처음에는 즉시조작만 표시하고 열 개 메뉴를 각각 입력 영역과 연결한다',
-    tabs.length===10&&visiblePanels().length===1&&visiblePanels()[0].id==='sec-quick'
+  ok('새 작업에서는 상황 입력만 표시하고 열 개 메뉴를 각각 입력 영역과 연결한다',
+    tabs.length===10&&visiblePanels().length===1&&visiblePanels()[0].id==='sec-mission'
     &&Array.prototype.every.call(tabs,function(tab){var panel=root.querySelector('#'+tab.getAttribute('aria-controls'));return panel&&panel.getAttribute('aria-labelledby')===tab.id;}));
+  gotoSection('sec-quick');
   var quick=uxInput('#evText','전환 후에도 남아야 하는 기록 초안');
   gotoSection('sec-mission');
   var title=uxInput('[data-path="mission.title"]','메뉴 전환 보존 검증');
@@ -164,7 +165,7 @@ async function uxQuickRecordAndValidation(){
   uxButton('#btnAddEv');await wait(30);
   var saved=W.S.events[W.S.events.length-1];
   ok('이력만 기록은 선택한 과거 시각을 보존하고 기체 운용 상태를 바꾸지 않는다',
-    buttonText.indexOf('이력만 기록')>=0&&saved.text==='사후 이륙 이력 확인'
+    buttonText.indexOf('기록 남기기')>=0&&saved.text==='사후 이륙 이력 확인'
     &&saved.t===W.tms(customAt)&&JSON.stringify(W.S.drones[0])===droneBefore);
   var mode=W.document.getElementById('evTimeMode');
   ok('저장 후 다음 기록은 현재 시각 모드로 돌아가 이전 과거 시각을 재사용하지 않는다',

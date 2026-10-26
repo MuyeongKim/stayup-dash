@@ -22,6 +22,11 @@ const results=[],errors=[];
 function check(name,pass,detail){results.push({name,pass:!!pass,detail});console.log((pass?'PASS ':'FAIL ')+name);}
 function observe(p){p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.type()==='prompt'?d.accept('완전삭제'):d.accept());}
 const live=await context.newPage();observe(live);
+async function showStartOptions(page){
+  if(!await page.locator('#onboardingGuide').isVisible())await page.locator('[data-onboard-action="toggle"]').click();
+  const options=page.locator('[data-onboard-fold="guide-start-options"]');
+  if(await options.count()&&!await options.evaluate(e=>e.open))await options.locator('summary').click();
+}
 async function addMap(page){
   await page.evaluate(async()=>{const c=document.createElement('canvas');c.width=1600;c.height=900;c.getContext('2d').fillRect(0,0,1600,900);const b=await new Promise(r=>c.toBlob(r));fileToMap(new File([b],'가상-지도.png',{type:'image/png'}));});
   await page.waitForFunction(()=>S.grid.hasMap&&mapPayloadReady());
@@ -39,6 +44,8 @@ async function offlineMarker(page,name,write){
 try{
   await live.goto(url);await live.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
   check('첫 화면은 주간 테마·시작·불러오기·분리된 연습 경로 제공',await live.locator('.cons').getAttribute('data-theme')==='light'&&await live.locator('#onboardingGuide').isVisible()&&await live.locator('[data-onboard-action="new"]').isVisible()&&await live.locator('a[href*="practice=1"]').getAttribute('rel')==='noopener');
+  check('첫 안내는 상세한 입력 현황과 자동 백업 설명을 접어 둠',!await live.locator('[data-onboard-fold="guide-readiness"]').evaluate(e=>e.open)&&!await live.locator('[data-onboard-fold="guide-storage"]').evaluate(e=>e.open));
+  await live.locator('[data-onboard-fold="guide-storage"]>summary').click();
   check('시작 안내에 첫 다운로드·변경 확인 주기·파일 확인 행동 명시',await live.locator('#onboardingGuide').innerText().then(t=>t.includes('30초')&&t.includes('첫 변경 확인')&&t.includes('10분')&&t.includes('다운로드 목록')));
   await live.screenshot({path:path.join(out,'first-start-light.png'),fullPage:false});
   for(const [w,h] of [[390,844],[320,800]]){
@@ -74,11 +81,12 @@ try{
   check('야간 날짜 컨트롤에 dark color-scheme 적용',await live.locator('[data-path="mission.dispatchedAt"]').evaluate(e=>getComputedStyle(e).colorScheme)==='dark');
   await live.locator('[data-theme-target="console"][data-theme-value="light"]').click();
   check('테마 변경은 상황·리비전·백업을 변경하지 않음',await live.evaluate(()=>exportPayload(true))===beforeTheme);
-  await live.locator('[data-onboard-action="new"]').click();
+  await showStartOptions(live);await live.locator('[data-onboard-action="new"]').click();
   check('새 상황 시작은 상황 입력과 제목 포커스로 연결',await live.locator('#sec-mission').isVisible()&&await live.locator('[data-path="mission.title"]').evaluate(e=>e===document.activeElement));
   await live.locator('[data-path="mission.title"]').fill('실제 기록 보존 검증용 가상 상황');
   await live.locator('[data-path="mission.location"]').fill('가상 훈련 구역');
   await live.locator('[data-path="mission.lat"]').fill('35.8');await live.locator('[data-path="mission.lon"]').fill('127.1');await live.locator('[data-act="confirmcoords"]').click();
+  if(!await live.locator('[data-onboard-fold="guide-readiness"]').evaluate(e=>e.open))await live.locator('[data-onboard-fold="guide-readiness"]>summary').click();
   check('준비 현황은 실제 입력값으로 갱신하고 비행 승인과 구분',await live.locator('.guide-progress').innerText().then(t=>t.includes('1 / 4')&&t.includes('별개')));
   await live.locator('#onboardingGuide [data-sec="sec-data"]').click();
   const beforeBackup=await live.evaluate(()=>exportPayload(true));
@@ -138,10 +146,10 @@ try{
   await offlineMarker(live,'stayup-offline-regions-v1',true);
   await live.locator('[data-onboard-action="toggle"]').click();
   live.removeAllListeners('dialog');live.on('dialog',d=>d.dismiss());
-  await live.locator('[data-onboard-action="new"]').click();
+  await showStartOptions(live);await live.locator('[data-onboard-action="new"]').click();
   check('기존 기록이 있는 새 상황 시작을 취소하면 내용과 원본 지도 보존',await live.evaluate(v=>exportPayload(true)===v.state&&MAPDATA===v.map,operational));
   live.removeAllListeners('dialog');live.on('dialog',d=>d.type()==='prompt'?d.accept('완전삭제'):d.accept());
-  const chooserEvent=live.waitForEvent('filechooser');await live.locator('[data-onboard-action="import"]').click();const chooser=await chooserEvent;await chooser.setFiles([]);
+  const chooserEvent=live.waitForEvent('filechooser');await showStartOptions(live);await live.locator('[data-onboard-action="import"]').click();const chooser=await chooserEvent;await chooser.setFiles([]);
   check('시작 화면 불러오기는 파일 선택으로 연결되며 취소 시 기존 내용 보존',await live.locator('#sec-data').isVisible()&&await live.evaluate(v=>exportPayload(true)===v,operational.state));
   const popup=context.waitForEvent('page');await live.locator('a[href*="practice=1"]').click();const practice=await popup;observe(practice);
   await practice.waitForFunction(()=>typeof S==='object'&&S.drones.length===3&&ownsEditorLock());
@@ -182,7 +190,7 @@ try{
   await live.evaluate(()=>loadSample());await live.waitForFunction(()=>S.drones.length===3);
   const oldTitle=await live.evaluate(()=>S.mission.title);
   if(!await live.locator('#onboardingGuide').isVisible())await live.locator('[data-onboard-action="toggle"]').click();
-  const backupEvent=live.waitForEvent('download');await live.locator('[data-onboard-action="new"]').click();const backup=await backupEvent;
+  const backupEvent=live.waitForEvent('download');await showStartOptions(live);await live.locator('[data-onboard-action="new"]').click();const backup=await backupEvent;
   await backup.saveAs(path.join(out,'new-incident-backup.json'));
   await live.waitForFunction(()=>!S.mission.title&&S.drones.length===0&&consoleActiveSection==='sec-mission');
   const backed=JSON.parse(await readFile(path.join(out,'new-incident-backup.json'),'utf8'));

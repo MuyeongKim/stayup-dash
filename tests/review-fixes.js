@@ -278,8 +278,8 @@ async function reviewConsoleAndDisplay(){
   var visibleSectionOrder=Array.prototype.map.call(root.querySelectorAll('.cons>.sec'),function(section){return section.id;});
   ok('현장 반복 조작을 빠른기록·기체·배터리·격자 순서로 배치한다',
     visibleSectionOrder.slice(0,4).join(',')==='sec-quick,sec-drone,sec-batt,sec-grid');
-  ok('상황·실종자·인원·데이터 설정은 선택 전까지 숨겨진 입력 탭이다',
-    ['mission','subject','crew','data'].every(function(key){
+  ok('수색 기록·대상자·인원·백업은 선택 전까지 숨겨진 입력 탭이다',
+    ['quick','subject','crew','data'].every(function(key){
       var panel=root.querySelector('#sec-'+key),tab=root.querySelector('#tab-'+key);
       return !!panel&&panel.hidden&&!!tab&&tab.getAttribute('role')==='tab';
     }));

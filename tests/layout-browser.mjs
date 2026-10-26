@@ -136,11 +136,11 @@ try{
     if(['mission','drone','grid','ai'].includes(key))await page.screenshot({path:path.join(out,`console-tab-${key}-1366.png`),fullPage:false});
   }
   check('실제 메뉴 클릭은 기존 상황·기체·핀·후보·기록을 변경하지 않음',await page.evaluate(()=>exportPayload(true))===stateBeforeTabs);
-  await page.locator('#tab-quick').click();await page.locator('#tab-quick').focus();
+  await page.locator('#tab-mission').click();await page.locator('#tab-mission').focus();
   await page.keyboard.press('ArrowRight');
-  check('실제 방향키로 포커스만 이동하고 선택 상태 유지',await page.locator('#tab-mission').evaluate(e=>e===document.activeElement)&&await page.locator('#tab-quick').getAttribute('aria-selected')==='true');
+  check('실제 방향키로 포커스만 이동하고 선택 상태 유지',await page.locator('#tab-subject').evaluate(e=>e===document.activeElement)&&await page.locator('#tab-mission').getAttribute('aria-selected')==='true');
   await page.keyboard.press('Enter');
-  check('Enter로 선택한 입력 탭 활성화',await page.locator('#sec-mission').isVisible()&&await page.locator('#tab-mission').getAttribute('aria-selected')==='true');
+  check('Enter로 선택한 입력 탭 활성화',await page.locator('#sec-subject').isVisible()&&await page.locator('#tab-subject').getAttribute('aria-selected')==='true');
   await page.evaluate(()=>scrollToSection(document.querySelector('#consoleRoot'),document.querySelector('#sec-mission')));
   await page.locator('[data-path="mission.priorityOrder"]').fill('통신 확인 후 C3 후보를 지상팀과 대조하세요.');
   await display.waitForFunction(()=>document.querySelector('#displayPriority [data-priority-text]').textContent.includes('C3 후보'));
@@ -168,7 +168,7 @@ try{
   await page.locator('[data-priority-toggle="console"]').click();await display.locator('[data-priority-toggle="display"]').click();await display.locator('[data-priority-toggle="display"]').click();
   check('상세 펼침 자체는 저장 상태·리비전·이벤트를 바꾸지 않음',await page.evaluate(()=>exportPayload(true))===beforeView);
   await page.locator('#tab-data').click();
-  const downloadEvent=page.waitForEvent('download');await page.locator('[data-act="export"]').click();const download=await downloadEvent;
+  const downloadEvent=page.waitForEvent('download');await page.locator('#sec-data [data-act="export"]').click();const download=await downloadEvent;
   const backupPath=path.join(out,'exported-backup.json');await download.saveAs(backupPath);
   const backup=JSON.parse(await readFile(backupPath,'utf8'));
   check('실제 JSON 다운로드에 기존 기록·후보 이미지 포함',backup.ai.candidates[0].responseNote==='기존 대응 기록 보존 <img src=x>'&&Object.keys(backup.aiImages).length>0&&backup.grid.cells.C3.s===1);

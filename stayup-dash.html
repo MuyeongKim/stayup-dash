@@ -14,10 +14,10 @@
   http://www.apache.org/licenses/LICENSE-2.0
   ----------------------------------------------------------------------------
   사용법
-    - 이 파일을 더블클릭하면 [조작 패널]이 열립니다 (운영요원 노트북)
-    - 상단 "표출 화면 열기" 버튼 -> 대형 스크린용 [표출 화면]이 새 창으로 열림
-    - 표출 화면을 대형 모니터로 옮기고 F11 (전체화면)
-    - 화면이 하나뿐이면 표출 화면에서 Ctrl+E 로 조작 패널을 겹쳐 열 수 있음
+    - 이 파일을 더블클릭하면 [입력 화면]이 열립니다 (운영요원 노트북)
+    - 상단 "현황 화면 열기" 버튼 -> 대형 스크린용 [현황 화면]이 새 창으로 열림
+    - 현황 화면을 대형 모니터로 옮기고 F11 (전체화면)
+    - 화면이 하나뿐이면 현황 화면에서 Ctrl+E 로 입력 화면을 겹쳐 열 수 있음
   권장 브라우저: Chrome / Edge
   ============================================================================
 -->
@@ -64,7 +64,7 @@ button:focus-visible,[tabindex]:focus-visible,a:focus-visible{
    그러면 숨겨야 할 드로어 오버레이와 배너가 계속 깔려 클릭이 막힌다. 반드시 !important 로 못박는다. */
 [hidden]{display:none !important}
 
-/* 표출 화면의 모든 크기는 rem 기반.
+/* 현황 화면의 모든 크기는 rem 기반.
    1rem = 16px @1920x1080 이며 화면 크기에 따라 자동 스케일된다.
    min() 을 쓰므로 4K·프로젝터·와이드 모두 한 화면에 들어온다. */
 html{
@@ -90,7 +90,7 @@ b,strong{font-weight:700}
 }
 
 /* ==========================================================================
-   2. 표출 화면 - 전체 골격
+   2. 현황 화면 - 전체 골격
    ========================================================================== */
 .board{
   display:grid; height:100vh;
@@ -285,7 +285,7 @@ b,strong{font-weight:700}
   border:1px solid var(--border);
 }
 /* 격자·핀·추정반경은 컨테이너가 아니라 지도 이미지의 좌표계에 고정한다.
-   컨테이너 종횡비는 화면마다 다르고(조작 패널 1.60 고정 / 표출 1.70~2.14) 해상도와
+   컨테이너 종횡비는 화면마다 다르고(입력 화면 1.60 고정 / 표출 1.70~2.14) 해상도와
    안전 카드 높이에 따라 계속 변한다. 격자를 컨테이너에 붙여 두면 object-fit:cover 의
    크롭량이 화면마다 달라져, 같은 칸이 두 화면에서 서로 다른 지형을 가리킨다.
    상자 크기는 fitMapBox() 가 px 로 계산한다. CSS 만으로는 "비율 유지하며 최대로 맞추기"가
@@ -333,7 +333,7 @@ b,strong{font-weight:700}
   position:absolute;width:0;height:0;pointer-events:none;z-index:5;
 }
 /* 표출용 rem은 모바일에서 3px 안팎까지 줄어든다. 핀의 좌표는 그대로 두고
-   점·라벨·테두리에 화면 픽셀 하한을 둬 조작 패널과 큰 지도에서도 읽히게 한다. */
+   점·라벨·테두리에 화면 픽셀 하한을 둬 입력 화면과 큰 지도에서도 읽히게 한다. */
 .pin .pdot{
   position:absolute;left:0;top:0;transform:translate(-50%,-50%);
   width:max(14px,1.05rem);height:max(14px,1.05rem);border-radius:50%;border:max(2px,.16rem) solid #fff;
@@ -518,7 +518,7 @@ b,strong{font-weight:700}
 @keyframes mannedblink{0%,100%{background:#7F1D1D}50%{background:#DC2626}}
 
 /* ==========================================================================
-   7. 조작 패널 (px 단위 - 노트북에서 일반 크기로 보여야 함)
+   7. 입력 화면 (px 단위 - 노트북에서 일반 크기로 보여야 함)
    ========================================================================== */
 .cons{font-size:15px;color:var(--text);max-width:1240px;margin:0 auto;padding:14px 16px 60px}
 .cons-top{
@@ -536,9 +536,9 @@ b,strong{font-weight:700}
 .cons-top .ct-mode{font-size:12px;color:var(--muted);background:var(--surface2);
   border:1px solid var(--border);border-radius:4px;padding:2px 7px;white-space:nowrap}
 .cons-top .spacer{flex:1 1 auto}
-/* 조작 패널은 노트북 기준 8화면 가까이 되고, 수색 중 가장 자주 만지는 수색구역이
+/* 입력 화면은 노트북 기준 8화면 가까이 되고, 수색 중 가장 자주 만지는 수색구역이
    70% 지점에 있다. 상단 바에 섹션 점프를 붙여 스크롤 없이 오갈 수 있게 한다. */
-/* 노트북 1대 + 대형 모니터 구성에서 기록자는 조작 패널만 본다. 골든타임·일몰·
+/* 노트북 1대 + 대형 모니터 구성에서 기록자는 입력 화면만 본다. 골든타임·일몰·
    비행 판정·출동 경과를 보려고 고개를 돌리지 않게 상단 바에 축소판을 둔다. */
 .cons-top .ct-kpi{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;
   padding-top:8px;border-top:1px solid var(--border)}
@@ -629,7 +629,7 @@ textarea{resize:vertical;min-height:52px}
 .note{font-size:13px;color:var(--muted2);line-height:1.55;margin-top:8px}
 .note b{color:#A9BDD0}
 
-/* 조작 패널의 기체/인원 목록 */
+/* 입력 화면의 기체/인원 목록 */
 .item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px}
 .item-h{display:flex;align-items:center;gap:6px;margin-bottom:8px}
 .item-h .ih-t{font-size:14px;font-weight:800}
@@ -658,7 +658,7 @@ textarea{resize:vertical;min-height:52px}
 .sens-pick{display:flex;gap:5px;flex-wrap:wrap}
 .sens-pick button{font-size:11.5px;padding:3px 7px}
 
-/* 조작 패널 안의 격자 편집기 */
+/* 입력 화면 안의 격자 편집기 */
 /* 칠하기 팔레트 — 칠할 것을 먼저 고르고 칸을 찍거나 쓸어내린다. */
 .paint{margin-bottom:8px}
 .paint .prow{display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap}
@@ -668,7 +668,7 @@ textarea{resize:vertical;min-height:52px}
 .pb:hover{color:var(--text);border-color:var(--info)}
 .pb.on{color:#0A0F14;background:var(--muted);border-color:var(--text)}
 .pb.keep.on{background:var(--surface3);color:var(--text);border-color:var(--border2)}
-/* 좌표 보정 기준점 마커 (조작 패널에만 표시. 표출 화면에는 세팅 흔적을 남기지 않는다) */
+/* 좌표 보정 기준점 마커 (입력 화면에만 표시. 현황 화면에는 세팅 흔적을 남기지 않는다) */
 .refpt{
   position:absolute;transform:translate(-50%,-50%);z-index:6;pointer-events:none;
   width:18px;height:18px;border-radius:50%;background:var(--info);color:#04121C;
@@ -722,7 +722,7 @@ textarea{resize:vertical;min-height:52px}
   padding:9px 11px;font-size:12.5px;line-height:1.55;margin-bottom:12px;
 }
 .warn-strip.danger{background:#3B1010;border-color:#991B1B;color:#FCA5A5}
-/* 상단에 두면 조작 패널의 상단 바(편집권·표출 화면 열기)와 표출 화면의 발견 배너를
+/* 상단에 두면 입력 화면의 상단 바(편집권·현황 화면 열기)와 현황 화면의 발견 배너를
    동시에 덮는다. 둘 다 이 경고보다 먼저 눌러야 하는 것들이라 하단으로 내린다. */
 .system-alert{
   position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:9500;
@@ -738,7 +738,7 @@ textarea{resize:vertical;min-height:52px}
   font:700 1rem/1.2 system-ui,sans-serif;cursor:pointer
 }
 
-/* Ctrl+E 드로어 (표출 화면 위에 겹쳐 열림) */
+/* Ctrl+E 드로어 (현황 화면 위에 겹쳐 열림) */
 .drawer{
   position:fixed;inset:0;z-index:7000;background:rgba(3,6,10,.72);
   display:flex;justify-content:flex-end;
@@ -912,7 +912,7 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
   .quick-message button{margin-top:0;min-height:44px}
   .cons input,.cons select,.cons textarea{scroll-margin-top:100px}
 }
-/* 원거리에서는 핵심 면적을 늘리고 원본 상세는 조작 패널에 유지한다. */
+/* 원거리에서는 핵심 면적을 늘리고 원본 상세는 입력 화면에 유지한다. */
 .far-view{gap:calc(.55 * var(--unit));padding:calc(.65 * var(--unit));font-size:calc(1.15 * var(--unit))}
 .far-view .hdr{grid-template-columns:calc(22 * var(--unit)) minmax(0,1fr) calc(12 * var(--unit));gap:calc(.65 * var(--unit))}
 .far-view .kpis{grid-template-columns:1.7fr 1fr 1fr;gap:calc(.6 * var(--unit))}
@@ -1246,6 +1246,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .cons{font-size:16px}
 .cons .note{font-size:14px;line-height:1.65}
 .cons .note b{color:var(--text)}
+.cons .btn:not(.sm),.cons #btnAddCrew,.cons #btnAddDrone{min-height:44px}
 .cons input,.cons select,.cons textarea{font-size:16px;min-height:44px}
 .cons input[type="checkbox"]{min-height:0}
 .cons label.f>span{font-size:14px;line-height:1.5}
@@ -1264,6 +1265,13 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .onboarding-guide{margin:0 0 20px;padding:20px;border:1px solid var(--border2);border-radius:10px;background:var(--surface)}
 .onboarding-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .onboarding-heading h2{font-size:23px;line-height:1.4;margin:4px 0 14px;letter-spacing:-.02em}
+.onboarding-heading h2{margin-bottom:8px}
+.guide-current-hint{font-size:15px;line-height:1.6;margin:0 0 8px;color:var(--text)}
+.guide-detail{border-top:1px solid var(--border);margin-top:8px}
+.guide-detail>summary{min-height:44px;padding:10px 0;cursor:pointer;font-size:14px;font-weight:750;color:var(--text)}
+.guide-detail>div{padding:0 0 10px}
+.guide-detail .guide-progress{display:inline-flex;padding:0;margin-left:4px;font-size:14px}
+.guide-detail .preparation-list li{grid-template-columns:minmax(0,1fr) auto 120px;padding:10px 0}
 .guide-eyebrow{font-size:13px;font-weight:800;color:var(--info)}
 .start-actions{display:flex;gap:8px;flex-wrap:wrap}
 .start-actions .btn{min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
@@ -1278,6 +1286,12 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .is-done .step-status{color:var(--ok)}
 .onboarding-next{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);margin:16px 0}
 .onboarding-next>span{font-size:14px;color:var(--muted)}
+.onboarding-next>div:first-child{min-width:0;flex:1}
+.onboarding-next strong,.onboarding-next>div>span{display:block}
+.onboarding-next>div>span{font-size:14px;color:var(--muted);line-height:1.6;margin-top:4px}
+.onboarding-next .btn{min-height:44px}
+.onboarding-next .row-tools{margin:0}
+[data-manual-backup-status]:empty{margin:0}
 .practice-badge{font:800 13px/1.4 system-ui;padding:5px 9px;border:2px dashed var(--info);border-radius:5px;color:var(--info);background:var(--surface2)}
 .practice-notice{font-size:14px;line-height:1.6;padding:12px;border-left:4px solid var(--info);background:var(--surface2)}
 .practice-notice a{color:var(--info);font-weight:750}
@@ -1327,7 +1341,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
   .onboarding-heading{flex-wrap:wrap}.onboarding-heading h2{font-size:20px}
   .preparation-list li{grid-template-columns:minmax(0,1fr) auto;gap:8px}
   .preparation-list li>.btn{grid-column:1/-1;min-height:44px;text-align:left}
-  .onboarding-next{flex-wrap:wrap}.onboarding-next>.btn{width:100%}
+  .onboarding-next{flex-wrap:wrap}.onboarding-next>.row-tools{width:100%}.onboarding-next .row-tools>.btn{flex:1;white-space:normal}
 }
 /* 짧은 휴대 화면에서는 전체 지시를 문서에서 읽고 상태·메뉴만 고정한다. */
 @media(max-width:1000px) and (max-height:600px){
@@ -1348,7 +1362,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 <div id="dimmer"></div>
 <div class="system-alert" id="systemAlert" role="alert" hidden></div>
 
-<!-- ======================= 표출 화면 (대형 스크린) ======================= -->
+<!-- ======================= 현황 화면 (대형 스크린) ======================= -->
 <div class="board" id="board" hidden>
 
   <div class="alert-banner" id="alertBanner" role="alert" aria-live="assertive" aria-atomic="true" hidden></div>
@@ -1395,7 +1409,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
     <!-- ---------- 좌열 ---------- -->
     <section class="col col-l">
       <div class="card" style="flex:0 0 auto;max-height:54%">
-        <div class="card-h"><h2>실종자 정보</h2><span class="h-right" id="subjTracker"></span></div>
+        <div class="card-h"><h2>대상자 정보</h2><span class="h-right" id="subjTracker"></span></div>
         <div class="card-b" id="subjBody"></div>
       </div>
       <div class="card" style="flex:0 0 auto">
@@ -1435,7 +1449,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
         </div>
       </div>
       <div class="card card-safety">
-        <div class="card-h"><h2>안전 · 규제 · 기상</h2><span class="h-right" id="wxStamp"></span></div>
+        <div class="card-h"><h2>안전 확인 · 기상</h2><span class="h-right" id="wxStamp"></span></div>
         <div class="card-b" id="safetyBody"></div>
       </div>
     </section>
@@ -1466,9 +1480,9 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
   </footer>
 </div>
 
-<!-- ======================= 조작 패널 ======================= -->
+<!-- ======================= 입력 화면 ======================= -->
 <div id="consoleRoot" hidden></div>
-<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="STAY UP 조작 패널" hidden><div class="drawer-in" id="drawerIn"></div></div>
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="STAY UP 입력 화면" hidden><div class="drawer-in" id="drawerIn"></div></div>
 
 <script src="offline-map-engine.js"></script>
 <script>
@@ -1794,7 +1808,7 @@ function weatherStatus(now){
 
 /* ==========================================================================
    S3. 저장 · 복구 · 창간 동기화
-   두 창(조작 패널 / 표출 화면) 사이를 2중으로 동기화한다.
+   두 창(입력 화면 / 현황 화면) 사이를 2중으로 동기화한다.
      (1) postMessage : 즉시 반영. window.open 으로 얻은 핸들 / window.opener
      (2) localStorage 500ms 폴링 : 창 핸들이 끊겨도 계속 동작 (file:// 대비)
    ========================================================================== */
@@ -1912,8 +1926,8 @@ function validateImportPackage(raw){
   var requiredObjects = ['meta','mission','subject','batteries','grid','safety','weather','ui'];
   for(var i=0;i<requiredObjects.length;i++){
     if(!isPlainObject(raw[requiredObjects[i]])){
-      if(raw.format==='stayup-ai-candidates')throw new Error('AI 후보 파일은 AI 후보 메뉴의 AI 후보 불러오기로 여세요.');
-      if(raw.format==='stayup-offline-region')throw new Error('지역 지도 파일은 수색구역 → 지도·격자 설정의 지도 파일 가져오기로 여세요.');
+      if(raw.format==='stayup-ai-candidates')throw new Error('AI 후보 파일은 탐지 사진 메뉴의 탐지 사진 불러오기로 여세요.');
+      if(raw.format==='stayup-offline-region')throw new Error('지역 지도 파일은 수색 지도 → 지도·격자 설정의 지도 백업 열기로 여세요.');
       throw new Error(requiredObjects[i]+' 항목이 없거나 올바르지 않습니다.');
     }
   }
@@ -2090,7 +2104,7 @@ function setSaveStatus(ok, message){
 function persistCandidate(candidate){
   try{
     if(!epochCurrent())throw new Error('출동 종료 후 열린 이전 창입니다. 새로고침하세요.');
-    if(!ownsEditorLock())throw new Error('편집권이 다른 조작 창으로 이동했습니다. 최신 화면을 확인하세요.');
+    if(!ownsEditorLock())throw new Error('편집권이 다른 입력 창으로 이동했습니다. 최신 화면을 확인하세요.');
     candidate.meta.epoch=SESSION_EPOCH;
     var raw=JSON.stringify(candidate); localStorage.setItem(KEY,raw);
     if(localStorage.getItem(KEY)!==raw) throw new Error('저장 확인 실패');
@@ -2117,7 +2131,7 @@ function commit(){
   var sweepBefore=lastSweep;
   touch(); var ok=persist();
   /* 저장에 실패한 상태(완전삭제 후 남은 이전 세대 창 등)를 상대 창으로 내보내지 않는다.
-     내보내면 삭제된 실종자 정보가 표출 화면에 되살아난다. */
+     내보내면 삭제된 실종자 정보가 현황 화면에 되살아난다. */
   if(ok){lastSeenUpdated=S.meta.updated;broadcast();}
   else {rollbackStoredState();if(sweepBefore&&epochCurrent()&&ownsEditorLock())lastSweep=sweepBefore;}
   renderAll(); return ok;
@@ -2186,7 +2200,7 @@ function saveRecoveryPoint(reason){
   }
 }
 function gcMapBlobs(){
-  /* 읽기 전용 표출 창은 상태가 늦을 수 있다. 그 창이 오래된 참조만 보고 최신 지도를
+  /* 보기 전용 현황 창은 상태가 늦을 수 있다. 그 창이 오래된 참조만 보고 최신 지도를
      지우지 못하도록 정리는 단일 편집자만 수행한다. */
   if(!ownsEditorLock()) return Promise.resolve(false);
   var gcSeq=mapGcGeneration;
@@ -2254,7 +2268,7 @@ function restoreRecovery(choiceKey){
 }
 function purgeIncidentData(){
   if(!exportJson())return Promise.resolve(false);
-  alert('JSON 다운로드를 시작했습니다. 다운로드 목록에서 파일이 생성되고 승인된 위치에 보관됐는지 확인하세요.');
+  alert('상황 백업 파일 내려받기를 요청했습니다. 다운로드 목록에서 파일이 생성되고 승인된 위치에 보관됐는지 확인하세요.');
   var answer=prompt('확인 후 모든 개인정보·지도·이벤트·복구본을 삭제하려면 정확히 "완전삭제"를 입력하세요.\n이 작업은 되돌릴 수 없습니다.','');
   if(answer!=='완전삭제'){alert('삭제를 취소했습니다. 데이터는 그대로 유지됩니다.');return;}
   var newEpoch;
@@ -2340,7 +2354,7 @@ function applyStateTransaction(nextState,nextMap,mapId,opSeq,opEpoch,fileSeq){
   var oldState=localStorage.getItem(KEY),wroteRaw=null,hadLegacyMap=!!(S.grid.hasMap&&!S.grid.mapId),durable=false;
   try{
     if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))throw new Error('더 최신 작업이 시작돼 이전 작업을 취소했습니다.');
-    if(!ownsEditorLock())throw new Error('편집권이 다른 조작 창으로 이동했습니다.');
+    if(!ownsEditorLock())throw new Error('편집권이 다른 입력 창으로 이동했습니다.');
     cancelWeatherRequest();
     nextState=migrate(nextState);
     nextState.meta.revision=S.meta.revision; nextState.meta.updated=S.meta.updated;
@@ -2417,7 +2431,7 @@ function ensureEditor(){
       ? '이전 완전삭제가 끝나지 않아 편집을 잠갔습니다. 브라우저 사이트 데이터에서 STAY UP 저장공간을 삭제한 뒤 다시 여세요.'
       : (!epochCurrent()
         ? '출동 종료 후 열린 이전 창입니다. 새로고침하세요.'
-        : '다른 조작 화면이 편집권을 사용 중입니다.\n동시 입력으로 기록이 유실되지 않도록 이 화면은 읽기 전용입니다.'));
+        : '다른 입력 화면이 편집권을 사용 중입니다.\n동시 입력으로 기록이 유실되지 않도록 이 화면은 보기 전용입니다.'));
   alert(msg);
   return false;
 }
@@ -2520,7 +2534,7 @@ function readMapFromStore(){
   });
   return true;
 
-  /* 블롭이 실제로 없어진 경우. 상태를 메모리에서만 고치면 표출 화면은 아직 지도가
+  /* 블롭이 실제로 없어진 경우. 상태를 메모리에서만 고치면 현황 화면은 아직 지도가
      있다고 알고 있게 된다. 편집권을 가진 창이 저장하고 상대 창에도 알린다.
      지리 범위(geo)와 원본 크기는 이미지와 별개로 유효하므로 남긴다 —
      같은 지도를 다시 넣으면 좌표 보정이 그대로 이어진다. */
@@ -2686,7 +2700,7 @@ function pollStore(){
       return;
     }
     var raw=localStorage.getItem(KEY); if(!raw)return;
-    /* 이벤트가 수천 건이면 파싱·정규화·직렬화가 무거워 초당 2회는 표출 화면을 끊기게 한다.
+    /* 이벤트가 수천 건이면 파싱·정규화·직렬화가 무거워 초당 2회는 현황 화면을 끊기게 한다.
        저장 원문이 지난번과 같으면 상태가 바뀌었을 수 없으므로 바로 빠져나간다. */
     if(raw!==lastPolledRaw){
       lastPolledRaw=raw;
@@ -2925,7 +2939,7 @@ function moveRadiusKm(now){
 }
 
 /* ==========================================================================
-   S6. 표출 화면 렌더
+   S6. 현황 화면 렌더
    ========================================================================== */
 function setKpi(id, lv){
   var el = $(id); if(!el) return;
@@ -2933,8 +2947,8 @@ function setKpi(id, lv){
 }
 /* --------------------------------------------------------------------------
    상단 KPI 네 개
-   표출 화면(대형 모니터)과 조작 패널(기록자 노트북)이 같은 계산을 써야 한다.
-   노트북 1대 + 대형 모니터 구성에서 기록자는 조작 패널만 보므로, 이 넷을 보려고
+   현황 화면(대형 모니터)과 입력 화면(기록자 노트북)이 같은 계산을 써야 한다.
+   노트북 1대 + 대형 모니터 구성에서 기록자는 입력 화면만 보므로, 이 넷을 보려고
    고개를 돌리게 하면 안 된다. 계산을 여기 한 곳에 두고 양쪽이 나눠 쓴다.
      v = 큰 숫자 · u = 단위 접미사 · s = 부제 · lv = 등급 · dot = 형태 표식 사용
    -------------------------------------------------------------------------- */
@@ -3073,7 +3087,7 @@ function renderCrew(){
 
 /* --------------------------------------------------------------------------
    수색구역: 지도 이미지 + 격자 오버레이
-   표출 화면(읽기 전용)과 조작 패널(클릭 편집)이 같은 함수를 공유한다.
+   현황 화면(보기 전용)과 입력 화면(클릭 편집)이 같은 함수를 공유한다.
    -------------------------------------------------------------------------- */
 /* Optional online providers. Nothing is fetched until onlineSDK.load is called. */
 var onlineSDK = (function () {
@@ -3715,11 +3729,11 @@ function offlineWorkspaceText(){
     if(!pack)return offlineCatalogLoaded?'연결된 지역 지도 없음 · 지도·격자 설정에서 저장하거나 지도 파일을 가져오세요.':'저장한 지역 지도를 확인하는 중…';
     return (S.grid.source==='offline'?'저장한 지역 지도 사용':'연결 장애 · 저장한 지역 지도로 전환')+' · '+offlinePackName(pack)+' · 자료 '+offlineDate(pack)+' · 상세 단계 '+pack.maxZoom+' · 저장 범위 안에서 사용';
   }
-  return pack?'오프라인 대비 지도 연결됨 · '+offlinePackName(pack)+' · 자료 '+offlineDate(pack)+(offlineShell.ready?' · 앱 재시작 준비 완료':' · 앱 오프라인 준비 상태 확인 필요'):'';
+  return pack?'오프라인 대비 지도 연결됨 · '+offlinePackName(pack)+' · 자료 '+offlineDate(pack)+(offlineShell.ready?' · 앱 재시작 준비 완료':' · 인터넷 없이 실행 준비 상태 확인 필요'):'';
 }
 function updateOfflineUi(){
   document.querySelectorAll('[data-offline-status]').forEach(function(el){el.textContent=offlineMessage||offlineCatalogError||'';});
-  document.querySelectorAll('[data-offline-shell-status]').forEach(function(el){el.textContent=offlineShell.message||(offlineShell.ready?'앱 오프라인 준비 완료':'앱 재시작을 위한 오프라인 준비가 필요합니다.');});
+  document.querySelectorAll('[data-offline-shell-status]').forEach(function(el){el.textContent=offlineShell.message||(offlineShell.ready?'인터넷 없이 실행 준비 완료':'앱 재시작을 위한 오프라인 준비가 필요합니다.');});
   var controlsDisabled=!!offlineJob||!ownsEditorLock();
   document.querySelectorAll('[data-offline-busy]').forEach(function(el){el.disabled=controlsDisabled;});
   var pack=selectedOfflinePack(),requirement=offlineRequirements(),hasRange=geoOK();
@@ -3728,13 +3742,13 @@ function updateOfflineUi(){
     map:pack?'현재 범위의 지도 연결됨 · '+offlinePackName(pack):offlineCatalogLoaded?'현재 범위에 연결한 지도 없음':'보관함 확인 중…',
     app:offlineShell.ready?'앱 파일 저장됨 · 오프라인 재시작 확인 필요':offlineShell.waiting?'새 앱 파일 저장됨 · 모든 상황판 창을 닫고 다시 여세요.':'앱 파일 준비 필요 · 지도 미리 저장에 앱 준비도 포함됩니다.'
   };
-  if(!ownsEditorLock())preparation.next='읽기 전용 창입니다. 편집 중인 창에서 지도와 앱을 준비하세요.';
+  if(!ownsEditorLock())preparation.next='보기 전용 창입니다. 편집 중인 창에서 지도와 앱을 준비하세요.';
   else if(requirement)preparation.next=requirement;
   else if(!hasRange)preparation.next='기존 사진을 유지하려면 사진 좌표를 보정하세요. 새 수색 범위는 배경 지도에서 저장한 지역 지도를 고른 뒤 중심 좌표·가로 범위를 입력하세요.';
   else if(offlineCatalogError)preparation.next=offlineCatalogError;
   else if(!offlineCatalogLoaded)preparation.next='저장한 지역 지도 보관함을 확인하는 중입니다.';
   else if(!pack)preparation.next='이 범위를 미리 저장하거나 지도 파일을 가져오세요. 보관함에 있다면 범위를 확인해 저장 지도 사용을 누르세요.';
-  else if(!offlineShell.ready)preparation.next='앱 오프라인 준비 상태를 확인하세요. 재시작 안내가 있으면 모든 상황판 창을 닫고 같은 주소로 다시 여세요.';
+  else if(!offlineShell.ready)preparation.next='인터넷 없이 실행 준비 상태를 확인하세요. 재시작 안내가 있으면 모든 상황판 창을 닫고 같은 주소로 다시 여세요.';
   else if(S.grid.source!=='offline')preparation.next='아래 목록에서 연결된 지도를 고르고 저장 지도 사용을 누르세요.';
   else preparation.next='인터넷을 끈 뒤 같은 주소에서 다시 열어 지도·핀·구역이 나오는지 확인하세요.';
   document.querySelectorAll('[data-offline-preparation]').forEach(function(el){var text=preparation[el.dataset.offlinePreparation];if(el.textContent!==text)el.textContent=text;});
@@ -3772,17 +3786,17 @@ function offlineMapPanel(){
     +'<p id="offlineEstimate" class="note"></p><p class="note">지도당 최대 4,096개 타일·100 MB, 보관함 최대 12개입니다. 정확한 용량은 다운로드 중 확인합니다.</p>'
     +'<label class="f"><span>저장 세부 수준</span><select id="offlineLevel" data-offline-busy>'
     +[[12,'넓은 지역 · 단계 12'],[14,'기본 · 단계 14'],[15,'상세 · 단계 15']].map(function(a){return '<option value="'+a[0]+'"'+(offlineLevel===a[0]?' selected':'')+'>'+a[1]+'</option>';}).join('')+'</select></label>'
-    +'<div class="row-tools"><button type="button" class="btn primary" data-offline-action="save" data-offline-busy>이 수색 범위 미리 저장</button><button type="button" class="btn" data-offline-action="cancel" hidden>저장 취소</button><button type="button" class="btn" data-offline-action="shell" data-offline-busy>앱 오프라인 준비</button></div>'
+    +'<div class="row-tools"><button type="button" class="btn primary" data-offline-action="save" data-offline-busy>이 수색 범위 미리 저장</button><button type="button" class="btn" data-offline-action="cancel" hidden>저장 취소</button><button type="button" class="btn" data-offline-action="shell" data-offline-busy>인터넷 없이 실행 준비</button></div>'
     +'<p class="offline-status" data-offline-status role="status" aria-live="polite"></p><p class="note" data-offline-shell-status></p>'
     +'<label class="f"><span>저장한 지역 지도</span><select data-offline-pack-select data-offline-busy></select></label>'
-    +'<div class="row-tools"><button type="button" class="btn" data-offline-action="use" data-offline-busy>저장 지도 사용</button><button type="button" class="btn" data-offline-action="export" data-offline-busy>지도 파일 내보내기</button><button type="button" class="btn" data-offline-action="import" data-offline-busy>지도 파일 가져오기</button><button type="button" class="btn danger" data-offline-action="delete" data-offline-busy>선택 지도 삭제</button></div>'
+    +'<div class="row-tools"><button type="button" class="btn" data-offline-action="use" data-offline-busy>저장 지도 사용</button><button type="button" class="btn" data-offline-action="export" data-offline-busy>지도 백업 저장</button><button type="button" class="btn" data-offline-action="import" data-offline-busy>지도 백업 열기</button><button type="button" class="btn danger" data-offline-action="delete" data-offline-busy>선택한 지도 삭제</button></div>'
     +'<input type="file" id="offlinePackFile" accept=".stayup-map,.json,application/json" hidden>'
     +'<p class="note">일반 상황 JSON에는 지역 지도 본체가 포함되지 않습니다. 다른 PC로 옮길 때는 상황 JSON과 지도 파일을 함께 보관하세요. 저장 범위 밖이나 저장 단계보다 세밀한 새 지도 정보는 제공하지 않습니다.</p></section>';
 }
 function offlineWorkerRequest(worker,type,extra){
   return new Promise(function(resolve,reject){
     if(!worker){reject(new Error('오프라인 앱 관리자를 찾을 수 없습니다.'));return;}
-    var channel=new MessageChannel(),timer=setTimeout(function(){channel.port1.close();reject(new Error('앱 오프라인 준비 응답 시간이 초과됐습니다.'));},type==='PREPARE_SHELL'?60000:3000);
+    var channel=new MessageChannel(),timer=setTimeout(function(){channel.port1.close();reject(new Error('인터넷 없이 실행 준비 응답 시간이 초과됐습니다.'));},type==='PREPARE_SHELL'?60000:3000);
     channel.port1.onmessage=function(ev){clearTimeout(timer);channel.port1.close();resolve(ev.data||{});};
     worker.postMessage(Object.assign({type:type},extra||{}),[channel.port2]);
   });
@@ -3804,7 +3818,7 @@ async function prepareOfflineShell(){
   if(!worker)throw new Error('현재 버전의 오프라인 앱 준비를 시작하지 못했습니다. 새로고침 후 다시 시도하세요.');
   var result=await offlineWorkerRequest(worker,'PREPARE_SHELL',{expectedBuild:manifest.build});
   if(!result.ready||result.build!==manifest.build)throw new Error(result.error||'앱 파일 저장 검증에 실패했습니다.');
-  offlineShell={ready:worker===reg.active,waiting:worker!==reg.active,build:manifest.build,message:worker===reg.active?'앱 오프라인 준비 완료 · 같은 주소에서 다시 열 수 있습니다.':'새 앱 파일 저장 완료 · 모든 상황판 창을 닫고 같은 주소로 다시 열어 준비 상태를 확인하세요.'};
+  offlineShell={ready:worker===reg.active,waiting:worker!==reg.active,build:manifest.build,message:worker===reg.active?'인터넷 없이 실행 준비 완료 · 같은 주소에서 다시 열 수 있습니다.':'새 앱 파일 저장 완료 · 모든 상황판 창을 닫고 같은 주소로 다시 열어 준비 상태를 확인하세요.'};
   updateOfflineUi();return offlineShell;
 }
 async function checkOfflineShell(){
@@ -3814,7 +3828,7 @@ async function checkOfflineShell(){
     var status=await offlineWorkerRequest(reg.active,'SHELL_STATUS');
     var res=await fetch('offline-shell.json',{cache:'no-store'});var manifest=res.ok?await res.json():null;
     var current=!!(manifest&&manifest.build===status.build);
-    offlineShell={ready:status.ready&&current,waiting:!!reg.waiting,build:status.build,message:status.ready&&current?'앱 오프라인 준비 완료':'앱 버전이 바뀌었습니다. 앱 오프라인 준비 후 모든 상황판 창을 닫고 다시 여세요.'};
+    offlineShell={ready:status.ready&&current,waiting:!!reg.waiting,build:status.build,message:status.ready&&current?'인터넷 없이 실행 준비 완료':'앱 버전이 바뀌었습니다. 인터넷 없이 실행 준비 후 모든 상황판 창을 닫고 다시 여세요.'};
   }catch(ignore){}updateOfflineUi();
 }
 async function refreshOfflinePacks(redraw){
@@ -3885,8 +3899,8 @@ async function importOfflineFile(file){
     var pack=await offlineEngine().importPack(file,{signal:controller.signal});
     await refreshOfflinePacks(false);signalOfflineCatalog();
     if(!controller.signal.aborted&&offlineJob===job&&scope===offlineScopeKey()&&ownsEditorLock()&&offlineCovers(pack,S.grid.geo)){S.grid.offlineId=pack.id;commit();}
-    offlineStatus('지도 파일 가져오기 완료 · 자료 '+offlineDate(pack)+' · 현재 범위를 포함하면 저장 지도 사용을 선택하세요.');return true;
-  }catch(error){offlineStatus('지도 파일 가져오기 실패 · '+error.message);return false;}
+    offlineStatus('지도 백업 열기 완료 · 자료 '+offlineDate(pack)+' · 현재 범위를 포함하면 저장 지도 사용을 선택하세요.');return true;
+  }catch(error){offlineStatus('지도 백업 열기 실패 · '+error.message);return false;}
   finally{if(offlineJob===job)offlineJob=null;updateOfflineUi();}
 }
 document.addEventListener('change',function(ev){
@@ -4073,7 +4087,7 @@ function placeMapPoint(x,y){
   if(!commit()){pinMode=mode;updatePinModeUi();return false;}
   updatePinModeUi();return true;
 }
-var mapMsgHtml = '';     /* 지도 붙여넣기 결과 안내 (조작 패널 재렌더 시에도 유지) */
+var mapMsgHtml = '';     /* 지도 붙여넣기 결과 안내 (입력 화면 재렌더 시에도 유지) */
 /* 빠른기록 입력줄은 data-path 가 없어 재렌더 때마다 초기화됐다. 한 줄 타이핑하다
    다른 버튼을 한 번만 눌러도 내용이 사라지고, 발생시각은 렌더 시각으로 되돌아가
    잘못된 시각의 기록이 활동일지에 남는다. 지도 안내문과 같은 방식으로 밖에 보관한다. */
@@ -4168,7 +4182,7 @@ function finishPaint(){
   var previousSweep=lastSweep;
   lastSweep = { before:p.before, eventId:sweepEventId, count:ids.length, at:Date.now() };
   /* 방금 칠한 칸을 빠른기록 구역에 물려준다. 이미 입력해 둔 값은 건드리지 않는다.
-     commit() 이 조작 패널을 다시 그리므로 그 전에 넣어야 화면에 반영된다. */
+     commit() 이 입력 화면을 다시 그리므로 그 전에 넣어야 화면에 반영된다. */
   if(!String(quickEv.zone||'').trim()){ quickEv.zone = ids[0]; }
   if(!commit()){
     lastSweep=(epochCurrent()&&ownsEditorLock())?previousSweep:null;
@@ -4242,7 +4256,7 @@ function buildGrid(host, interactive){
     html += '<img class="mapimg" alt="수색 지도 또는 현장 사진" draggable="false" src="'+MAPDATA+'" style="opacity:'
           + num(g.mapOpacity,0.85) + '">';
   } else if(interactive&&!online){
-    /* 표출 화면에는 운영요원용 안내문을 띄우지 않는다. 격자 뒤로 비쳐 읽히지도 않고,
+    /* 현황 화면에는 운영요원용 안내문을 띄우지 않는다. 격자 뒤로 비쳐 읽히지도 않고,
        지휘부가 보는 화면에 조작 지시문이 남는다. 지도 미적용 여부는 카드 헤더로 알린다. */
     html += '<div class="mapnote">지도 이미지 없음<br>'
           + '여기에 카카오맵·네이버지도 캡처를 붙여넣으면('+esc(K_PASTE)+') 배경으로 깔립니다</div>';
@@ -4546,7 +4560,7 @@ function refreshBatteryStamps(){
 function renderDrones(){
   refreshDroneRisks();
   if(!S.drones.length){
-    $('droneBody').innerHTML = '<div class="empty">기체 미등록 — 조작 패널에서 기체를 추가하세요</div>';
+    $('droneBody').innerHTML = '<div class="empty">기체 미등록 — 입력 화면에서 기체를 추가하세요</div>';
     $('droneMeta').textContent = '';
     return;
   }
@@ -4575,7 +4589,7 @@ function renderDrones(){
         + '<div class="d-crew">'
           + (d.pilot ? '조종 '+esc(d.pilot) : '')
           + (d.observer ? ' · 관측 '+esc(d.observer) : '')
-          + ' · 소티 '+intv(d.sorties,0)
+          + ' · 비행 '+intv(d.sorties,0)+'회'
         + '</div></div>'
       + '</article>';
   });
@@ -4754,11 +4768,11 @@ function renderBanner(){
       $('ackBtn').onclick = function(){
         if(ownsEditorLock()){S.ui.ackFound=alarmKey;commit();return;}
         if(sendPeer({type:'action',action:'ackFound',t:alarmKey}))return;
-        /* 창 핸들이 끊기면(상단 "표출 화면 미연결") 이 버튼은 아무 일도 하지 못한다.
+        /* 창 핸들이 끊기면(상단 "현황 화면 미연결") 이 버튼은 아무 일도 하지 못한다.
            조용히 실패하면 눌렀는데 경보가 그대로인 상태가 되므로 이유를 남긴다.
            대형 스크린 앞에서 alert 를 띄우면 화면이 막히므로 버튼 안에 적는다. */
         var b=$('ackBtn'); if(!b)return;
-        b.textContent='조작 패널에서 확인하세요';
+        b.textContent='입력 화면에서 확인하세요';
         setTimeout(function(){ if($('ackBtn')===b) b.textContent='확인'; },6000);
       };
     }
@@ -4985,7 +4999,7 @@ function applyUi(){
 }
 
 /* ==========================================================================
-   S9. 조작 패널
+   S9. 입력 화면
    입력 필드는 data-path 로 상태 경로를 가리킨다. 예: data-path="mission.title"
    ========================================================================== */
 function getPath(path){
@@ -5071,7 +5085,7 @@ function sel(label, path, opts){
   return '<label class="f"><span>'+label+'</span><select data-path="'+path+'">'+o+'</select></label>';
 }
 
-/* 조작 패널은 모드에 따라 스크롤 주체가 다르다.
+/* 입력 화면은 모드에 따라 스크롤 주체가 다르다.
    console 모드는 문서가, 드로어(Ctrl+E)는 겹쳐 열린 패널이 스크롤된다.
    상단 바 높이는 칩 줄바꿈에 따라 달라지므로 고정값 대신 그때그때 잰다. */
 function scrollHost(el){
@@ -5088,7 +5102,7 @@ function scrollHost(el){
 }
 /* 부드러운 스크롤은 쓰지 않는다. 4,000px 이동에 1초 가까이 걸려 그동안 조작이 막히고,
    모션 축소 설정이나 애니메이션을 지원하지 않는 환경에서는 아예 이동하지 않는다. */
-/* 조작 패널 재렌더 타이밍
+/* 입력 화면 재렌더 타이밍
    change 는 버튼을 누르는 mousedown(blur) 시점에 발생한다. 그 자리에서 패널을 다시
    그리면 mouseup 이 교체된 DOM 위에서 일어나 click 이 성립하지 않는다.
    현장에서는 "입력하고 나서 누른 첫 버튼이 안 먹는다"로 나타난다.
@@ -5111,9 +5125,20 @@ function scheduleConsoleRefresh(root){
 var consoleFolds={};
 /* 화면 선택은 이 창의 보기 상태다. 상황 JSON·이벤트·저장 리비전에는 넣지 않는다. */
 var consoleActiveSection='sec-quick';
-var CONSOLE_SECTIONS=[['quick','즉시조작'],['mission','상황'],['subject','실종자'],
-  ['drone','드론'],['batt','배터리'],['crew','인원'],['grid','수색구역'],
-  ['ai','AI 후보'],['safety','안전·기상'],['data','데이터']];
+var guidedStarted=false;
+var CONSOLE_FLOW=[
+  {id:'mission',title:'상황 입력',hint:'어디에서 어떤 수색을 하는지 적으세요. 현장 위치는 지도와 대조해 확인합니다.'},
+  {id:'subject',title:'대상자 정보',hint:'대상 A 같은 별칭을 쓰고, 알고 있는 정보만 입력하세요.'},
+  {id:'crew',title:'인원 등록',hint:'참여 인원을 추가하세요. 조종자는 역할을 조종으로 지정합니다.'},
+  {id:'drone',title:'드론 연결',hint:'드론을 추가하고 등록된 조종자를 선택하세요. 배터리는 실제 잔량을 확인합니다.'},
+  {id:'grid',title:'수색 지도 준비',hint:'지도나 현장 사진을 넣으세요. 구역 표시와 저장 지역 지도는 필요할 때 설정합니다.'},
+  {id:'safety',title:'안전 확인',hint:'현장 위치·기상·승인 내용을 확인하세요. 모르는 값은 확인되지 않은 상태로 둡니다.'},
+  {id:'quick',title:'수색 기록',hint:'무전 내용이나 확인한 결과를 기록하세요. 기체 상태 변경은 드론 메뉴에서 따로 반영합니다.'},
+  {id:'data',title:'백업 저장',hint:'상황 백업 저장을 누르고 다운로드 목록에서 파일이 생겼는지 확인하세요.'}
+];
+var CONSOLE_SECTIONS=[['mission','상황 입력'],['subject','대상자 정보'],['crew','인원 관리'],
+  ['drone','드론 관리'],['grid','수색 지도'],['safety','안전 확인'],
+  ['quick','수색 기록'],['data','백업·설정'],['batt','배터리 재고'],['ai','탐지 사진']];
 function applyConsolePanels(root){
   CONSOLE_SECTIONS.forEach(function(p){
     var id='sec-'+p[0],section=root.querySelector('#'+id),tab=root.querySelector('#tab-'+p[0]);
@@ -5134,7 +5159,7 @@ function applyConsolePanels(root){
     if(root.querySelector('.mobile-more [data-sec="'+consoleActiveSection+'"]'))more.setAttribute('aria-current','location');
     else more.removeAttribute('aria-current');
   }
-  updateNextStep(root);
+  renderOnboarding(root);
   syncCompactConsole(root);
   revealConsoleTab(root);
 }
@@ -5165,7 +5190,7 @@ window.addEventListener('resize',function(){
 function activateConsolePanel(root,id){
   if(!CONSOLE_SECTIONS.some(function(p){return id==='sec-'+p[0];}))return false;
   if(consoleActiveSection!==id&&typeof cancelMapInteraction==='function')cancelMapInteraction();
-  consoleActiveSection=id;applyConsolePanels(root);
+  guidedStarted=true;consoleActiveSection=id;applyConsolePanels(root);
   if(id==='sec-drone')suggestRegisteredPilots(root);
   if(id==='sec-grid'){
     renderGridAll();
@@ -5489,7 +5514,7 @@ function geoPanel(){
   return h;
 }
 
-/* 표출 화면과 같은 kpi* 함수를 쓰므로 두 화면의 숫자가 어긋날 수 없다. */
+/* 현황 화면과 같은 kpi* 함수를 쓰므로 두 화면의 숫자가 어긋날 수 없다. */
 function consoleKpiCells(){
   var now = new Date();
   function cell(label, k){
@@ -5648,10 +5673,10 @@ function consoleHtml(){
 
   /* --- 상단 바 --- */
   h += '<div class="cons-top">'
-    + '<h1 class="ct-brand"><span>STAY UP</span> 조작 패널 <span class="app-version">v'+esc(APP_VERSION)+'</span></h1>'
-    + '<div class="ct-mode">'+(editor?'편집권 보유':'읽기 전용')+'</div>'
+    + '<h1 class="ct-brand"><span>STAY UP</span> 입력 화면 <span class="app-version">v'+esc(APP_VERSION)+'</span></h1>'
+    + '<div class="ct-mode">'+(editor?'입력 가능':'보기 전용')+'</div>'
     +(PRACTICE_MODE?'<strong class="practice-badge">연습 공간 · 가상 데이터</strong>':'')
-    +'<button class="btn" type="button" data-onboard-action="toggle" aria-expanded="'+onboardingOpen+'" aria-controls="onboardingGuide">처음 사용 안내</button>'
+    +'<button class="btn" type="button" data-onboard-action="toggle" aria-expanded="'+onboardingOpen+'" aria-controls="onboardingGuide">준비 순서 보기</button>'
     +themeControls('console')
     + '<div class="spacer"></div>'
     + '<div class="save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad')+'" id="savePill">'
@@ -5659,9 +5684,9 @@ function consoleHtml(){
     + '<div class="save-pill'+(!PRACTICE_MODE&&(!S.ui.autoSave||autoSaveErr)?' bad':'')+'" id="autoSavePill">'
       + esc(autoSaveLabel())+'</div>'
     + '<div class="sync-pill'+(peerConnected()?'':' off')+'" id="syncPill">'
-      + (peerConnected() ? '표출 화면 연결됨' : '표출 화면 미연결')+'</div>'
-    + (!editor?'<button class="btn danger" data-act="takecontrol">편집권 가져오기</button>':'')
-    + '<button class="btn primary" id="btnOpenDisplay">표출 화면 열기</button>'
+      + (peerConnected() ? '현황 화면 연결됨' : '현황 화면 미연결')+'</div>'
+    + (!editor?'<button class="btn danger" data-act="takecontrol">이 창에서 입력하기</button>':'')
+    + '<button class="btn primary" id="btnOpenDisplay">현황 화면 열기</button>'
     + (MODE==='display' ? '<button class="btn" id="btnCloseDrawer">닫기 (Esc)</button>' : '')
     + '<div class="ct-kpi" id="ctKpi">'+consoleKpiCells()+'</div>'
     + '<nav class="ct-nav" role="tablist" aria-label="입력 메뉴">'
@@ -5675,25 +5700,25 @@ function consoleHtml(){
   h+='<div class="operation-brief">'+consolePriorityHtml()+'<div class="console-alert-row"><div class="mobile-verdict" data-verdict-level="'+esc(verdict.lv)+'"><button type="button" data-act="verdictnav" data-sec="verdictHelp" id="mobileVerdictText">'
     +esc(verdict.txt+' · '+verdict.why[0])+'</button><button class="btn compact-priority-link" type="button" data-act="nav" data-sec="consolePriority" aria-controls="consolePriority">현재 지시</button></div><div class="console-emergency"></div></div></div>'+verdictHelpHtml()
     +'<nav class="mobile-nav" aria-label="주요 화면 이동">'
-      +'<button type="button" data-act="nav" data-sec="sec-quick">조작</button>'
+      +'<button type="button" data-act="nav" data-sec="sec-quick">기록</button>'
       +'<button type="button" data-act="nav" data-sec="sec-grid">지도</button>'
-      +'<button type="button" data-act="nav" data-sec="sec-drone">기체</button>'
+      +'<button type="button" data-act="nav" data-sec="sec-drone">드론</button>'
       +'<button type="button" id="btnMoreNav" aria-expanded="false" aria-controls="mobileMore">더보기</button></nav>'
     +'<div id="mobileMore" class="mobile-more" hidden>'
-      +[['safety','안전·기상'],['batt','배터리 자원'],['crew','인원'],['mission','상황·지시'],['subject','실종자'],['ai','AI 후보'],['data','화면·데이터']].map(function(p){
+      +[['mission','상황 입력'],['subject','대상자 정보'],['crew','인원 관리'],['safety','안전 확인'],['batt','배터리 재고'],['ai','탐지 사진'],['data','백업·설정']].map(function(p){
         return '<button class="btn" type="button" data-act="nav" data-sec="sec-'+p[0]+'">'+p[1]+'</button>';
       }).join('')+'</div>';
 
   if(!STORAGE_OK){
-    h += '<div class="warn-strip danger">이 브라우저에서는 <b>로컬 저장이 차단</b>되어 읽기 전용입니다. '
-      + '입력한 내용이 새로고침 후 사라지고, 표출 화면과의 동기화도 불안정합니다. '
+    h += '<div class="warn-strip danger">이 브라우저에서는 <b>로컬 저장이 차단</b>되어 보기 전용입니다. '
+      + '입력한 내용이 새로고침 후 사라지고, 현황 화면과의 동기화도 불안정합니다. '
       + '<b>Chrome 또는 Edge</b>로 열어 주세요. (Safari는 file:// 에서 저장을 막습니다)</div>';
   }
-  if(!editor&&STORAGE_OK) h+='<div class="warn-strip danger" data-editor-help><b>이 창은 읽기 전용입니다.</b> 입력하려면 기존 조작 창을 닫은 뒤 <b>편집권 가져오기</b>를 누르세요. 닫은 창의 잠금이 남으면 최대 '+Math.ceil(LOCK_LEASE_MS/1000)+'초 기다린 뒤 다시 누르세요. 안내 확인·화면 테마 변경과 내용 보기는 계속할 수 있습니다.</div>';
+  if(!editor&&STORAGE_OK) h+='<div class="warn-strip danger" data-editor-help><b>이 창은 보기 전용입니다.</b> 입력하려면 기존 입력 창을 닫은 뒤 <b>이 창에서 입력하기</b>를 누르세요. 닫은 창의 잠금이 남으면 최대 '+Math.ceil(LOCK_LEASE_MS/1000)+'초 기다린 뒤 다시 누르세요. 안내 확인·화면 테마 변경과 내용 보기는 계속할 수 있습니다.</div>';
   if(STARTUP_WARNINGS.length)h+='<div class="warn-strip danger">'+esc(STARTUP_WARNINGS.join(' · '))+'</div>';
 
   /* --- 즉시 조작(가장 많이 쓰는 것 위로) --- */
-  h += '<div class="sec" id="sec-quick"><h2>즉시 조작 <span class="hint">현장에서 가장 자주 누르는 버튼</span></h2><div class="sec-b">'
+  h += '<div class="sec" id="sec-quick"><h2>수색 기록 <span class="hint">현장에서 가장 자주 누르는 버튼</span></h2><div class="sec-b">'
     + '<div class="quick-grid">'
       + '<button class="btn alarm big'+(S.safety.manned?' on':'')+'" id="btnManned" aria-pressed="'+(S.safety.manned?'true':'false')+'">'
         + (S.safety.manned ? '유인기 경보 해제' : '\u26A0\uFE0E 유인기 진입 (전 기체 즉시 착륙)') + '</button>'
@@ -5705,7 +5730,7 @@ function consoleHtml(){
         + '<label class="f" id="evEntityWrap">'+quickEntityHtml()+'</label>'
         + '<label class="f"><span>구역</span><input id="evZone" aria-label="기록 구역" placeholder="예: A1" value="'+esc(quickEv.zone)+'"></label></div>'
         + '<div class="quick-message"><label class="f"><span>내용</span><input id="evText" aria-label="기록 내용" placeholder="내용 입력 후 Enter" value="'+esc(quickEv.text)+'"></label>'
-        + '<button class="btn primary" id="btnAddEv">이력만 기록</button></div>'
+        + '<button class="btn primary" id="btnAddEv">기록 남기기</button></div>'
         + '<div class="quick-time"><label class="f"><span>발생시각</span><select id="evTimeMode"><option value="now"'+(quickEv.timeAuto?' selected':'')+'>지금</option>'
         +'<option value="custom"'+(!quickEv.timeAuto?' selected':'')+'>과거 시각 지정</option></select></label>'
         + '<label class="f" id="evTimeLabel"'+(quickEv.timeAuto?' hidden':'')+'><span>사건 발생시각</span><input id="evTime" type="datetime-local" value="'+esc(quickEvTime())+'" aria-label="사건 발생시각"></label></div>'
@@ -5713,8 +5738,8 @@ function consoleHtml(){
       + '</div>'
     + '</div>'
     + emergencyHistoryNotice()
-    + '<div class="note">기록한 이벤트는 표출 화면 타임라인에 즉시 올라가고, 그대로 활동일지가 됩니다. '
-      + '<b>발견</b>을 기록하면 표출 화면 전체에 적색 배너와 경보음이 나갑니다. 발생시각은 사후 입력할 수 있습니다.</div>'
+    + '<div class="note">기록한 이벤트는 현황 화면 타임라인에 즉시 올라가고, 그대로 활동일지가 됩니다. '
+      + '<b>발견</b>을 기록하면 현황 화면 전체에 적색 배너와 경보음이 나갑니다. 발생시각은 사후 입력할 수 있습니다.</div>'
     + (function(){
         var mm=stateMismatches(); if(!mm.length) return '';
         return '<div class="mismatch"><div class="mm-h">기록과 상태가 어긋난 항목 '+mm.length+'건</div>'
@@ -5729,7 +5754,7 @@ function consoleHtml(){
     + '</div></div>';
 
   /* --- 상황 개요 --- */
-  h += '<div class="sec" id="sec-mission"><h2>상황 개요</h2><div class="sec-b">'
+  h += '<div class="sec" id="sec-mission"><h2>상황 입력</h2><div class="sec-b">'
     + '<div class="f2">'+fld('상황명','mission.title','text','placeholder="예: 완주군 소양면 실종자 수색"')
     + fld('수색 장소','mission.location','text','placeholder="예: 소양면 대흥리 일대 (CP: 마을회관)"')+'</div>'
     + '<div class="f4">'+fld('출동시각','mission.dispatchedAt','datetime-local')
@@ -5748,8 +5773,8 @@ function consoleHtml(){
     + '</div></div>';
 
   /* --- 실종자 --- */
-  h += '<div class="sec" id="sec-subject"><h2>실종자 정보</h2><div class="sec-b">'
-    + '<div class="f4">'+fld('식별명(별칭)','subject.name','text','maxlength="80" autocomplete="off" placeholder="예: 대상 A"')+fld('연령','subject.age','number','min="0" max="130"')
+  h += '<div class="sec" id="sec-subject"><h2>대상자 정보</h2><div class="sec-b">'
+    + '<div class="f4">'+fld('대상자 이름·별칭','subject.name','text','maxlength="80" autocomplete="off" placeholder="예: 대상 A"')+fld('연령','subject.age','number','min="0" max="130"')
     + sel('성별','subject.sex',[['',''],['남','남'],['여','여']])
     + fld('치매등급·구분','subject.level','text','placeholder="치매 3등급"')+'</div>'
     + '<p class="note">실명 대신 대상 A 같은 별칭을 사용하세요. 확인하지 못한 정보는 빈칸으로 둘 수 있습니다.</p>'
@@ -5760,7 +5785,7 @@ function consoleHtml(){
     + '<p class="note" data-subject-color-help>새 상황의 색상 칸에는 초기값이 표시됩니다. 확인한 색상·옷차림은 설명에도 적어주세요. 설명을 비우면 표출에는 <b>미상</b>으로 표시됩니다.</p>'
     + '<div class="f2">'+fld('실종(최종목격) 시각','subject.missingAt','datetime-local')
     + fld('최종목격 장소','subject.lastSeenPlace','text','placeholder="마을회관 앞 버스정류장"')+'</div>'
-    + fld('특이사항 (쉼표로 구분 → 태그로 표출)','subject.notes','textarea','placeholder="보행 가능, 혈압약 복용, 청력 저하"')
+    + fld('특이사항 (쉼표로 나누어 입력)','subject.notes','textarea','placeholder="보행 가능, 혈압약 복용, 청력 저하"')
     + fld('배회감지기 착용','subject.tracker','checkbox')
     + '<div class="note">지도에 표시하는 이동반경은 계획 보조용 추정치입니다. 계산 가정은 아래 상세 설정에서 확인하세요.</div>'
     + '<details class="settings-fold" data-fold="subject-estimate"><summary>상세 설정 · 이동 추정반경 <span class="hint">보행 '+num(S.subject.walkSpeed,2)+'km/h · 계수 '+num(S.subject.decay,0.35)+'</span></summary><div>'
@@ -5777,17 +5802,17 @@ function consoleHtml2(){
   var h = '';
 
   /* --- 드론 기체 --- */
-  h += '<div class="sec" id="sec-drone"><h2>드론 운용 <span class="hint">기체별 카드가 표출 화면 우측에 표시됩니다</span>'
-    + '<span class="spacer"></span><button class="btn sm primary" id="btnAddDrone">＋ 기체 추가</button></h2><div class="sec-b">';
+  h += '<div class="sec" id="sec-drone"><h2>드론 등록·운용 <span class="hint">기체별 카드가 현황 화면 우측에 표시됩니다</span>'
+    + '<span class="spacer"></span><button class="btn sm primary" id="btnAddDrone">＋ 드론 추가</button></h2><div class="sec-b">';
   h+='<div class="drone-risk-summary" data-drone-risk-summary="console" aria-label="운용 중 기체 위험 요약" hidden></div>';
-  if(!S.drones.length) h += '<div class="note">등록된 기체가 없습니다. 우측 상단 “기체 추가”를 누르세요.</div>';
+  if(!S.drones.length) h += '<div class="note">등록된 기체가 없습니다. 우측 상단 “드론 추가”를 누르세요.</div>';
   S.drones.forEach(function(d,i){
     h += '<div class="item" data-di="'+i+'">'
       + '<div class="item-h"><span class="ih-t">'+esc(d.name||('기체 '+(i+1)))+'</span>'
         + '<span class="ct-mode">'+esc(DRONE_ST[d.status]||'')+'</span>'
         + '<span class="spacer"></span>'
-        + '<button class="btn sm" data-act="takeoff" data-di="'+i+'"'+(d.tookOffAt?' disabled':'')+'>이륙(지금)</button>'
-        + '<button class="btn sm" data-act="land" data-di="'+i+'"'+(!d.tookOffAt?' disabled':'')+'>착륙</button>'
+        + '<button class="btn sm" data-act="takeoff" data-di="'+i+'"'+(d.tookOffAt?' disabled':'')+'>이륙 기록 (지금)</button>'
+        + '<button class="btn sm" data-act="land" data-di="'+i+'"'+(!d.tookOffAt?' disabled':'')+'>착륙 기록</button>'
         + '</div>'
       + '<div class="f4">'
         + sel('상태','drones.'+i+'.status', Object.keys(DRONE_ST).map(function(k){return [k, DRONE_ST[k]];}))
@@ -5809,7 +5834,7 @@ function consoleHtml2(){
       + '<div class="f3">'
         + fld('조종(정)','drones.'+i+'.pilot')
         + fld('관측(부)','drones.'+i+'.observer')
-        + fld('금일 소티','drones.'+i+'.sorties','number','min="0" max="999"')
+        + fld('오늘 비행 횟수','drones.'+i+'.sorties','number','min="0" max="999"')
       + '</div>'
       + '<label class="f"><span>탑재 센서</span><div class="sens-pick">'
         + SENSORS.map(function(s){
@@ -5821,12 +5846,12 @@ function consoleHtml2(){
       + '</div></details>'
       + '</div>';
   });
-  h += '<div class="note">“이륙(지금)”은 현재 시각을 이륙시각으로 넣고 상태를 비행중으로 바꾸며 타임라인에 기록합니다. '
+  h += '<div class="note">“이륙 기록 (지금)”은 현재 시각을 이륙시각으로 넣고 상태를 비행중으로 바꾸며 타임라인에 기록합니다. '
     + '잔여 추정은 배터리 100%→25%(착륙 유보) 구간을 항속시간으로 보고 계산합니다.</div>'
     + '</div></div>';
 
   /* --- 배터리 자원 --- */
-  h += '<div class="sec" id="sec-batt"><h2>배터리 자원 <span class="hint">언제 철수해야 하는가를 숫자로</span></h2><div class="sec-b">'
+  h += '<div class="sec" id="sec-batt"><h2>배터리 재고 <span class="hint">언제 철수해야 하는가를 숫자로</span></h2><div class="sec-b">'
     + '<p class="note">이 메뉴는 배터리 <b>재고 수량</b>을 관리합니다. 재고를 바꿔도 기체의 잔량 %·이륙대기·배터리교체 상태는 자동으로 바뀌지 않습니다. 실제 교체 뒤 드론 메뉴에서도 해당 기체를 확인하세요.</p>'
     + '<div class="f3">'+fld('충전완료','batteries.ready','number','min="0" max="999"')
     + fld('충전중','batteries.charging','number','min="0" max="999"')
@@ -5926,7 +5951,7 @@ function consoleHtml2(){
     + '</div></div></div>';
 
   /* --- 안전·규제·기상 --- */
-  h += '<div class="sec" id="sec-safety"><h2>안전 · 규제 · 기상</h2><div class="sec-b">'
+  h += '<div class="sec" id="sec-safety"><h2>안전 확인 · 기상</h2><div class="sec-b">'
     + '<div class="f4">'
       + sel('비행승인(원스톱)','safety.approval',
           [['unknown','미확인'],['none','미신청'],['pending','신청중'],['done','승인완료'],['na','해당없음']])
@@ -5955,49 +5980,49 @@ function consoleHtml2(){
     + '</div></div>';
 
   /* --- 화면 · 데이터 --- */
-  h += '<div class="sec" id="sec-data"><h2>화면 설정 · 데이터</h2><div class="sec-b">'
+  h += '<div class="sec" id="sec-data"><h2>백업·설정</h2><div class="sec-b">'
     + '<section class="data-task" aria-label="지금 상황 백업"><h3>1. 지금 상황을 파일로 백업</h3>'
-    + '<p class="note">아래 버튼으로 상황·사진·핀·구역·기록을 JSON 파일에 보관합니다. 다운로드 목록에서 실제 파일을 확인하세요. 브라우저 저장·복구본과 별도의 파일입니다.</p>'
-    + '<div class="row-tools"><button class="btn primary" data-act="export">JSON 내보내기</button>'
-      + '<button class="btn" data-act="report">활동일지 복사</button></div>'
-    + '<p class="note">저장 지역 지도의 본체는 상황 JSON에 포함되지 않습니다. 지역 지도를 쓴다면 지도 파일도 따로 보관하세요.</p>'
+    + '<p class="note">아래 버튼으로 상황·사진·핀·구역·기록을 한 파일에 보관합니다. 다운로드 목록에서 실제 파일을 확인하세요. 브라우저 저장·복구본과 별도의 파일입니다.</p>'
+    + '<div class="row-tools"><button class="btn primary" data-act="export">상황 백업 저장</button>'
+      + '<button class="btn" data-act="report">보고서용 기록 복사</button></div><p class="note" data-manual-backup-status role="status" aria-live="polite"></p>'
+    + '<p class="note">저장 지역 지도의 본체는 상황 백업 파일에 포함되지 않습니다. 지역 지도를 쓴다면 지도 파일도 따로 보관하세요.</p>'
     + '<button class="btn" data-act="nav" data-sec="offlinePreparation">지역 지도 파일 보관으로</button></section>'
-    + '<section class="data-task" aria-label="자동 보관 설정"><h3>2. 작업 중 자동 보관 설정</h3><div class="row-tools">'
-      + fld('자동 보관','ui.autoSave','checkbox')
+    + '<section class="data-task" aria-label="자동 백업 설정"><h3>2. 작업 중 자동 백업 설정</h3><div class="row-tools">'
+      + fld('자동 백업','ui.autoSave','checkbox')
       + (typeof window.showSaveFilePicker==='function'
-          ? '<button class="btn primary" data-act="autofile">보관 파일 지정…</button>' : '')
+          ? '<button class="btn primary" data-act="autofile">자동 백업 파일 선택…</button>' : '')
       + '<span class="hint" data-auto-save-status>'+esc(autoSaveLabel())+'</span>'
     + '</div>'
-    + '<div class="note">자동 보관을 켜두면 지정한 파일에 변경분을 덮어씁니다. 창을 다시 열면 보관 파일도 다시 지정하세요. '
+    + '<div class="note">자동 백업을 켜두면 지정한 파일에 변경분을 덮어씁니다. 창을 다시 열면 보관 파일도 다시 지정하세요. '
       + '약 30초마다 변경을 확인합니다. 파일을 지정하지 않으면 첫 변경 확인 때 JSON 다운로드를 요청하고, 이후 변경 시 최소 '+AUTOSAVE_MIN+'분 간격으로 요청합니다. '
       + '다운로드 목록에서 실제 파일 생성을 확인하세요. 브라우저 저장소와 자동 복구본은 브라우저 데이터 삭제 시 함께 사라질 수 있습니다.</div>'
     + '</section><section class="data-task" aria-label="불러오기와 복구"><h3>3. 저장 파일 불러오기·이전 상태 복구</h3>'
-    + '<p class="note">내려받은 상황 파일은 JSON 불러오기로 엽니다. 이 브라우저의 이전 상태는 상황명·시각을 보고 복구본을 선택하세요. 지도 파일은 위의 지역 지도 파일 보관으로 이동해 가져옵니다.</p>'
-    + '<div class="row-tools"><button class="btn" data-act="import">JSON 불러오기</button>'
+    + '<p class="note">저장해 둔 상황 백업은 백업 파일 열기로 엽니다. 이 브라우저의 이전 상태는 상황명·시각을 보고 복구본을 선택하세요. 지도 파일은 위의 지역 지도 파일 보관으로 이동해 가져옵니다.</p>'
+    + '<div class="row-tools"><button class="btn" data-act="import">백업 파일 열기</button>'
       + recoveryChoiceHtml()
-      + '<button class="btn" data-act="recover"'+(recoveryCandidates().length?'':' disabled')+'>선택한 복구본 적용</button>'
+      + '<button class="btn" data-act="recover"'+(recoveryCandidates().length?'':' disabled')+'>선택한 시점으로 되돌리기</button>'
     + '</div></section><section class="data-task" aria-label="상황 종료와 삭제"><h3>4. 백업 확인 후 초기화·종료</h3>'
-    + '<div class="row-tools"><button class="btn danger" data-act="reset">전체 초기화</button>'
-      + '<button class="btn danger" data-act="purge">출동 종료 · 개인정보 완전 삭제</button>'
+    + '<div class="row-tools"><button class="btn danger" data-act="reset">현재 상황 비우기</button>'
+      + '<button class="btn danger" data-act="purge">종료 후 개인정보 삭제</button>'
     + '</div>'
-    + '<div class="note" data-reset-help><b>전체 초기화</b>는 현재 상황을 비우고 복구본을 유지합니다. <b>개인정보 완전 삭제</b>는 사진·지도·복구본까지 삭제합니다.</div>'
+    + '<div class="note" data-reset-help><b>현재 상황 비우기</b>는 현재 상황을 비우고 복구본을 유지합니다. <b>개인정보 완전 삭제</b>는 사진·지도·복구본까지 삭제합니다.</div>'
     + '<input type="file" id="importFile" accept=".json,application/json" hidden>'
     + '<div class="note">저장 성공 여부를 상단에서 확인하세요. JSON에는 이름·좌표·지도 등 개인정보가 암호화되지 않은 평문으로 포함됩니다. 승인된 위치에 보관한 사실을 확인한 뒤 완전 삭제하세요.</div></section>'
-    + '<section class="data-task" aria-label="표출 화면 설정"><h3>표출 화면 설정</h3>'
-    + sel('표출 구성','ui.viewPreset',[['standard','기본 · 전체 정보'],['far','원거리 · 핵심 정보']])
-    + '<div class="note">원거리는 판정·위험 기체·수색구역·우선 지시를 크게 보여줍니다. 기체 제원과 인원 상세는 조작 패널에서 확인하세요.</div>'
+    + '<section class="data-task" aria-label="현황 화면 설정"><h3>현황 화면 설정</h3>'
+    + sel('현황 화면 구성','ui.viewPreset',[['standard','기본 · 전체 정보'],['far','큰 글씨 · 핵심 정보']])
+    + '<div class="note">큰 글씨 화면은 판정·위험 기체·수색구역·우선 지시를 크게 보여줍니다. 드론 상세와 인원 정보는 입력 화면에서 확인하세요.</div>'
     + '<div class="f2">'
-      + '<label class="f"><span>표출 화면 배율 ('+num(S.ui.scale,1).toFixed(2)+')</span>'
+      + '<label class="f"><span>현황 화면 배율 ('+num(S.ui.scale,1).toFixed(2)+')</span>'
         + '<input type="range" min="0.75" max="1.5" step="0.05" data-path="ui.scale" value="'+num(S.ui.scale,1)+'"></label>'
       + '<label class="f"><span>야간 밝기 저감 ('+Math.round(num(S.ui.dim,0)*100)+'%)</span>'
         + '<input type="range" min="0" max="1" step="0.05" data-path="ui.dim" value="'+num(S.ui.dim,0)+'"></label>'
-    + '</div><button class="btn" data-act="sample">샘플 상황 넣기</button></section>'
+    + '</div><button class="btn" data-act="sample">현재 상황을 예제로 바꾸기</button></section>'
     + '</div></div>';
   return h;
 }
 
 /* --------------------------------------------------------------------------
-   조작 패널 이벤트 결선
+   입력 화면 이벤트 결선
    -------------------------------------------------------------------------- */
 function renderDisplayOnly(){
   if($('board').hidden) return;
@@ -6005,12 +6030,12 @@ function renderDisplayOnly(){
   renderGridStats(); renderSafety(); renderDrones(); renderLog();
   renderTicker(); renderBanner();
 }
-/* 타이핑 중에는 조작 패널을 다시 그리지 않는다(포커스 유지) */
+/* 타이핑 중에는 입력 화면을 다시 그리지 않는다(포커스 유지) */
 function commitLight(){
   if(applying) return;
   var sweepBefore=lastSweep;
   touch(); var ok=persist();
-  if(ok){lastSeenUpdated=S.meta.updated;broadcast();applyUi();renderDisplayOnly();refreshPriorityInstructions();}
+  if(ok){lastSeenUpdated=S.meta.updated;broadcast();applyUi();renderDisplayOnly();refreshPriorityInstructions();refreshManualBackupNotice();}
   else {rollbackStoredState();if(sweepBefore&&epochCurrent()&&ownsEditorLock())lastSweep=sweepBefore;renderAll();}
   return ok;
 }
@@ -6129,7 +6154,7 @@ function bindConsole(root){
     scheduleConsoleRefresh(root);
   });
 
-  /* 표출 화면 열기 / 드로어 닫기 */
+  /* 현황 화면 열기 / 드로어 닫기 */
   var od = root.querySelector('#btnOpenDisplay');
   if(od) od.onclick = function(){
     var url = location.href.split('#')[0] + '#display';
@@ -6243,7 +6268,7 @@ function bindConsole(root){
       if(acquireEditorLock()){renderAll();}
       else alert(purgeBarrierActive()
         ? '이전 완전삭제가 끝나지 않았습니다. 브라우저 사이트 데이터에서 STAY UP 저장공간을 삭제한 뒤 다시 여세요.'
-        : '다른 조작 창의 편집권이 아직 유효합니다. 그 창을 닫고 최대 15초 후 다시 시도하세요.');
+        : '다른 입력 창의 편집권이 아직 유효합니다. 그 창을 닫고 최대 15초 후 다시 시도하세요.');
       return;
     }
     if(act==='eventpage'){eventHistory.page=intv(b.getAttribute('data-page'),0);renderEventHistory(root);focusEventHistoryResults(root);return;}
@@ -6430,10 +6455,10 @@ function bindConsole(root){
     }
     else if(act === 'reset'){
       if(confirm('현재 상황 입력을 빈 상태로 초기화할까요?\n초기화 전 상태를 복구본에 보관하며 기존 복구본도 유지합니다.')){
-        if(!saveRecoveryPoint('전체 초기화 전')){alert('복구본을 만들 수 없어 초기화를 중단했습니다.');return;}
+        if(!saveRecoveryPoint('현재 상황 비우기 전')){alert('복구본을 만들 수 없어 초기화를 중단했습니다.');return;}
         var resetSeq=++fileMutationSeq;
         applyStateWithMap(defaultState(),null,stateLifecycleSeq,SESSION_EPOCH,resetSeq).then(function(ok){
-          if(ok) alert('현재 상황을 초기화했습니다. 복구본을 고른 뒤 선택한 복구본 적용으로 되돌릴 수 있습니다.');
+          if(ok) alert('현재 상황을 초기화했습니다. 복구본을 고른 뒤 선택한 시점으로 되돌리기으로 되돌릴 수 있습니다.');
         });
       }
     }
@@ -6466,7 +6491,7 @@ function bindConsole(root){
     var f = imp.files && imp.files[0]; if(!f) return;
     imp.value='';
     if(!ensureEditor())return;
-    aiFolderStop('상황 JSON 불러오기를 시작해 폴더 연결을 해제했습니다.');
+    aiFolderStop('상황 백업 파일 열기를 시작해 폴더 연결을 해제했습니다.');
     var opSeq=stateLifecycleSeq,opEpoch=SESSION_EPOCH,fileSeq=++fileMutationSeq;
     if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))return;
     if(f.size>MAX_IMPORT_BYTES){alert('가져오기 파일이 '+Math.round(MAX_IMPORT_BYTES/1048576)+'MB 한도를 초과합니다. 원본을 별도 보관하고 지도를 축소하세요.');return;}
@@ -6482,9 +6507,9 @@ function bindConsole(root){
         applyStateWithMap(o,o.map||null,opSeq,opEpoch,fileSeq).then(function(ok){
           if(!lifecycleCurrent(opSeq,opEpoch)||!fileMutationCurrent(fileSeq))return;
           alert(ok ? '검증 후 안전하게 불러왔습니다.'
-            : '가져오기 실패: 저장공간 부족 또는 저장 충돌로 적용하지 못했습니다.\n기존 데이터는 유지됩니다.');
+            : '불러오기 실패: 저장공간 부족 또는 저장 충돌로 적용하지 못했습니다.\n기존 데이터는 유지됩니다.');
         });
-      }catch(e){ alert('가져오기 실패: '+(e&&e.message?e.message:'JSON 형식 또는 구조를 확인하세요.')+'\n기존 데이터는 유지됩니다.'); }
+      }catch(e){ alert('불러오기 실패: '+(e&&e.message?e.message:'JSON 형식 또는 구조를 확인하세요.')+'\n기존 데이터는 유지됩니다.'); }
     };
     fr.readAsText(f);
   };
@@ -6803,18 +6828,32 @@ function mapPayloadReadyBase(){
   return mapVerLoaded===S.grid.mapVer
     &&mapIdLoaded===(S.grid.mapId||'legacy')&&validMapData(MAPDATA);
 }
+var lastManualBackup=null;
+function manualBackupNotice(){
+  if(!lastManualBackup||!S||lastManualBackup.epoch!==S.meta.epoch)return '';
+  if(!lastManualBackup.ok)return '백업 저장 요청이 실패했습니다. 오류 안내와 다운로드 목록을 확인한 뒤 다시 저장하세요.';
+  if(lastManualBackup.revision!==S.meta.revision)return '백업 이후 입력이 바뀌었습니다. 최신 내용으로 다시 백업하세요.';
+  return '백업 파일 내려받기를 요청했습니다. 다운로드 목록에서 파일을 확인하세요.';
+}
+function refreshManualBackupNotice(){
+  var text=manualBackupNotice();
+  document.querySelectorAll('[data-manual-backup-status]').forEach(function(el){if(el.textContent!==text)el.textContent=text;el.hidden=el.getAttribute('role')==='status'?false:!text;});
+}
+function noteManualBackup(ok){
+  lastManualBackup={epoch:S.meta.epoch,revision:S.meta.revision,ok:!!ok};refreshManualBackupNotice();
+}
 function exportJson(){
   if(!mapPayloadReady()){
-    alert('지도 또는 후보 이미지를 아직 읽지 못해 완전한 JSON을 만들 수 없습니다. 잠시 후 다시 시도하세요.');
+    noteManualBackup(false);alert('지도 또는 탐지 사진을 아직 읽지 못해 백업 파일을 만들 수 없습니다. 잠시 후 다시 저장하세요.');
     return false;
   }
-  try{download('stayup-'+stampName()+'.json', exportPayload(true));return true;}
-  catch(error){alert(error.message);return false;}
+  try{download('stayup-'+stampName()+'.json',exportPayload(true));noteManualBackup(true);return true;}
+  catch(error){noteManualBackup(false);alert(error.message);return false;}
 }
 
 /* ==========================================================================
-   S11b. 자동 보관
-   활동 타임라인은 그대로 보고서가 되는데, 지금까지는 운영요원이 'JSON 내보내기'를
+   S11b. 자동 백업
+   활동 타임라인은 그대로 보고서가 되는데, 지금까지는 운영요원이 '상황 백업 저장'를
    누르기 전까지 브라우저 저장소에만 존재했다. 프로필 초기화·브라우저 변경·파일 경로
    이동 한 번이면 출동 기록이 통째로 사라지고, 자동 복구본도 같은 저장소라 함께 없어진다.
      1순위 - 파일 하나를 지정받아 조용히 덮어쓴다 (File System Access).
@@ -6840,24 +6879,25 @@ function autoSaveWorth(){
     || S.drones.length || S.crew.length || S.subject.name);
 }
 function autoSaveLabel(){
-  if(PRACTICE_MODE)return '연습 · 자동 보관 안 함';
-  if(!S.ui.autoSave) return '자동 보관 꺼짐';
-  if(autoSaveErr) return '자동 보관 실패 · '+autoSaveErr;
+  if(PRACTICE_MODE)return '연습 · 자동 백업 안 함';
+  if(!S.ui.autoSave) return '자동 백업 꺼짐';
+  if(autoSaveErr) return '자동 백업 실패 · '+autoSaveErr;
   var how = autoSaveHandle ? '파일' : '다운로드';
-  if(!autoSaveAt) return '자동 보관 대기 · '+how;
+  if(!autoSaveAt) return '자동 백업 대기 · '+how;
   var m = Math.floor((Date.now()-autoSaveAt)/60000);
   return (autoSaveHandle?'파일 저장 ':'다운로드 요청 ')+(m<1?'방금':m+'분 전')+(autoSaveHandle?'':' · 파일 확인');
 }
 function refreshAutoSavePill(){
+  refreshManualBackupNotice();
   document.querySelectorAll('#autoSavePill,[data-auto-save-status]').forEach(function(el){
     el.textContent=autoSaveLabel();
     if(el.id==='autoSavePill')el.className='save-pill'+(!PRACTICE_MODE&&(!S.ui.autoSave||autoSaveErr)?' bad':'');
   });
 }
 function pickAutoSaveFile(){
-  if(PRACTICE_MODE){alert('연습 공간에서는 실제 파일 자동 보관을 사용하지 않습니다. 연습 결과는 JSON 내보내기로 따로 보관하세요.');return;}
+  if(PRACTICE_MODE){alert('연습 공간에서는 실제 파일 자동 백업을 사용하지 않습니다. 연습 결과는 상황 백업 저장로 따로 보관하세요.');return;}
   if(typeof window.showSaveFilePicker !== 'function'){
-    alert('이 환경에서는 보관 파일을 지정할 수 없습니다. 자동 보관은 다운로드로 진행됩니다.');
+    alert('이 환경에서는 보관 파일을 지정할 수 없습니다. 자동 백업은 다운로드로 진행됩니다.');
     return;
   }
   var pickerGeneration=autoSaveGeneration;
@@ -6874,7 +6914,7 @@ function pickAutoSaveFile(){
     if(pickerGeneration!==autoSaveGeneration)return;
     if(e && e.name==='AbortError') return;   /* 사용자가 취소 */
     autoSaveErr=(e&&e.name)?e.name:String(e); refreshAutoSavePill();
-    alert('보관 파일을 지정하지 못했습니다. 자동 보관은 다운로드로 진행됩니다.');
+    alert('보관 파일을 지정하지 못했습니다. 자동 백업은 다운로드로 진행됩니다.');
   });
 }
 function autoSaveTick(){
@@ -6953,11 +6993,11 @@ function buildReport(){
   if(!S.drones.length) lines.push('  · 없음');
   S.drones.forEach(function(d){
     lines.push('  · '+(d.name||'기체')+' ('+(d.model||'-')+') 상태 '+(DRONE_ST[d.status]||'-')
-      +' / 배터리 '+num(d.battery,0)+'% ('+batteryStamp(d,now.getTime())+') / 소티 '+intv(d.sorties,0)
+      +' / 배터리 '+num(d.battery,0)+'% ('+batteryStamp(d,now.getTime())+') / 비행 횟수 '+intv(d.sorties,0)
       +' / 센서 '+((d.sensors||[]).join(',')||'-')
       +' / 조종 '+(d.pilot||'-')+(d.observer?' · 관측 '+d.observer:''));
   });
-  lines.push('  · 총 소티 : '+totalSorties+'회');
+  lines.push('  · 총 비행 횟수 : '+totalSorties+'회');
   lines.push('');
   lines.push('4. 수색 결과');
   lines.push('  · 구역 구성 : '+gridRows()+'×'+gridCols()+' = '+st.total+'구역 (지도 가로 '
@@ -7141,8 +7181,8 @@ function aiCandidate(raw){
 function aiPackage(raw){
   if(!isPlainObject(raw)||raw.format!=='stayup-ai-candidates'||raw.version!==1||!aiDate(raw.generatedAt,true)
      ||!isPlainObject(raw.app)||!aiText(raw.app.version,40)){
-    if(isPlainObject(raw)&&raw.format==='stayup-offline-region')aiFail('지역 지도 파일은 수색구역 → 지도·격자 설정의 지도 파일 가져오기로 여세요.');
-    if(isPlainObject(raw)&&isPlainObject(raw.meta)&&isPlainObject(raw.mission)&&isPlainObject(raw.grid))aiFail('상황 백업 파일은 데이터 메뉴의 JSON 불러오기로 여세요.');
+    if(isPlainObject(raw)&&raw.format==='stayup-offline-region')aiFail('지역 지도 파일은 수색 지도 → 지도·격자 설정의 지도 백업 열기로 여세요.');
+    if(isPlainObject(raw)&&isPlainObject(raw.meta)&&isPlainObject(raw.mission)&&isPlainObject(raw.grid))aiFail('상황 백업 파일은 백업·설정 메뉴의 백업 파일 열기로 여세요.');
     aiFail('지원하지 않는 AI 후보 파일입니다.');
   }
   var r=raw.run;
@@ -7421,7 +7461,7 @@ function aiRefreshImages(){
 }
 function aiResponseState(c){
   var draft=aiResponseDrafts[aiKey(c)],dirty=!!draft&&(draft.note!==c.responseNote||draft.status!==c.responseStatus);
-  return {dirty:dirty,text:dirty?'대응 미저장 · 대응 저장을 눌러 기록하세요.':c.responseAt?'저장된 대응 기록 · '+shortDateTime(c.responseAt):'대응 상태·메모를 입력한 뒤 대응 저장을 누르세요.'};
+  return {dirty:dirty,text:dirty?'대응 미저장 · 메모·대응 저장을 눌러 기록하세요.':c.responseAt?'저장된 대응 기록 · '+shortDateTime(c.responseAt):'대응 상태·메모를 입력한 뒤 메모·대응 저장을 누르세요.'};
 }
 function aiRefreshResponseState(key){
   var item=S.ai.candidates.filter(function(c){return aiKey(c)===key;})[0];if(!item)return;
@@ -7438,14 +7478,14 @@ function aiSectionHtml(){
   });
   var pages=Math.max(1,Math.ceil(filtered.length/20));aiPage=Math.max(0,Math.min(aiPage,pages-1));
   var html='<h2>AI 사진 후보 <span class="hint">고유 인원 아님 · 사진 GPS는 촬영 위치</span></h2>'
-    +'<div class="sec-b"><div class="row-tools"><button type="button" class="btn primary" data-ai-action="import"'+(!ownsEditorLock()?' disabled':'')+'>AI 후보 불러오기</button>'
+    +'<div class="sec-b"><div class="row-tools"><button type="button" class="btn primary" data-ai-action="import"'+(!ownsEditorLock()?' disabled':'')+'>탐지 사진 불러오기</button>'
     +'<input type="file" data-ai-file accept=".json,application/json" hidden>'
     +'<button type="button" class="btn" data-ai-action="folder"'+(!ownsEditorLock()||PRACTICE_MODE?' disabled':'')+'>자동 읽기 폴더 연결</button>'
     +'<button type="button" class="btn" data-ai-action="folder-stop"'+(!aiFolder.session?' disabled':'')+'>연결 해제</button>'
     +'<label>표시 <select data-ai-filter aria-label="AI 후보 표시 필터">'
     +[['active','확인할 후보'],['all','전체'],['unreviewed','미확인'],['person','사람 맞음'],['hold','보류'],['false_positive','오탐'],['withdrawn','원본에서 빠진 후보']].map(function(p){return '<option value="'+p[0]+'"'+(aiFilter===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+'</select></label></div>'
     +'<p class="note">상황 전체 복원과 별개로 후보만 추가·갱신합니다. 기존 지도·기체·수색 상태·대응 기록은 유지합니다. 발견 경보와 수색 완료는 자동 변경하지 않습니다.</p>'
-    +'<p class="note">대응 상태·메모는 <b>대응 저장</b>을 눌러야 기록됩니다. 저장 전 입력은 메뉴를 옮겨도 남지만, 새로고침하거나 창을 닫으면 사라집니다.</p>'
+    +'<p class="note">대응 상태·메모는 <b>메모·대응 저장</b>을 눌러야 기록됩니다. 저장 전 입력은 메뉴를 옮겨도 남지만, 새로고침하거나 창을 닫으면 사라집니다.</p>'
     +'<p data-ai-status role="status" aria-live="polite">'+esc(aiMessage||('분석 작업 '+S.ai.runs.length+'개 · 보관 후보 '+items.length+'건 · 표시 '+filtered.length+'건'))+'</p>';
   html+='<p data-ai-folder-status class="note" role="status" aria-live="polite">'+esc(aiFolder.message)+'</p>';
   var incomplete=S.ai.runs.filter(function(r){return r.status!=='completed'||r.failedCount>0;}).length;
@@ -7455,14 +7495,14 @@ function aiSectionHtml(){
     var key=aiKey(c),draft=aiResponseDrafts[key]||{note:c.responseNote,status:c.responseStatus},responseState=aiResponseState(c);
     var time=c.capturedAt?(c.capturedAt.replace('T',' ')+(/[Z+-]\d\d:?\d\d$|Z$/.test(c.capturedAt)?'':' (시간대 미상)')):'촬영 시각 없음';
     html+='<article class="ai-candidate" data-ai-key="'+esc(key)+'"><div class="ai-candidate-head">'
-      +'<button type="button" class="btn sm" data-ai-action="detail" data-ai-key="'+esc(key)+'">사진 확인</button> <b>'+esc(c.file||c.photoId)+'</b> · '+esc(AI_REVIEWS[c.review])+' · 신뢰도 '+Math.round(c.confidence*100)+'%'
+      +'<button type="button" class="btn sm" data-ai-action="detail" data-ai-key="'+esc(key)+'">탐지 사진 보기</button> <b>'+esc(c.file||c.photoId)+'</b> · '+esc(AI_REVIEWS[c.review])+' · 신뢰도 '+Math.round(c.confidence*100)+'%'
       +(c.sourceMissing?' · 원본에서 빠짐(대응 기록 유지)':'')+'</div>'
       +'<p class="note">'+esc(c.id)+' · '+esc(time)+'<br>'+esc(aiLocation(c).text)
       +(c.gps?' · '+c.gps.lat.toFixed(6)+', '+c.gps.lon.toFixed(6):'')+'</p>'
       +'<div class="row-tools"><label>대응 상태 <select data-ai-response="status" aria-label="'+esc(c.id)+' 대응 상태"'+(!ownsEditorLock()?' disabled':'')+'>'
       +Object.keys(AI_RESPONSES).map(function(k){return '<option value="'+k+'"'+(draft.status===k?' selected':'')+'>'+AI_RESPONSES[k]+'</option>';}).join('')+'</select></label>'
       +'<label class="ai-response-note">대응 메모 <input data-ai-response="note" aria-label="'+esc(c.id)+' 대응 메모" maxlength="500" value="'+esc(draft.note)+'"'+(!ownsEditorLock()?' disabled':'')+'></label>'
-      +'<button type="button" class="btn sm" data-ai-action="response" data-ai-key="'+esc(key)+'"'+(!ownsEditorLock()?' disabled':'')+'>대응 저장</button></div>'
+      +'<button type="button" class="btn sm" data-ai-action="response" data-ai-key="'+esc(key)+'"'+(!ownsEditorLock()?' disabled':'')+'>메모·대응 저장</button></div>'
       +'<p class="ai-response-state'+(responseState.dirty?' is-dirty':'')+'" data-ai-response-state role="status" aria-live="polite">'+esc(responseState.text)+'</p></article>';
   });
   if(!filtered.length)html+='<p class="note">표시할 사진 후보가 없습니다. 탐지 프로그램에서 내보낸 파일을 불러오세요.</p>';
@@ -7538,7 +7578,7 @@ function aiSaveResponse(key){
   if(!requireEventSlots(1,'AI 후보 대응 기록'))return false;
   item.responseNote=draft.note;item.responseStatus=draft.status;item.responseAt=Date.now();
   addEvent('ai','후보 '+item.id+' ('+item.runId.slice(0,8)+') · '+AI_RESPONSES[draft.status]+(draft.note?' · '+draft.note:''),'',true);
-  if(!commit()){aiMessage='대응 저장 실패 · 입력을 유지했습니다. 다시 저장하세요.';aiRenderAll();return false;}
+  if(!commit()){aiMessage='메모·대응 저장 실패 · 입력을 유지했습니다. 다시 저장하세요.';aiRenderAll();return false;}
   delete aiResponseDrafts[key];aiMessage='AI 후보 대응 기록을 저장했습니다.';aiRenderAll();return true;
 }
 document.addEventListener('input',function(e){
@@ -7645,7 +7685,7 @@ drawOnlineMap=function(rec){aiDrawOnlineMapBase(rec);aiRenderPins(rec.host);};
 
 
 /* ==========================================================================
-   S12. 드로어 (표출 화면 위에 조작 패널 겹쳐 열기 · 화면이 하나뿐일 때)
+   S12. 드로어 (현황 화면 위에 입력 화면 겹쳐 열기 · 화면이 하나뿐일 때)
    ========================================================================== */
 var drawerLastFocus=null;
 function drawerFocusable(){
@@ -7724,7 +7764,7 @@ function hasIncidentContent(){
   return !!(S.mission.title||S.mission.location||S.subject.name||S.drones.length||S.crew.length||S.events.length||S.grid.hasMap||Object.keys(S.grid.cells).length||S.ai.runs.length);
 }
 function themeControls(target){
-  return '<div class="view-theme" role="group" aria-label="'+(target==='console'?'조작':'표출')+' 화면 테마"><span>'+(target==='console'?'조작':'표출')+'</span>'
+  return '<div class="view-theme" role="group" aria-label="'+(target==='console'?'입력':'현황')+' 화면 테마"><span>'+(target==='console'?'입력':'현황')+'</span>'
     +[['light','주간'],['dark','야간']].map(function(p){return '<button type="button" data-theme-target="'+target+'" data-theme-value="'+p[0]+'" aria-pressed="'+(viewPreferences[target+'Theme']===p[0])+'">'+p[1]+'</button>';}).join('')+'</div>';
 }
 function applyViewPreferences(){
@@ -7732,7 +7772,7 @@ function applyViewPreferences(){
   document.querySelectorAll('.cons').forEach(function(el){el.dataset.theme=viewPreferences.consoleTheme;});
   $('board').dataset.theme=viewPreferences.displayTheme;
   document.querySelectorAll('[data-theme-target]').forEach(function(button){button.setAttribute('aria-pressed',String(viewPreferences[button.dataset.themeTarget+'Theme']===button.dataset.themeValue));});
-  var toggle=$('displayThemeToggle');if(toggle){toggle.textContent=viewPreferences.displayTheme==='light'?'야간':'주간';toggle.setAttribute('aria-label','표출 화면 '+(viewPreferences.displayTheme==='light'?'야간':'주간')+' 테마로 전환');}
+  var toggle=$('displayThemeToggle');if(toggle){toggle.textContent=viewPreferences.displayTheme==='light'?'야간':'주간';toggle.setAttribute('aria-label','현황 화면 '+(viewPreferences.displayTheme==='light'?'야간':'주간')+' 테마로 전환');}
   document.body.classList.toggle('light-console-open',!$('drawer').hidden&&viewPreferences.consoleTheme==='light');
 }
 function setViewTheme(target,value){
@@ -7757,10 +7797,10 @@ function preparationSteps(){
   var mapReady=!!S.grid.hasMap||S.grid.source==='offline'&&!!selectedOfflinePack()
     ||isOnlineMap()&&onlineMapReady($('consMap'));
   return [
-    {sec:'mission',title:'1. 상황 입력',hint:'상황명과 현장 좌표를 입력하고 확인하세요.',done:!!S.mission.title.trim()&&coordinates.confirmed,label:'상황 입력'},
-    {sec:crewReady?'drone':'crew',title:'2. 인원·기체 등록',hint:'인원을 먼저 등록한 뒤 기체의 조종자를 연결하세요.',done:registrationReady,label:crewReady?'기체 등록':'인원 등록'},
-    {sec:'grid',title:'3. 지도 준비',hint:'지도·현장 사진을 넣거나 저장한 지역 지도를 선택하세요.',done:!!mapReady,label:'지도 준비'},
-    {sec:'safety',title:'4. 안전정보 확인',hint:v.lv==='ok'?'입력된 제한사항이 없습니다. 실제 승인과 현장 조건을 확인하세요.':v.why[0],done:v.lv==='ok',label:'확인할 항목 보기'}
+    {sec:'mission',title:'상황·현장 위치',hint:'상황명과 현장 좌표를 입력하고 확인하세요.',done:!!S.mission.title.trim()&&coordinates.confirmed,label:'상황 입력'},
+    {sec:crewReady?'drone':'crew',title:'인원·드론 연결',hint:'인원을 먼저 등록한 뒤 기체의 조종자를 연결하세요.',done:registrationReady,label:crewReady?'드론 등록':'인원 등록'},
+    {sec:'grid',title:'수색 지도',hint:'지도·현장 사진을 넣거나 저장한 지역 지도를 선택하세요.',done:!!mapReady,label:'지도 준비'},
+    {sec:'safety',title:'안전 정보',hint:v.lv==='ok'?'입력된 제한사항이 없습니다. 실제 승인과 현장 조건을 확인하세요.':v.why[0],done:v.lv==='ok',label:'확인할 항목 보기'}
   ];
 }
 function renderOnboarding(root){
@@ -7771,38 +7811,56 @@ function renderOnboarding(root){
   root.querySelectorAll('[data-onboard-action="toggle"]').forEach(function(b){b.setAttribute('aria-expanded',String(onboardingOpen));});
   var steps=preparationSteps(),done=steps.filter(function(s){return s.done;}).length;
   var editor=ownsEditorLock(),editDisabled=editor?'':' disabled';
-  var startNote=!editor?'이 창은 읽기 전용입니다. 안내와 테마는 사용할 수 있으며, 새 상황 시작과 파일 불러오기는 편집권을 가진 창에서 진행하세요.':hasIncidentContent()?'저장된 내용이 있습니다. 이어서 사용하려면 아래 항목이나 원하는 메뉴를 누르세요.':'입력은 자동으로 이 브라우저에 저장됩니다. 상황을 옮기거나 종료할 때는 파일로 백업하세요.';
-  var key=JSON.stringify([steps,PRACTICE_MODE,hasIncidentContent(),editor]);
+  var at=CONSOLE_FLOW.findIndex(function(step){return 'sec-'+step.id===consoleActiveSection;});
+  var welcome=!guidedStarted&&!hasIncidentContent(),step=CONSOLE_FLOW[at];
+  var startNote='입력은 이 브라우저에 자동 저장됩니다. '+(S.ui.autoSave?'자동 백업 파일이 내려받아질 수 있습니다. ':'')+'마지막에는 백업 파일을 직접 확인하세요.';
+  if(!editor)startNote='이 창은 보기 전용입니다. 다른 입력 창을 닫은 뒤 이 창에서 입력하기를 누르면 이어서 입력할 수 있습니다.';
+  var key=JSON.stringify([steps,PRACTICE_MODE,hasIncidentContent(),editor,consoleActiveSection,welcome,startNote]);
+  function fold(name,label,body){return '<details class="guide-detail" data-onboard-fold="'+name+'"'+(consoleFolds[name]?' open':'')+'><summary id="'+name+'-summary">'+label+'</summary><div>'+body+'</div></details>';}
   if(guide.dataset.content!==key){
     guide.dataset.content=key;
-    guide.innerHTML='<div class="onboarding-heading"><div><span class="guide-eyebrow">'+(PRACTICE_MODE?'실제 기록과 분리된 연습':'처음 사용 안내')+'</span><h2 id="onboardingTitle">'+(hasIncidentContent()?'지금 할 일을 순서대로 확인하세요':'처음이라면 여기서 시작하세요')+'</h2></div><button class="btn" type="button" data-onboard-action="close">안내 접기</button></div>'
-      +(PRACTICE_MODE?'<p class="practice-notice">연습 데이터만 사용합니다. 실제 상황·지도·복구본과 표출 연결은 분리되어 있으며 자동 보관·자동 폴더 읽기는 사용하지 않습니다. <a href="'+esc(workspaceURL(false))+'" target="_blank" rel="noopener">실제 상황 화면 열기</a></p>':'<div class="start-actions"><button class="btn primary" type="button" data-onboard-action="new"'+editDisabled+'>새 상황 시작</button><button class="btn" type="button" data-onboard-action="import"'+editDisabled+'>저장한 상황 불러오기</button><a class="btn" href="'+esc(workspaceURL(true))+'" target="_blank" rel="noopener">가상 데이터로 연습하기 ↗</a></div><p class="note">'+esc(startNote)+'</p>')
-      +(PRACTICE_MODE?'':'<p class="note">자동 보관은 약 30초마다 변경을 확인합니다. 켜두면 첫 변경 확인 때, 이후 변경 시 최소 '+AUTOSAVE_MIN+'분 간격으로 JSON 다운로드를 요청합니다. 보관 파일을 지정하면 해당 파일에 저장합니다. 내려받은 파일은 다운로드 목록에서 확인하세요.</p><div class="row-tools"><button class="btn" type="button" data-act="nav" data-sec="sec-data">보관 설정·백업</button></div>')
-      +'<div class="guide-progress">기본 입력 현황 <strong>'+done+' / 4</strong><span>입력 현황과 실제 비행 승인은 별개입니다.</span></div>'
-      +'<ol class="preparation-list">'+steps.map(function(s){return '<li class="'+(s.done?'is-done':'')+'"><div><h3>'+s.title+'</h3><p>'+esc(s.hint)+'</p></div><span class="step-status">'+(s.done?'✓ 입력 확인':s.sec==='safety'?'사유 확인':'미완료')+'</span><button class="btn" type="button" data-act="nav" data-sec="sec-'+s.sec+'">'+s.label+'</button></li>';}).join('')+'</ol><p class="note">실종자 정보는 <b>실종자</b> 메뉴에서 입력합니다. 확인하지 못한 정보는 빈칸으로 두고, 입력된 값만으로 수색 종료나 비행 가능 여부를 확정하지 마세요.</p>';
+    var actions='<div class="start-actions"><button class="btn'+(welcome?' primary':'')+'" type="button" data-onboard-action="new"'+editDisabled+'>새 수색 준비</button><button class="btn" type="button" data-onboard-action="import"'+editDisabled+'>백업 파일 열기</button><a class="btn" href="'+esc(workspaceURL(true))+'" target="_blank" rel="noopener">예제로 연습하기 ↗</a></div>';
+    var practice='<p class="practice-notice">연습 자료입니다. 실제 작업의 기록·사진·지도와 분리됩니다. 자동 백업·자동 폴더 읽기는 사용하지 않습니다. <a href="'+esc(workspaceURL(false))+'" target="_blank" rel="noopener">실제 작업 화면 열기</a></p>';
+    var title=welcome?'처음이라면 새 수색을 준비하세요':step?step.title:'추가 기능 · '+(CONSOLE_SECTIONS.find(function(p){return 'sec-'+p[0]===consoleActiveSection;})||['','준비'])[1];
+    var eyebrow=PRACTICE_MODE?'실제 기록과 분리된 연습':welcome?'준비부터 백업까지':step?'준비 순서 '+(at+1)+' / '+CONSOLE_FLOW.length:'필요할 때 사용하는 기능';
+    var body='<div class="onboarding-heading"><div><span class="guide-eyebrow">'+esc(eyebrow)+'</span><h2 id="onboardingTitle">'+esc(title)+'</h2></div><button class="btn" type="button" data-onboard-action="close">순서 안내 닫기</button></div>';
+    if(welcome){body+=actions+'<p class="note">상황 → 대상자 → 인원 → 드론 → 지도 → 안전 → 기록 → 백업 순서로 따라가세요.</p>';}
+    else body+='<p class="guide-current-hint">'+esc(step?step.hint:'현재 내용을 유지하며 필요한 기능을 사용할 수 있습니다. 준비를 이어가려면 첫 단계로 이동하세요.')+'</p><button class="btn sm" type="button" data-act="nav" data-sec="sec-mission">첫 단계로</button>';
+    body+=PRACTICE_MODE?practice:'<p class="note">'+esc(startNote)+'</p>';
+    if(!welcome&&!PRACTICE_MODE)body+=fold('guide-start-options','다른 상황 열기·연습하기',actions);
+    var readiness='<ol class="preparation-list">'+steps.map(function(s){return '<li class="'+(s.done?'is-done':'')+'"><div><h3>'+s.title+'</h3><p>'+esc(s.hint)+'</p></div><span class="step-status">'+(s.done?'입력 확인':s.sec==='safety'?'확인 필요':'아직 입력 전')+'</span><button class="btn" type="button" data-act="nav" data-sec="sec-'+s.sec+'">'+s.label+'</button></li>';}).join('')+'</ol>';
+    body+=fold('guide-readiness','입력한 내용 다시 확인하기','<div class="guide-progress">기본 항목 <strong>'+done+' / 4</strong><span>실제 비행 승인과는 별개입니다.</span></div>'+readiness);
+    if(!PRACTICE_MODE)body+=fold('guide-storage','자동 백업과 파일 확인 방법','<p class="note">자동 백업은 약 30초마다 변경을 확인합니다. 켜두면 첫 변경 확인 때, 이후 변경 시 최소 '+AUTOSAVE_MIN+'분 간격으로 백업 파일 내려받기를 요청합니다. 파일을 선택하면 그 파일에 저장합니다. 다운로드 목록에서 실제 파일을 확인하세요.</p><button class="btn" type="button" data-act="nav" data-sec="sec-data">백업·자동 저장 설정</button>');
+    guide.innerHTML=body;
+    guide.querySelectorAll('[data-onboard-fold]').forEach(function(el){el.ontoggle=function(){consoleFolds[el.dataset.onboardFold]=el.open;};});
   }
   updateNextStep(root);
 }
 function updateNextStep(root){
   var cons=root.querySelector('.cons');if(!cons)return;
   var next=root.querySelector('.onboarding-next');if(!next){next=document.createElement('div');next.className='onboarding-next';cons.appendChild(next);}
-  next.hidden=!onboardingOpen;
-  var order=['mission','subject','crew','drone','grid','safety','quick'],at=order.indexOf(consoleActiveSection.slice(4));
-  var id=at<0||at===order.length-1?'mission':order[at+1],item=CONSOLE_SECTIONS.filter(function(p){return p[0]===id;})[0];
-  var text='다음: '+item[1];
-  if(next.dataset.target!==id){next.dataset.target=id;next.innerHTML='<span>안내에 따라 준비하거나 메뉴를 직접 선택할 수 있습니다.</span><button class="btn primary" type="button" data-act="nav" data-sec="sec-'+id+'">'+text+'</button>';}
+  var welcome=!guidedStarted&&!hasIncidentContent();next.hidden=!onboardingOpen||welcome;
+  var at=CONSOLE_FLOW.findIndex(function(step){return 'sec-'+step.id===consoleActiveSection;});
+  var prev=at>0?CONSOLE_FLOW[at-1]:null,after=at>=0&&at<CONSOLE_FLOW.length-1?CONSOLE_FLOW[at+1]:null;
+  var key=String(at);if(next.dataset.target!==key){
+    next.dataset.target=key;
+    var back=prev?'<button class="btn" type="button" data-act="nav" data-sec="sec-'+prev.id+'">이전: '+prev.title+'</button>':'';
+    var primary=after?'<button class="btn primary" type="button" data-act="nav" data-sec="sec-'+after.id+'">다음: '+after.title+'</button>':at===CONSOLE_FLOW.length-1?'<button class="btn primary" type="button" data-act="export">상황 백업 저장</button>':'<button class="btn primary" type="button" data-act="nav" data-sec="sec-mission">준비 순서로 돌아가기</button>';
+    next.innerHTML='<div><strong>'+(at<0?'추가 기능':(at+1)+' / '+CONSOLE_FLOW.length+' · '+CONSOLE_FLOW[at].title)+'</strong><span>'+(at===CONSOLE_FLOW.length-1?'내려받은 파일은 다운로드 목록에서 직접 확인하세요.':'아는 내용을 입력한 뒤 다음으로 이동하세요. 모르는 정보는 확인되지 않은 상태로 둘 수 있습니다.')+'</span><p class="note" data-manual-backup-status hidden></p></div><div class="row-tools">'+back+primary+'</div>';
+  }
+  refreshManualBackupNotice();
 }
 async function startNewIncident(root){
   if(!ensureEditor())return false;
   if(hasIncidentContent()){
-    if(!confirm('현재 상황이 있습니다. 먼저 현재 상황 JSON을 다운로드한 뒤 새 상황을 시작할까요?'))return false;
+    if(!confirm('현재 상황이 있습니다. 먼저 현재 상황 백업 파일을 내려받은 뒤 새 상황을 시작할까요?'))return false;
     if(!exportJson())return false;
     if(!confirm('다운로드 목록에서 백업 파일이 생성되고 보관됐는지 확인했나요? 확인한 경우에만 새 상황을 만듭니다.'))return false;
     if(!saveRecoveryPoint('새 상황 시작 전')){alert('복구본을 만들지 못해 새 상황 시작을 중단했습니다.');return false;}
     var seq=++fileMutationSeq;
     if(!await applyStateWithMap(defaultState(),null,stateLifecycleSeq,SESSION_EPOCH,seq))return false;
   }
-  onboardingOpen=true;consoleActiveSection='sec-mission';renderConsole(root);
+  guidedStarted=true;consoleFolds['guide-start-options']=false;onboardingOpen=true;consoleActiveSection='sec-mission';renderConsole(root);
   scrollToSection(root,root.querySelector('#sec-mission'));
   var title=root.querySelector('[data-path="mission.title"]');if(title)title.focus({preventScroll:true});
   return true;
@@ -7825,17 +7883,18 @@ function boot(){
   /* 지도 축소 상한이 저장소에 따라 달라진다. 첫 지도를 넣기 전에 알아 둔다. */
   idbOpen().then(function(){}, function(){});
   loadLocal();
-  onboardingOpen=!hasIncidentContent();
+  onboardingOpen=!hasIncidentContent();guidedStarted=hasIncidentContent();
+  if(!guidedStarted)consoleActiveSection='sec-mission';
   document.documentElement.setAttribute('data-app-version', APP_VERSION);
   var versionEl = $('appVersion');
   if(versionEl) versionEl.textContent = 'v'+APP_VERSION;
 
   if(MODE === 'display'){
     document.body.className = 'mode-display';
-    document.title = 'STAY UP v'+APP_VERSION+' — 표출';
+    document.title = 'STAY UP v'+APP_VERSION+' — 현황 화면';
     $('board').hidden = false;
     $('consoleRoot').hidden = true;
-    /* 조작 패널(부모 창)에 존재를 알리고 최신 상태를 요청 */
+    /* 입력 화면(부모 창)에 존재를 알리고 최신 상태를 요청 */
     try{
       if(window.opener && !window.opener.closed){
         peer = window.opener;
@@ -7844,7 +7903,7 @@ function boot(){
     }catch(e){}
   } else {
     document.body.className = 'mode-console';
-    document.title = 'STAY UP v'+APP_VERSION+' — 조작 패널';
+    document.title = 'STAY UP v'+APP_VERSION+' — 입력 화면';
     $('board').hidden = true;
     acquireEditorLock();
     renderConsole($('consoleRoot'));
@@ -7887,7 +7946,7 @@ function boot(){
   setInterval(function(){
     /* 절전·모달로 5초 갱신이 멈춰 임대가 만료되면, 다른 창이 가져가지 않은 한
        같은 창이 스스로 편집권을 회수한다. 그러지 않으면 노트북을 덮었다 열 때마다
-       조작 패널이 읽기 전용으로 잠겨 버튼을 한 번 더 눌러야 한다. */
+       입력 화면이 보기 전용으로 잠겨 버튼을 한 번 더 눌러야 한다. */
     if(ownsEditorLock()){ refreshEditorLock(); heldEditorLock=true; return; }
     if(heldEditorLock){
       if(acquireEditorLock()) renderAll();      /* 만료된 자기 임대 회수 */
@@ -7900,13 +7959,13 @@ function boot(){
     if(!pill) return;
     var on = peerConnected();
     pill.className = 'sync-pill' + (on ? '' : ' off');
-    pill.textContent = on ? '표출 화면 연결됨' : '표출 화면 미연결';
+    pill.textContent = on ? '현황 화면 연결됨' : '현황 화면 미연결';
     var save=document.getElementById('savePill');if(save){save.className='save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad');
       save.textContent=SAVE_STATUS.ok?(SAVE_STATUS.backupOk?'저장·복구 정상':'저장 정상 · 복구본 실패'):'저장 실패';}
     refreshAutoSavePill();
   }, 2000);
 
-  /* 표출 화면을 닫을 때 마지막 상태를 확실히 남긴다 */
+  /* 현황 화면을 닫을 때 마지막 상태를 확실히 남긴다 */
   window.addEventListener('beforeunload',function(){if(ownsEditorLock())persist();releaseEditorLock();});
 }
 boot();
