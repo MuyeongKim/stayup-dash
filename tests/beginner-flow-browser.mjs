@@ -40,11 +40,33 @@ try{
   await page.locator('[data-pilot-target]').first().selectOption('조종 A');await page.waitForFunction(()=>!consoleIdleTimer);
   check('작성한 인원과 드론 조종자를 연결하고 원래 이름 보존',await page.evaluate(()=>S.crew[0].name==='조종 A'&&S.drones[0].pilot==='조종 A'&&S.mission.title==='가상 직원의 첫 수색'));
   await next('grid');
+  const beforeMapChoice=await state();
+  for(const [width,height] of [[1366,768],[390,844],[320,800]]){
+    await page.setViewportSize({width,height});await page.locator('#tab-grid').click();
+    check(width+'px에서 빈 지도보다 사진 넣기·지역 지도 준비 버튼이 먼저 보임',await page.locator('.map-empty-actions').evaluate(el=>{
+      const r=el.getBoundingClientRect(),map=document.querySelector('#consMap').getBoundingClientRect();
+      const top=document.querySelector('.console-workspace-bar').getBoundingClientRect().bottom;
+      const bottom=document.querySelector('.mobile-nav');const limit=bottom&&getComputedStyle(bottom).display!=='none'?bottom.getBoundingClientRect().top:innerHeight;
+      return r.top>=top-1&&r.bottom<=limit+1&&r.bottom<=map.top&&[...el.querySelectorAll('button')].every(b=>b.getBoundingClientRect().height>=44)&&document.documentElement.scrollWidth<=innerWidth+1;
+    }));
+    await page.screenshot({path:path.join(out,'empty-map-'+width+'.png'),scale:'css'});
+  }
+  await page.setViewportSize({width:1366,height:900});
+  await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
+  check('지역 지도 바로가기는 준비 안내를 펼치고 업무 자료를 유지',await page.locator('#offlinePreparation').isVisible()&&await page.locator('#sec-grid .setup-section').evaluate(e=>e.open)&&isDeepStrictEqual(await state(),beforeMapChoice));
+  check('사진 파일과 저장 지역 지도 이름은 구분하고 저장 값은 유지',await page.locator('#mapSourceSelect option[value="image"]').innerText()==='지도·현장 사진'&&await page.locator('#mapSourceSelect option[value="offline"]').innerText()==='저장한 지역 지도'&&await page.locator('#consMap .mapnote').count()===0);
+  await page.locator('#tab-grid').click();
+  await page.getByRole('button',{name:'지도 크게 보기',exact:true}).click();await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
+  check('큰 지도에서도 준비 바로가기는 지도를 닫고 안내에 초점을 연결',await page.locator('dialog.map-dialog').count()===0&&await page.locator('#offlinePreparation h3').evaluate(e=>e===document.activeElement)&&isDeepStrictEqual(await state(),beforeMapChoice));
   const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=1200;c.height=750;const g=c.getContext('2d');g.fillStyle='#dce9df';g.fillRect(0,0,c.width,c.height);g.fillStyle='#234a38';g.font='40px sans-serif';g.fillText('가상 지도 · 실제 지형 아님',60,100);return c.toDataURL('image/png').split(',')[1];});
   const fixture=path.join(out,'synthetic-map.png');await writeFile(fixture,Buffer.from(png,'base64'));
   const chooser=page.waitForEvent('filechooser');chooser.catch(()=>{});await page.locator('[data-act="mapfile"]').first().click();await(await chooser).setFiles(fixture);await page.waitForFunction(()=>S.grid.hasMap&&mapPayloadReady());
   await next('safety');check('순서 이동과 입력 현황을 실제 비행승인으로 처리하지 않음',await page.evaluate(()=>S.safety.approval==='unknown'&&flightVerdict(new Date()).lv!=='ok'));
-  await next('quick');await page.locator('#evType').selectOption('note');await page.locator('#evText').fill('가상 구역을 다시 확인함');await page.locator('#btnAddEv').click();
+  await next('quick');check('첫 수색 기록은 일반 메모인 특이사항으로 시작',await page.locator('#evType').inputValue()==='note');
+  await page.locator('#evType').selectOption('heat');await page.locator('#evText').fill('가상 열원 확인 메모 작성 중');
+  await page.locator('#tab-drone').click();await page.locator('#tab-quick').click();
+  check('사용자가 고른 유형과 작성 중 내용은 메뉴 왕복 후 유지',await page.locator('#evType').inputValue()==='heat'&&await page.locator('#evText').inputValue()==='가상 열원 확인 메모 작성 중');
+  await page.locator('#evType').selectOption('note');await page.locator('#evText').fill('가상 구역을 다시 확인함');await page.locator('#btnAddEv').click();
   check('쉬운 기록 버튼은 이력만 남기고 기체 상태를 바꾸지 않음',await page.evaluate(()=>S.events.at(-1).text==='가상 구역을 다시 확인함'&&S.drones[0].status==='ready'));
   await next('data');
   check('마지막 단계는 처음으로 돌지 않고 백업 저장으로 끝남',await page.locator('.onboarding-next .btn.primary').innerText()==='상황 백업 저장'&&await page.locator('.onboarding-next').innerText().then(t=>t.includes('8 / 8')));

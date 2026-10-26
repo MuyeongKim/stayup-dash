@@ -65,7 +65,7 @@ try{
   const manualDownload=live.waitForEvent('download');await live.locator('#sec-data [data-act="export"]').click();
   const manualFile=await manualDownload;await manualFile.saveAs(path.join(out,'manual-backup.json'));
   check('첫 백업 버튼의 실제 파일이 현재 전체 상황과 일치',await readFile(path.join(out,'manual-backup.json'),'utf8')===beforeBackupNav&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
-  await live.locator('[data-sec="offlinePreparation"]').click();
+  await live.locator('#sec-data [data-sec="offlinePreparation"]').click();
   check('백업에서 지역 지도 준비로 바로 이동하고 입력값 보존',await live.locator('#tab-grid').getAttribute('aria-selected')==='true'&&await live.locator('details[data-fold="map-setup"]').evaluate(e=>e.open)&&await live.locator('#offlinePreparation h3').evaluate(e=>e===document.activeElement)&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
   check('빈 지도 준비 상태는 범위 누락과 환경에 맞는 다음 행동 명시',await live.locator('[data-offline-preparation="range"]').innerText().then(t=>t.includes('범위 미입력'))&&await live.locator('[data-offline-preparation="next"]').innerText().then(t=>process.argv.includes('--file')?t.includes('HTTPS'):t.includes('수색 범위')));
   await live.locator('[data-sec="mapSourceSelect"]').click();

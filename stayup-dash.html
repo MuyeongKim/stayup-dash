@@ -990,6 +990,8 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .map-position{font-size:12px;line-height:1.45;color:var(--muted);padding:5px 0;overflow-wrap:anywhere;flex:0 0 auto}
 .map-empty-actions{display:flex;gap:10px;align-items:center;padding:12px;background:var(--surface2);border:1px dashed var(--control-border);border-radius:6px;margin-top:8px}
 .map-empty-actions span{font-size:13px;color:var(--muted)}
+.map-workspace>.map-empty-actions{margin:0 0 12px;flex-wrap:wrap}
+.map-empty-actions span{flex:1 1 250px}
 .map-review-notice{padding:12px;margin:8px 0;border:1px solid var(--warn);background:#33210A;color:#FDE68A;font-size:14px;line-height:1.5}
 .map-review-notice .btn{margin-top:8px}
 .map-palette-fold{border:1px solid var(--border2);border-radius:6px;padding:0 10px;margin-bottom:8px;flex:0 0 auto}
@@ -1068,6 +1070,7 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
  .map-tools .btn{font-size:12px;padding:7px 9px}
  .cons-map{height:46vh;min-height:260px}
  .map-empty-actions{align-items:stretch;flex-direction:column}
+ .map-empty-actions span{flex:0 1 auto}
  .map-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;padding:10px}
  .map-dialog-head h2{font-size:18px}
  .map-dialog>.map-workspace{overflow:auto}
@@ -3490,7 +3493,7 @@ var onlineSDK = (function () {
 var ONLINE_KEYS_KEY=PRACTICE_MODE?'stayup.practice.onlineKeys.v1':'stayup.onlineKeys.v1';
 var onlineHosts=Object.create(null);
 function isOnlineMap(){return ['naver','google','offline'].indexOf(S.grid.source)>=0;}
-function onlineSourceName(source){return {image:'사진·오프라인',naver:'네이버지도',google:'구글지도',offline:'저장한 지역 지도'}[source]||'사진·오프라인';}
+function onlineSourceName(source){return {image:'지도·현장 사진',naver:'네이버지도',google:'구글지도',offline:'저장한 지역 지도'}[source]||'지도·현장 사진';}
 function getOnlineKeys(){
   try{var value=JSON.parse(localStorage.getItem(ONLINE_KEYS_KEY)||'{}');return {naver:typeof value.naver==='string'?value.naver:'',google:typeof value.google==='string'?value.google:''};}
   catch(ignore){return {naver:'',google:''};}
@@ -3510,9 +3513,9 @@ function onlineGeoError(geo){
   return '';
 }
 function onlineEnvironmentError(source){
-  if(!/^https?:$/.test(location.protocol))return '온라인 지도는 localhost 또는 HTTPS 주소에서 열어야 합니다. 파일로 연 화면에서는 사진·오프라인을 사용하세요.';
+  if(!/^https?:$/.test(location.protocol))return '온라인 지도는 localhost 또는 HTTPS 주소에서 열어야 합니다. 파일로 연 화면에서는 지도·현장 사진을 사용하세요.';
   if(!getOnlineKeys()[source])return onlineSourceName(source)+' 키가 없습니다. 지도·격자 설정의 온라인 지도 연결 설정에서 키를 저장하세요.';
-  if(navigator.onLine===false)return '인터넷 연결이 끊겼습니다. 연결 후 다시 시도하거나 사진·오프라인을 선택하세요.';
+  if(navigator.onLine===false)return '인터넷 연결이 끊겼습니다. 연결 후 다시 시도하거나 지도·현장 사진을 선택하세요.';
   return '';
 }
 function applyMapSource(source,type){
@@ -4091,7 +4094,7 @@ var mapMsgHtml = '';     /* 지도 붙여넣기 결과 안내 (입력 화면 재
 /* 빠른기록 입력줄은 data-path 가 없어 재렌더 때마다 초기화됐다. 한 줄 타이핑하다
    다른 버튼을 한 번만 눌러도 내용이 사라지고, 발생시각은 렌더 시각으로 되돌아가
    잘못된 시각의 기록이 활동일지에 남는다. 지도 안내문과 같은 방식으로 밖에 보관한다. */
-var quickEv = { type:'', entityId:'', zone:'', text:'', time:'', timeAuto:true };
+var quickEv = { type:'note', entityId:'', zone:'', text:'', time:'', timeAuto:true };
 var eventHistory = {query:'',type:'',status:'all',page:0};
 var EVENT_PAGE_SIZE = 20;
 function quickEvTime(){ return quickEv.timeAuto ? localDateTime(new Date()) : quickEv.time; }
@@ -4255,12 +4258,9 @@ function buildGrid(host, interactive){
   if(MAPDATA&&!online){
     html += '<img class="mapimg" alt="수색 지도 또는 현장 사진" draggable="false" src="'+MAPDATA+'" style="opacity:'
           + num(g.mapOpacity,0.85) + '">';
-  } else if(interactive&&!online){
-    /* 현황 화면에는 운영요원용 안내문을 띄우지 않는다. 격자 뒤로 비쳐 읽히지도 않고,
-       지휘부가 보는 화면에 조작 지시문이 남는다. 지도 미적용 여부는 카드 헤더로 알린다. */
-    html += '<div class="mapnote">지도 이미지 없음<br>'
-          + '여기에 카카오맵·네이버지도 캡처를 붙여넣으면('+esc(K_PASTE)+') 배경으로 깔립니다</div>';
   }
+  /* 빈 지도의 입력 안내는 격자에 가리지 않도록 지도 위의 준비 도구에 둔다.
+     현황 화면에는 지도 미적용 상태만 표시한다. */
   var R = gridRows(), C = gridCols();
   var fm=/^([A-L])(\d{1,2})$/.exec(gridFocusId||'');
   if(!fm||fm[1].charCodeAt(0)-65>=R||parseInt(fm[2],10)>C)gridFocusId=cellId(0,0);
@@ -5604,7 +5604,7 @@ function paintPalette(){
 }
 
 function quickEntityKind(){
-  var type=quickEv.type||'takeoff';return type==='takeoff'||type==='landing'?'drone':type==='crew'?'crew':'';
+  var type=quickEv.type||'note';return type==='takeoff'||type==='landing'?'drone':type==='crew'?'crew':'';
 }
 function quickEntityHtml(){
   var kind=quickEntityKind();if(!kind)return '';
@@ -5891,6 +5891,7 @@ function consoleHtml2(){
   h += '<div class="sec" id="sec-grid"><h2>수색구역 · 지도 <span class="hint">먼저 지도를 살펴보고, 기록할 때 칠하기 또는 핀 배치를 선택하세요</span></h2><div class="sec-b">'
     + '<div class="grid2">'
       + '<div class="map-workspace" id="consMapWorkspace" data-map-workspace="consMap">'
+        + (!S.grid.hasMap&&!isOnlineMap()?'<div class="map-empty-actions"><button class="btn primary" data-act="mapfile">지도·현장 사진 넣기</button><button class="btn" data-act="nav" data-sec="offlinePreparation">지역 지도 미리 저장</button><span>사진 파일을 넣거나 인터넷 연결 중 지역 지도를 준비하세요. 지도 없이 기록하려면 구역 칠하기를 선택하세요.</span></div>':'')
         + mapToolsHtml('consMap',true)
         + '<div class="map-review-notice" id="mapReviewNotice"'+(S.grid.spatialReview?'':' hidden')+'>'
           +'<b>이전 지도·표식을 다시 확인하세요.</b> 이전 버전의 확대·이동 또는 좌표 보정 이력이 있는 자료입니다. 원본 보기에서 구역·핀·좌표를 대조한 뒤 편집을 시작하세요. '
@@ -5899,7 +5900,6 @@ function consoleHtml2(){
         + '<div class="map-mode" id="mapModeStatus" role="status" aria-live="polite" hidden></div>'
         + '<div class="cons-map" id="consMap"></div>'
         + '<div class="map-position" data-map-position="consMap"></div>'
-        + (!S.grid.hasMap&&!isOnlineMap()?'<div class="map-empty-actions"><button class="btn primary" data-act="mapfile">지도·현장 사진 넣기</button><span>이미지를 끌어다 놓거나 붙여넣을 수도 있습니다. 지도 없이 격자를 사용할 때는 구역 칠하기를 선택하세요.</span></div>':'')
         + '<div class="row-tools">'
           + '<button class="btn sm" data-act="pin" data-p="last">최종목격 핀 배치</button>'
           + '<button class="btn sm" data-act="pin" data-p="found">발견 핀 배치</button>'
@@ -6283,6 +6283,7 @@ function bindConsole(root){
       var menuButton=root.querySelector('#btnMoreNav');if(menuButton)menuButton.setAttribute('aria-expanded','false');
       var target=root.querySelector('#'+b.getAttribute('data-sec'));
       if(target){
+        if(mapDialog&&mapDialog.open&&mapDialog.contains(b)&&!mapDialog.contains(target))closeMapWorkspace();
         if(target.tagName==='DETAILS'){target.open=true;consoleFolds[target.dataset.fold]=true;}
         scrollToSection(root,target);
         if(b.getAttribute('role')==='tab')b.focus({preventScroll:true});
