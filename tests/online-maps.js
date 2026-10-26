@@ -180,6 +180,9 @@ async function onlineMapGeometry(provider){
   workspacePointer('pointerdown',start);workspacePointer('pointermove',end);workspacePointer('pointerup',end);await wait(40);
   ok(provider+' 보기 모드에서 쓸어도 수색 상태·핀·이력을 바꾸지 않는다',onlineMapSignature()===before);
   W.resetMapView(workspaceHost());await wait(70);W.setMapEditMode('paint');
+  /* The palette and preparation controls change the map's document position.
+     Hit-tested gestures must target visible cells, as real pointer input does. */
+  workspaceHost().scrollIntoView({block:'center',behavior:'instant'});await wait(30);
   W.S.ui.paintS=2;W.S.ui.paintBy='지상';
   var cellsBefore=JSON.stringify(W.S.grid.cells),count=W.S.events.length;
   start=onlineMapScreenPoint(mock,25,70);end=onlineMapScreenPoint(mock,42,70);

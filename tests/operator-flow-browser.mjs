@@ -1,0 +1,92 @@
+/* User journeys for incident switching, preparation navigation, maps, battery
+ * context and named backups. Synthetic data and disposable Chrome only. */
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {isDeepStrictEqual} from 'node:util';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const option=k=>{const i=process.argv.indexOf(k);return i<0?null:process.argv[i+1];};
+const modules=option('--modules'),out=option('--out')||'/tmp/stayup-operator-flow';await mkdir(out,{recursive:true});
+const {chromium}=await import(modules?pathToFileURL(path.join(modules,'playwright/index.mjs')).href:'playwright');
+const server=createServer(async(req,res)=>{try{const file=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!file.startsWith(root+path.sep))throw Error('Invalid path');res.setHeader('Content-Type',file.endsWith('.html')?'text/html':file.endsWith('.js')?'text/javascript':'application/json');res.setHeader('Cache-Control','no-store');res.end(await readFile(file));}catch{res.writeHead(404);res.end();}});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const isFile=process.argv.includes('--file'),url=isFile?pathToFileURL(path.join(root,'stayup-dash.html')).href:'http://127.0.0.1:'+server.address().port+'/stayup-dash.html';
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const context=await browser.newContext({viewport:{width:1366,height:768},serviceWorkers:'block',reducedMotion:'reduce'});
+await context.route('**/*',route=>{const address=new URL(route.request().url());return address.protocol==='file:'||address.hostname==='127.0.0.1'?route.continue():route.abort();});
+const page=await context.newPage();page.setDefaultTimeout(7000);
+const results=[],errors=[],dialogs=[],answers=[];
+const check=(name,pass)=>{results.push({name,pass:!!pass});console.log((pass?'PASS ':'FAIL ')+name);};
+page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{dialogs.push(d.message());const accept=answers.length?answers.shift():true;await(accept?d.accept():d.dismiss());});
+const payload=()=>page.evaluate(()=>JSON.parse(exportPayload(true)));
+const unchanged=async before=>isDeepStrictEqual(await payload(),before);
+const next=()=>page.locator('.step-nav .btn.primary').click();
+async function downloadBackup(name){const ready=page.waitForEvent('download');ready.catch(()=>{});await page.locator('#sec-data [data-act="export"]').click();const file=await ready,dest=path.join(out,name+'.json');await file.saveAs(dest);return {name:file.suggestedFilename(),file:dest,data:JSON.parse(await readFile(dest,'utf8'))};}
+try{
+  await page.goto(url);await page.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
+  await page.evaluate(()=>{S.weather.auto=false;S.ui.autoSave=false;commitLight();});
+  await page.locator('[data-onboard-action="new"]').click();
+  const empty=await payload();
+  for(const [width,height] of [[1366,768],[390,844],[320,800]]){
+    await page.setViewportSize({width,height});await page.locator('#tab-mission').click();
+    const fit=await page.locator('.step-nav').evaluate(e=>{const r=e.getBoundingClientRect(),bar=document.querySelector('.console-workspace-bar').getBoundingClientRect(),b=document.querySelector('.mobile-nav');const limit=b&&getComputedStyle(b).display!=='none'?b.getBoundingClientRect().top:innerHeight;return {top:r.top,bottom:r.bottom,bar:bar.bottom,limit,overflow:document.documentElement.scrollWidth>innerWidth};});
+    check(width+'px에서 입력 제목 아래 다음 버튼이 가림 없이 보임',fit.top>=fit.bar-1&&fit.bottom<=fit.limit+1&&!fit.overflow&&await page.locator('.step-nav .btn.primary').evaluate(e=>e.getBoundingClientRect().height>=44));
+    check(width+'px의 빈 우선 지시를 한 줄로 축소하고 안전·경보 유지',await page.locator('#consolePriority').evaluate(e=>e.classList.contains('is-empty')&&e.getBoundingClientRect().height<=60&&e.querySelector('button').getBoundingClientRect().width<160)&&await page.locator('#mobileVerdictText').isVisible()&&await page.locator('#btnManned').isVisible());
+    await page.screenshot({path:path.join(out,'inline-'+width+'.png'),scale:'css'});
+  }
+  await page.locator('[data-priority-toggle="console"]').click();
+  check('빈 지시도 상세 전문·연락 정보를 열 수 있고 자료 불변',await page.locator('#consolePriorityDetails').isVisible()&&await unchanged(empty));
+  await page.locator('[data-priority-toggle="console"]').click();await page.setViewportSize({width:1366,height:900});
+  await page.locator('[data-path="mission.title"]').fill('가상 / 수색: A*? <확인>');await page.locator('[data-path="mission.priorityOrder"]').fill('가상 구역 A1 확인 후 보고');await page.locator('[data-path="mission.priorityOrder"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);
+  check('실제 우선 지시는 축소하지 않고 원문 표시',!await page.locator('#consolePriority').evaluate(e=>e.classList.contains('is-empty'))&&await page.locator('#consolePriority [data-priority-text]').innerText()==='가상 구역 A1 확인 후 보고');
+  await page.locator('[data-path="mission.priorityOrder"]').fill('');await page.locator('[data-path="mission.priorityOrder"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);
+  await next();check('제목 옆 다음 버튼으로 해당 입력 한 화면에 이동',await page.locator('#sec-subject').isVisible()&&await page.locator('[role="tabpanel"]:visible').count()===1);
+  const selected=await payload();await page.locator('.step-nav [data-sec="sec-mission"]').click();check('제목 아래 이전 이동은 전체 자료와 리비전을 유지',await unchanged(selected));
+  const beforeCancel=await payload();answers.push(false);await page.locator('[data-act="newincident"]').click();check('상단 새 수색 준비도 첫 취소에서 기존 자료 유지',await unchanged(beforeCancel)&&dialogs.at(-1).includes('현재 상황'));
+  answers.push(true,false);const cancelDownload=page.waitForEvent('download');cancelDownload.catch(()=>{});await page.locator('[data-act="newincident"]').click();await(await cancelDownload).saveAs(path.join(out,'cancel-before-new.json'));
+  check('상단 새 수색의 백업 이후 보관 확인 취소도 원본 유지',await unchanged(beforeCancel)&&isDeepStrictEqual(JSON.parse(await readFile(path.join(out,'cancel-before-new.json'),'utf8')),beforeCancel));
+  await page.locator('#tab-crew').click();await page.locator('#btnAddCrew').click();await page.locator('[data-path="crew.0.name"]').fill('조종 A');await page.locator('[data-path="crew.0.name"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);
+  await page.locator('#tab-drone').click();await page.locator('#btnAddDrone').click();
+  check('미등록 조종자와 확인하지 않은 잔량을 카드 앞에 표시',await page.locator('#sec-drone [data-drone-checks]').first().innerText().then(t=>t.includes('조종자 미지정')&&t.includes('배터리 미확인')));
+  await page.locator('[data-pilot-target]').first().selectOption('조종 A');await page.locator('[data-act="confirmbattery"]').first().click();await page.waitForFunction(()=>[...document.querySelectorAll('#sec-drone [data-drone-checks]')].every(e=>e.hidden));
+  check('직접 연결·확인한 기체의 미확인 표시만 해제',await page.evaluate(()=>S.drones[0].battery===100&&S.drones[0].status==='ready'&&S.drones[0].batteryUpdatedAt>0));
+  await page.locator('#btnAddDrone').click();await page.locator('[data-path="drones.1.name"]').fill('예비 2호기');await page.locator('[data-path="drones.1.name"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);
+  await page.locator('[data-path="drones.1.status"]').selectOption('swap');await page.waitForFunction(()=>!consoleIdleTimer);
+  const card=page.locator('#sec-drone .item[data-di="1"]'),flow=card.locator('.battery-workflow');if(!await flow.evaluate(e=>e.open))await flow.locator('summary').click();
+  const beforeInventory=await payload();await card.locator('[data-battery-drone]').click();
+  check('교체 재고 이동은 선택한 두 번째 기체를 안내하며 전체 자료 유지',await page.locator('[data-battery-return]').innerText().then(t=>t.includes('예비 2호기'))&&await unchanged(beforeInventory));
+  await page.locator('[data-act="battswap"]').click();check('재고 0개에서는 기존처럼 거부하고 기체·재고를 바꾸지 않음',dialogs.at(-1).includes('충전완료 재고가 없어')&&await unchanged(beforeInventory));
+  await page.locator('[data-path="batteries.ready"]').fill('2');await page.locator('[data-path="batteries.ready"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);await page.locator('[data-act="battswap"]').click();
+  check('명시적 교체 재고 반영은 수량만 바꾸며 기체 잔량·상태 보존',await page.evaluate(()=>S.batteries.ready===1&&S.batteries.empty===1&&S.drones[1].battery===100&&S.drones[1].status==='swap'));
+  const beforeReturn=await payload();await page.locator('[data-battery-return] button').click();
+  check('재고에서 같은 기체의 잔량 입력으로 복귀하며 전체 자료 유지',await page.locator('[data-path="drones.1.battery"]').evaluate(e=>e===document.activeElement)&&await unchanged(beforeReturn));
+  await page.locator('[data-path="drones.1.battery"]').fill('83');await page.locator('[data-path="drones.1.battery"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);await page.locator('[data-path="drones.1.status"]').selectOption('ready');await page.waitForFunction(()=>!consoleIdleTimer);
+  check('예비 기체는 잔량 확인 후에도 미지정 조종자 표시를 유지',await card.locator('[data-drone-checks]').innerText().then(t=>t.includes('조종자 미지정')&&!t.includes('배터리 미확인'))&&await page.evaluate(()=>S.drones[0].battery===100&&S.drones[1].battery===83));
+  const popup=context.waitForEvent('page');popup.catch(()=>{});await page.locator('#btnOpenDisplay').click();const display=await popup;await display.waitForFunction(()=>typeof S==='object'&&S.drones.length===2);
+  check('현황 화면도 예비 기체의 미지정 조종자를 상태 근처에 표시',await display.locator('[data-drone-checks]').last().innerText().then(t=>t.includes('조종자 미지정')));await display.close();
+  await page.locator('#tab-grid').click();const beforeMap=await payload();await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
+  check('실행 환경에 맞게 지역 지도 제약과 현재 가능한 선택을 구분',isFile?await page.locator('[data-offline-environment]').isVisible()&&await page.locator('[data-offline-action="save"]').isDisabled()&&await page.locator('[data-offline-action="shell"]').isDisabled():!await page.locator('[data-offline-environment]').isVisible()&&await page.locator('[data-offline-action="save"]').isEnabled());
+  if(isFile){await page.locator('.offline-environment summary').click();check('지역 지도 준비 방법·설명서 연결을 제공하고 업무 값 불변',await page.locator('.offline-environment').innerText().then(t=>t.includes('같은 주소')&&t.includes('저장 공간'))&&await page.locator('.offline-environment a').getAttribute('href')==='docs/user-guide.html#chapter-6'&&await unchanged(beforeMap));}
+  const image=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=1000;c.height=650;c.getContext('2d').fillRect(0,0,1000,650);return c.toDataURL('image/png').split(',')[1];}),photo=path.join(out,'synthetic-map.png');await writeFile(photo,Buffer.from(image,'base64'));
+  const chooser=page.waitForEvent('filechooser');chooser.catch(()=>{});await(isFile?page.getByRole('button',{name:'사진 지도로 계속하기',exact:true}):page.locator('#consMapWorkspace [data-act="mapfile"]')).click();await(await chooser).setFiles(photo);await page.waitForFunction(()=>S.grid.hasMap&&mapPayloadReady());
+  check('지도 준비의 사진 선택으로 기존 기체·재고·기록을 유지하며 지도 적용',await page.evaluate(()=>S.grid.source==='image'&&S.drones[1].battery===83&&S.batteries.ready===1));
+  await page.locator('#tab-data').click();const beforeBackup=await payload(),backup=await downloadBackup('named-backup');
+  check('실제 백업 이름에 상황 별칭·초 단위 시각을 넣고 금지 문자는 제거',backup.name.startsWith('stayup-가상 _ 수색_ A__ _확인_')&&/\d{8}-\d{6}\.json$/.test(backup.name)&&!/[<>:"/\\|?*]/.test(backup.name));
+  check('요청한 실제 파일명을 화면에 표시하고 전체 백업 내용은 동일',await page.locator('#sec-data [data-manual-backup-status]').innerText().then(t=>t.includes(backup.name)&&t.includes('요청')&&!t.includes('저장 완료'))&&isDeepStrictEqual(backup.data,beforeBackup)&&await unchanged(beforeBackup));
+  await page.setViewportSize({width:320,height:800});await page.locator('#tab-data').click();check('긴 백업 파일명도 320px 화면을 가로로 넘치지 않음',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:path.join(out,'backup-320.png'),scale:'css'});await page.setViewportSize({width:1366,height:900});
+  await page.locator('[data-path="ui.autoSave"]').check();const autoPayload=await payload(),automaticWait=page.waitForEvent('download');automaticWait.catch(()=>{});await page.evaluate(()=>{autoSaveHandle=null;autoSaveAt=0;lastAutoSavedRev=-1;autoSaveTick();});const automatic=await automaticWait;await automatic.saveAs(path.join(out,'automatic-backup.json'));
+  check('자동 다운로드도 상황 별칭과 실제 파일명을 제공하며 전체 자료 보존',automatic.suggestedFilename().startsWith('stayup-자동보관-가상 _ 수색_')&&await page.locator('[data-auto-file-status]').innerText().then(t=>t.includes(automatic.suggestedFilename()))&&isDeepStrictEqual(JSON.parse(await readFile(path.join(out,'automatic-backup.json'),'utf8')),autoPayload)&&await unchanged(autoPayload));await page.locator('[data-path="ui.autoSave"]').uncheck();
+  await page.locator('#tab-mission').click();await page.locator('[data-path="mission.title"]').fill('');await page.locator('[data-path="mission.title"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);await page.locator('#tab-data').click();const blank=await downloadBackup('blank-title');check('빈 상황명은 미지정상황으로 식별',blank.name.startsWith('stayup-미지정상황-'));
+  await page.locator('#tab-mission').click();await page.locator('[data-path="mission.title"]').fill('가상 '+('긴이름'.repeat(22)));await page.locator('[data-path="mission.title"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);await page.locator('#tab-data').click();const long=await downloadBackup('long-title');check('긴 상황명은 파일명 길이만 제한하고 입력 내용은 보존',Array.from(long.name).length<=70&&long.data.mission.title.length>40);
+  await page.locator('#tab-mission').click();await page.locator('[data-path="mission.title"]').fill('최종 가상 수색');await page.locator('[data-path="mission.title"]').press('Tab');await page.waitForFunction(()=>!consoleIdleTimer);await page.locator('#tab-data').click();const finalPayload=await payload(),finalBackup=await downloadBackup('final-backup');
+  const viewer=await context.newPage();await viewer.goto(url+'?viewer=1');await viewer.waitForFunction(()=>typeof S==='object'&&!ownsEditorLock());check('보기 전용에서 새 수색은 잠기고 배터리 안내 이동은 허용',await viewer.locator('[data-act="newincident"]').isDisabled());await viewer.locator('#tab-drone').click();const viewerFlow=viewer.locator('.battery-workflow').last();if(!await viewerFlow.evaluate(e=>e.open))await viewerFlow.locator('summary').click();await viewer.locator('[data-battery-drone]').last().click();check('보기 전용의 기체별 재고 안내는 편집권·원본을 바꾸지 않음',await viewer.locator('[data-battery-return]').isVisible()&&await viewer.evaluate(()=>!ownsEditorLock())&&await unchanged(finalPayload));await viewer.close();
+  answers.push(true,true);const freshDownload=page.waitForEvent('download');freshDownload.catch(()=>{});await page.locator('[data-act="newincident"]').click();await(await freshDownload).saveAs(path.join(out,'before-new.json'));await page.waitForFunction(()=>!S.mission.title&&S.drones.length===0);
+  check('정상 새 수색은 백업·보관 확인 뒤 전환하고 이전 복구본을 보존',await page.locator('[data-path="mission.title"]').evaluate(e=>e===document.activeElement)&&await page.evaluate(()=>recoveryCandidates().some(p=>p.record.state.mission.title==='최종 가상 수색')));
+  await page.locator('#tab-data').click();const imported=page.waitForEvent('filechooser');imported.catch(()=>{});await page.locator('#sec-data [data-act="import"]').click();await(await imported).setFiles(finalBackup.file);await page.waitForFunction(()=>S.mission.title==='최종 가상 수색'&&mapPayloadReady());const restored=await payload();
+  const business=v=>{const c=JSON.parse(JSON.stringify(v));delete c.meta;delete c.grid.mapId;delete c.grid.mapVer;return c;};check('새 수색 이후 실제 백업의 모든 업무 값·사진·기록을 복원',isDeepStrictEqual(business(restored),business(finalPayload)));
+  check('새 보기 상태는 저장 자료에 필드를 추가하지 않음',!Object.hasOwn(restored,'batteryReturnId')&&!Object.hasOwn(restored,'lastManualBackup'));
+  check('페이지 실행 오류 없음',errors.length===0);
+}finally{await writeFile(path.join(out,'results.json'),JSON.stringify({passed:results.filter(r=>r.pass).length,total:results.length,failed:results.filter(r=>!r.pass),errors,results},null,2));await browser.close();await new Promise(r=>server.close(r));}
+assert.equal(results.filter(r=>!r.pass).length,0,'Operator flow validation failed');

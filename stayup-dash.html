@@ -837,6 +837,11 @@ textarea{resize:vertical;min-height:52px}
 .endur .ev{white-space:nowrap}
 .battery-stamp{color:var(--muted);font-size:.86rem;line-height:1.35;margin:.15rem 0 .35rem}
 .cons .battery-stamp{font-size:13px;margin:0}
+.drone-checks{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}
+.drone-checks span{font:750 13px/1.4 system-ui,sans-serif;border:1px solid var(--warn);border-radius:4px;padding:3px 6px;background:var(--surface2);color:var(--text)}
+.battery-workflow{margin:10px 0}.battery-workflow li{margin:9px 0;line-height:1.6}
+.battery-workflow .btn,[data-battery-return] .btn{min-height:44px}
+[data-battery-return]{padding:12px;border:1px solid var(--info);border-radius:6px;margin:10px 0;background:var(--surface2)}
 .drone-state-help{display:none}
 .item:has(select[data-path$=".status"] option[value="swap"]:checked) .drone-state-help.swap,
 .item:has(select[data-path$=".status"] option[value="ready"]:checked) .drone-state-help.ready{display:block}
@@ -990,6 +995,10 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .map-position{font-size:12px;line-height:1.45;color:var(--muted);padding:5px 0;overflow-wrap:anywhere;flex:0 0 auto}
 .map-empty-actions{display:flex;gap:10px;align-items:center;padding:12px;background:var(--surface2);border:1px dashed var(--control-border);border-radius:6px;margin-top:8px}
 .map-empty-actions span{font-size:13px;color:var(--muted)}
+.offline-environment{padding:12px;border:1px solid var(--warn);border-radius:6px;background:var(--surface2);margin:10px 0}
+.offline-environment summary{min-height:44px;padding:10px 0;cursor:pointer;font-weight:750}
+.offline-environment li{margin:8px 0;line-height:1.6}
+.offline-environment a{color:var(--info)}
 .map-workspace>.map-empty-actions{margin:0 0 12px;flex-wrap:wrap}
 .map-empty-actions span{flex:1 1 250px}
 .map-review-notice{padding:12px;margin:8px 0;border:1px solid var(--warn);background:#33210A;color:#FDE68A;font-size:14px;line-height:1.5}
@@ -1113,6 +1122,8 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .operation-brief .mobile-verdict{margin:6px 0 0}
 .operation-brief .mobile-verdict button{font-size:13px}
 .priority-card:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+#consolePriority.is-empty:not(.is-expanded){padding:4px 10px;grid-template-columns:minmax(0,1fr) auto}
+#consolePriority.is-empty:not(.is-expanded) [data-priority-text]{display:none}
 .hdr-clock .audio-arm{position:static;font-size:13px;line-height:1.35;min-height:44px;padding:6px;margin-top:6px;max-width:100%}
 @media(min-width:1001px) and (max-height:900px){
   html{font-size:calc(max(13px,min(100vw / 120,100vh / 67.5)) * var(--s))}
@@ -1304,6 +1315,12 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .onboarding-next>div>span{font-size:14px;color:var(--muted);line-height:1.6;margin-top:4px}
 .onboarding-next .btn{min-height:44px}
 .onboarding-next .row-tools{margin:0}
+.step-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--surface2);flex-wrap:wrap}
+.step-nav>span{font-size:13px;font-weight:750;color:var(--muted)}
+.step-nav .row-tools{margin:0;gap:8px;flex-wrap:wrap}
+.step-nav .btn{min-height:44px;font-size:14px}
+[data-manual-backup-status]{overflow-wrap:anywhere}
+[data-auto-file-status]{overflow-wrap:anywhere}
 [data-manual-backup-status]:empty{margin:0}
 .practice-badge{font:800 13px/1.4 system-ui;padding:5px 9px;border:2px dashed var(--info);border-radius:5px;color:var(--info);background:var(--surface2)}
 .practice-notice{font-size:14px;line-height:1.6;padding:12px;border-left:4px solid var(--info);background:var(--surface2)}
@@ -1358,6 +1375,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
   .preparation-list li{grid-template-columns:minmax(0,1fr) auto;gap:8px}
   .preparation-list li>.btn{grid-column:1/-1;min-height:44px;text-align:left}
   .onboarding-next{flex-wrap:wrap}.onboarding-next>.row-tools{width:100%}.onboarding-next .row-tools>.btn{flex:1;white-space:normal}
+  .step-nav{padding:8px 12px}.step-nav .row-tools{flex:1}.step-nav .row-tools>.btn{flex:1;white-space:normal}
 }
 /* 짧은 휴대 화면에서는 전체 지시를 문서에서 읽고 상태·메뉴만 고정한다. */
 @media(max-width:1000px) and (max-height:600px){
@@ -3753,6 +3771,9 @@ function updateOfflineUi(){
   var controlsDisabled=!!offlineJob||!ownsEditorLock();
   document.querySelectorAll('[data-offline-busy]').forEach(function(el){el.disabled=controlsDisabled;});
   var pack=selectedOfflinePack(),requirement=offlineRequirements(),hasRange=geoOK();
+  document.querySelectorAll('[data-offline-environment]').forEach(function(el){el.hidden=!requirement;});
+  document.querySelectorAll('[data-offline-requirement]').forEach(function(el){el.textContent=requirement;});
+  document.querySelectorAll('[data-offline-action="save"],[data-offline-action="shell"]').forEach(function(el){el.disabled=controlsDisabled||!!requirement;});
   var preparation={
     range:hasRange?'좌표 범위 입력됨 · 실제 위치와 대조하세요.':'범위 미입력 · 사진 좌표 보정 또는 새 수색 범위 만들기를 먼저 하세요.',
     map:pack?'현재 범위의 지도 연결됨 · '+offlinePackName(pack):offlineCatalogLoaded?'현재 범위에 연결한 지도 없음':'보관함 확인 중…',
@@ -3793,6 +3814,12 @@ function updateOfflineUi(){
 }
 function offlineMapPanel(){
   return '<section class="offline-settings" id="offlinePreparation" aria-label="오프라인 지역 지도"><h3>오프라인 지역 지도 준비</h3>'
+    +'<div class="offline-environment" data-offline-environment'+(offlineRequirements()?'':' hidden')+'><b>'+(location.protocol==='file:'?'지금은 파일로 연 화면입니다. 사진 지도를 사용할 수 있습니다.':'지역 지도 저장 환경을 먼저 확인하세요.')+'</b>'
+    +'<p class="note" data-offline-requirement>'+esc(offlineRequirements())+'</p>'
+    +'<button class="btn primary" type="button" data-act="mapfile">사진 지도로 계속하기</button>'
+    +'<details><summary>지역 지도 준비 방법</summary><ol><li>인터넷이 연결된 상태에서 압축을 푼 프로그램 폴더 전체를 준비하세요.</li><li>이 프로그램을 제공받은 웹 주소 또는 안내받은 로컬 웹 주소로 엽니다. 파일을 직접 여는 화면에서는 지역 지도 미리 저장을 시작할 수 없습니다.</li><li>웹 주소로 연 화면에서 수색 범위를 입력하고 이 수색 범위 미리 저장을 누릅니다. 준비 후 인터넷을 끄고 같은 주소·브라우저에서 다시 열어 확인하세요.</li></ol>'
+    +'<p class="note">주소가 바뀌면 저장 공간도 달라집니다. 현재 상황 백업과 지역 지도 파일을 각각 보관한 뒤 새 주소에서 불러오세요.</p>'
+    +'<div class="row-tools"><button class="btn" type="button" data-act="export">먼저 상황 백업 저장</button><a href="docs/user-guide.html#chapter-6" target="_blank" rel="noopener">설명서의 지도 준비 방법 보기 ↗</a></div></details></div>'
     +'<p class="note">현재 수색 범위의 일반 지도를 미리 저장합니다. 핀·칠한 구역·담당·기록을 유지하며, 통신이 끊기면 저장한 지도로 전환합니다. 오프라인 배경은 Protomaps / OpenStreetMap이며 네이버·구글·위성 지도와 다릅니다.</p>'
     +'<ol class="preparation-steps"><li><b>수색 범위 확인</b><span data-offline-preparation="range"></span>'
     +'<div class="row-tools" data-offline-range-links><button class="btn" type="button" data-act="nav" data-sec="mapSourceSelect">배경 선택으로</button><button class="btn" type="button" data-act="nav" data-sec="onlineAreaSetup">새 범위 입력으로</button>'
@@ -4499,6 +4526,18 @@ function batteryStamp(d,now){
   var minutes=Math.max(0,Math.floor((time-at)/60000));
   return '배터리 수동 입력 · '+(minutes===0?'방금':minutes+'분 전')+' 확인';
 }
+function droneChecksHtml(d){
+  var labels=[];
+  if(!String(d.pilot||'').trim())labels.push('조종자 미지정');
+  var at=num(d.batteryUpdatedAt,0);if(!at||at>Date.now()+5000)labels.push('배터리 미확인');
+  return labels.map(function(text){return '<span>'+text+'</span>';}).join('');
+}
+function refreshDroneChecks(){
+  document.querySelectorAll('[data-drone-checks]').forEach(function(el){
+    var d=S.drones.find(function(item){return item.id===el.getAttribute('data-drone-checks');});
+    var html=d?droneChecksHtml(d):'';if(el.innerHTML!==html)el.innerHTML=html;el.hidden=!html;
+  });
+}
 /* 위험 요약은 운용 중인 기체의 확인을 돕는다. 비행 판정이나 기체 등록 순서는 바꾸지 않는다.
    수동 배터리 확인 5분 경과는 재확인 주의이며, 실제 잔량/통신 위험과 구분한다. */
 var DRONE_BATTERY_STALE_MS=5*60000;
@@ -4562,6 +4601,7 @@ function refreshDroneRisks(now){
   });
 }
 function refreshBatteryStamps(){
+  refreshDroneChecks();
   var stamps=Object.create(null),now=Date.now();
   S.drones.forEach(function(d){stamps[d.id]=batteryStamp(d,now);});
   document.querySelectorAll('[data-battery-stamp]').forEach(function(el){
@@ -4589,6 +4629,7 @@ function renderDrones(){
       + '<div class="d-top"><span class="d-name">'+esc(d.name||'기체')+'</span>'
         + '<span class="d-model">'+esc(d.model||'')+'</span>'
         + '<span class="d-st">'+esc(DRONE_ST[d.status]||'대기')+'</span></div>'
+      + '<div class="drone-checks" data-drone-checks="'+esc(d.id)+'"'+(droneChecksHtml(d)?'':' hidden')+'>'+droneChecksHtml(d)+'</div>'
       + '<div class="d-batt"><div class="bar '+lvl+'"><i style="width:'+clamp(b,0,100)+'%"></i></div>'
         + '<span class="d-pct num '+lvl+'">'+Math.round(b)+'%</span></div>'
       + '<div class="battery-stamp" data-battery-stamp="'+esc(d.id)+'">'+esc(batteryStamp(d))+'</div>'
@@ -4664,8 +4705,8 @@ function priorityContact(){
   return bits.join(' · ')||'연락 정보 미입력';
 }
 function consolePriorityHtml(){
-  return '<section class="priority-card" id="consolePriority" tabindex="-1" aria-labelledby="consolePriorityLabel">'
-    +'<span class="priority-label" id="consolePriorityLabel">현재 우선 지시</span>'
+  return '<section class="priority-card'+(priorityIsEmpty()?' is-empty':'')+(priorityOpen.console?' is-expanded':'')+'" id="consolePriority" tabindex="-1" aria-labelledby="consolePriorityLabel">'
+    +'<span class="priority-label" id="consolePriorityLabel">현재 우선 지시'+(priorityIsEmpty()?' · 미입력':'')+'</span>'
     +'<div class="priority-text" data-priority-text>'+esc(priorityText())+'</div>'
     +'<button type="button" class="btn priority-toggle" data-priority-toggle="console" aria-expanded="'+priorityOpen.console+'" aria-controls="consolePriorityDetails">'+(priorityOpen.console?'상세 접기':'상세 보기')+'</button>'
     +'<div class="priority-details" id="consolePriorityDetails" tabindex="0" aria-label="지휘부 지시 전문과 연락 정보"'+(priorityOpen.console?'':' hidden')+'>'
@@ -4673,7 +4714,11 @@ function consolePriorityHtml(){
     +'<p data-priority-contact>'+esc(priorityContact())+'</p>'
     +'<button type="button" class="btn" data-act="verdictnav" data-sec="sec-mission" data-path-target="mission.priorityOrder">우선 지시 입력으로 이동</button></div></section>';
 }
+function priorityIsEmpty(){
+  return !['priorityOrder','orders','trs','callsign','briefing'].some(function(key){return String(S.mission[key]||'').trim();});
+}
 function refreshPriorityInstructions(){
+  document.querySelectorAll('#consolePriority').forEach(function(card){card.classList.toggle('is-empty',priorityIsEmpty());card.classList.toggle('is-expanded',priorityOpen.console);card.querySelector('.priority-label').textContent='현재 우선 지시'+(priorityIsEmpty()?' · 미입력':'');});
   document.querySelectorAll('[data-priority-text]').forEach(function(el){if(el.textContent!==priorityText())el.textContent=priorityText();});
   document.querySelectorAll('[data-priority-full],#tkMove').forEach(function(el){var txt=S.mission.orders||'지시 전문 미입력';if(el.textContent!==txt)el.textContent=txt;});
   document.querySelectorAll('[data-priority-contact],#tkRight').forEach(function(el){if(el.textContent!==priorityContact())el.textContent=priorityContact();});
@@ -5136,6 +5181,15 @@ function scheduleConsoleRefresh(root){
 }
 
 var consoleFolds={};
+var batteryReturnId='';  /* 선택한 기체로 돌아가기 위한 이 창의 보기 상태 */
+function refreshBatteryReturn(root){
+  var box=root.querySelector('[data-battery-return]');if(!box)return;
+  var index=S.drones.findIndex(function(d){return d.id===batteryReturnId;});box.hidden=index<0;
+  if(index<0)return;
+  var d=S.drones[index],key=JSON.stringify([d.id,d.name,index]);if(box.dataset.content===key)return;
+  box.dataset.content=key;box.innerHTML='<p class="note">교체 재고 확인 중: <b>'+esc(d.name||'기체')+'</b>. 재고 반영 뒤 이 기체의 잔량과 상태를 확인하세요.</p>'
+    +'<button class="btn" type="button" data-act="nav" data-sec="sec-drone" data-path-target="drones.'+index+'.battery">'+esc(d.name||'기체')+' 잔량·상태 확인으로</button>';
+}
 /* 화면 선택은 이 창의 보기 상태다. 상황 JSON·이벤트·저장 리비전에는 넣지 않는다. */
 var consoleActiveSection='sec-quick';
 var guidedStarted=false;
@@ -5173,6 +5227,7 @@ function applyConsolePanels(root){
     else more.removeAttribute('aria-current');
   }
   renderOnboarding(root);
+  refreshBatteryReturn(root);
   syncCompactConsole(root);
   revealConsoleTab(root);
 }
@@ -5690,6 +5745,7 @@ function consoleHtml(){
     + '<div class="ct-mode">'+(editor?'입력 가능':'보기 전용')+'</div>'
     +(PRACTICE_MODE?'<strong class="practice-badge">연습 공간 · 가상 데이터</strong>':'')
     +'<button class="btn" type="button" data-onboard-action="toggle" aria-expanded="'+onboardingOpen+'" aria-controls="onboardingGuide">준비 순서 보기</button>'
+    +'<button class="btn" type="button" data-act="newincident">새 수색 준비</button>'
     +themeControls('console')
     + '<div class="spacer"></div>'
     + '<div class="save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad')+'" id="savePill">'
@@ -5818,6 +5874,7 @@ function consoleHtml2(){
   h += '<div class="sec" id="sec-drone"><h2>드론 등록·운용 <span class="hint">기체별 카드가 현황 화면 우측에 표시됩니다</span>'
     + '<span class="spacer"></span><button class="btn sm primary" id="btnAddDrone">＋ 드론 추가</button></h2><div class="sec-b">';
   h+='<div class="drone-risk-summary" data-drone-risk-summary="console" aria-label="운용 중 기체 위험 요약" hidden></div>';
+  h+='<div class="row-tools"><button class="btn" type="button" data-act="nav" data-sec="sec-batt">배터리 재고 등록</button><span class="hint">준비한 예비 배터리 수량을 먼저 확인하세요.</span></div>';
   if(!S.drones.length) h += '<div class="note">등록된 기체가 없습니다. 우측 상단 “드론 추가”를 누르세요.</div>';
   S.drones.forEach(function(d,i){
     h += '<div class="item" data-di="'+i+'">'
@@ -5827,6 +5884,7 @@ function consoleHtml2(){
         + '<button class="btn sm" data-act="takeoff" data-di="'+i+'"'+(d.tookOffAt?' disabled':'')+'>이륙 기록 (지금)</button>'
         + '<button class="btn sm" data-act="land" data-di="'+i+'"'+(!d.tookOffAt?' disabled':'')+'>착륙 기록</button>'
         + '</div>'
+      + '<div class="drone-checks" data-drone-checks="'+esc(d.id)+'"'+(droneChecksHtml(d)?'':' hidden')+'>'+droneChecksHtml(d)+'</div>'
       + '<div class="f4">'
         + sel('상태','drones.'+i+'.status', Object.keys(DRONE_ST).map(function(k){return [k, DRONE_ST[k]];}))
         + fld('배터리 % · 수동','drones.'+i+'.battery','number','min="0" max="100"')
@@ -5837,6 +5895,7 @@ function consoleHtml2(){
         + '<button class="btn sm" data-act="confirmbattery" data-di="'+i+'">배터리 확인 (지금)</button></div>'
       + '<p class="note drone-state-help swap">실제 교체 후 새 배터리 잔량을 입력하고 상태를 이륙대기로 바꾸세요. 배터리 메뉴의 재고도 별도로 반영합니다.</p>'
       + '<p class="note drone-state-help ready">예비·대기 기체는 실제 잔량과 조종자를 확인하세요. 이륙대기 표시는 비행승인이나 준비 점검 완료를 뜻하지 않습니다.</p>'
+      + '<details class="settings-fold battery-workflow" data-fold="battery-flow-'+esc(d.id)+'"'+(d.status==='swap'?' open':'')+'><summary>배터리 교체 순서</summary><ol><li>실제 착륙 후 착륙 기록을 남깁니다.</li><li>실제 교체에 사용한 재고를 확인합니다. <button class="btn" type="button" data-act="nav" data-sec="sec-batt" data-battery-drone="'+esc(d.id)+'">이 기체 교체 재고 확인</button></li><li>새 배터리의 실제 잔량을 입력합니다. <button class="btn" type="button" data-act="nav" data-sec="sec-drone" data-path-target="drones.'+i+'.battery">잔량 입력으로</button></li><li>기체 상태에서 실제 준비 상태에 맞춰 이륙대기를 선택합니다. <button class="btn" type="button" data-act="nav" data-sec="sec-drone" data-path-target="drones.'+i+'.status">상태 확인으로</button></li></ol><p class="note">재고·잔량·상태는 각각 확인해 반영합니다. 이 안내만으로 교체 완료나 비행승인을 처리하지 않습니다.</p></details>'
       + '<details class="settings-fold" data-fold="drone-'+esc(d.id)+'"'+(!d.pilot?' open':'')+'><summary>기체 설정 · 조종자 · 센서</summary><div>'
       + '<div class="f4">'
         + fld('호기명','drones.'+i+'.name','text','placeholder="1호기"')
@@ -5865,6 +5924,7 @@ function consoleHtml2(){
 
   /* --- 배터리 자원 --- */
   h += '<div class="sec" id="sec-batt"><h2>배터리 재고 <span class="hint">언제 철수해야 하는가를 숫자로</span></h2><div class="sec-b">'
+    + '<div data-battery-return hidden></div>'
     + '<p class="note">이 메뉴는 배터리 <b>재고 수량</b>을 관리합니다. 재고를 바꿔도 기체의 잔량 %·이륙대기·배터리교체 상태는 자동으로 바뀌지 않습니다. 실제 교체 뒤 드론 메뉴에서도 해당 기체를 확인하세요.</p>'
     + '<div class="f3">'+fld('충전완료','batteries.ready','number','min="0" max="999"')
     + fld('충전중','batteries.charging','number','min="0" max="999"')
@@ -6006,6 +6066,7 @@ function consoleHtml2(){
           ? '<button class="btn primary" data-act="autofile">자동 백업 파일 선택…</button>' : '')
       + '<span class="hint" data-auto-save-status>'+esc(autoSaveLabel())+'</span>'
     + '</div>'
+    + '<p class="note" data-auto-file-status hidden></p>'
     + '<div class="note">자동 백업을 켜두면 지정한 파일에 변경분을 덮어씁니다. 창을 다시 열면 보관 파일도 다시 지정하세요. '
       + '약 30초마다 변경을 확인합니다. 파일을 지정하지 않으면 첫 변경 확인 때 JSON 다운로드를 요청하고, 이후 변경 시 최소 '+AUTOSAVE_MIN+'분 간격으로 요청합니다. '
       + '다운로드 목록에서 실제 파일 생성을 확인하세요. 브라우저 저장소와 자동 복구본은 브라우저 데이터 삭제 시 함께 사라질 수 있습니다.</div>'
@@ -6284,6 +6345,7 @@ function bindConsole(root){
         : '다른 입력 창의 편집권이 아직 유효합니다. 그 창을 닫고 최대 15초 후 다시 시도하세요.');
       return;
     }
+    if(act==='newincident'){startNewIncident(root);return;}
     if(act==='eventpage'){eventHistory.page=intv(b.getAttribute('data-page'),0);renderEventHistory(root);focusEventHistoryResults(root);return;}
     if(act==='confirmmapreview'){
       if(!ensureEditor())return;
@@ -6296,6 +6358,7 @@ function bindConsole(root){
       var menuButton=root.querySelector('#btnMoreNav');if(menuButton)menuButton.setAttribute('aria-expanded','false');
       var target=root.querySelector('#'+b.getAttribute('data-sec'));
       if(target){
+        if(target.id==='sec-batt')batteryReturnId=b.getAttribute('data-battery-drone')||'';
         if(mapDialog&&mapDialog.open&&mapDialog.contains(b)&&!mapDialog.contains(target))closeMapWorkspace();
         if(target.tagName==='DETAILS'){target.open=true;consoleFolds[target.dataset.fold]=true;}
         scrollToSection(root,target);
@@ -6829,6 +6892,13 @@ function stampName(){
   var n = new Date();
   return n.getFullYear()+p2(n.getMonth()+1)+p2(n.getDate())+'-'+p2(n.getHours())+p2(n.getMinutes());
 }
+function backupFileName(automatic){
+  var alias=String(S.mission.title||'미지정상황').normalize('NFKC')
+    .replace(/[<>:"/\\|?*\u0000-\u001F\u007F]/g,'_').replace(/\s+/g,' ').trim().replace(/^[. ]+|[. ]+$/g,'');
+  alias=Array.from(alias||'미지정상황').slice(0,40).join('').replace(/[. ]+$/g,'')||'미지정상황';
+  var n=new Date(),stamp=n.getFullYear()+p2(n.getMonth()+1)+p2(n.getDate())+'-'+p2(n.getHours())+p2(n.getMinutes())+p2(n.getSeconds());
+  return 'stayup-'+(automatic?'자동보관-':'')+alias+'-'+stamp+'.json';
+}
 /* 보관 파일 한 개만 있어도 복원 가능해야 한다. 지도 참조만 들어간 JSON은 상태상
    '지도 있음'인데 본체가 없어, 가장 최신 파일일수록 오히려 복원할 수 없게 된다. */
 function exportPayloadBase(includeMap){
@@ -6845,24 +6915,26 @@ function mapPayloadReadyBase(){
 var lastManualBackup=null;
 function manualBackupNotice(){
   if(!lastManualBackup||!S||lastManualBackup.epoch!==S.meta.epoch)return '';
-  if(!lastManualBackup.ok)return '백업 저장 요청이 실패했습니다. 오류 안내와 다운로드 목록을 확인한 뒤 다시 저장하세요.';
-  if(lastManualBackup.revision!==S.meta.revision)return '백업 이후 입력이 바뀌었습니다. 최신 내용으로 다시 백업하세요.';
-  return '백업 파일 내려받기를 요청했습니다. 다운로드 목록에서 파일을 확인하세요.';
+  var file=lastManualBackup.filename?'파일: '+lastManualBackup.filename+' · ':'';
+  if(!lastManualBackup.ok)return file+'백업 저장 요청이 실패했습니다. 오류 안내와 다운로드 목록을 확인한 뒤 다시 저장하세요.';
+  if(lastManualBackup.revision!==S.meta.revision)return file+'백업 이후 입력이 바뀌었습니다. 최신 내용으로 다시 백업하세요.';
+  return file+'백업 파일 내려받기를 요청했습니다. 다운로드 목록에서 파일을 확인하세요.';
 }
 function refreshManualBackupNotice(){
   var text=manualBackupNotice();
   document.querySelectorAll('[data-manual-backup-status]').forEach(function(el){if(el.textContent!==text)el.textContent=text;el.hidden=el.getAttribute('role')==='status'?false:!text;});
 }
-function noteManualBackup(ok){
-  lastManualBackup={epoch:S.meta.epoch,revision:S.meta.revision,ok:!!ok};refreshManualBackupNotice();
+function noteManualBackup(ok,filename){
+  lastManualBackup={epoch:S.meta.epoch,revision:S.meta.revision,ok:!!ok,filename:filename||''};refreshManualBackupNotice();
 }
 function exportJson(){
   if(!mapPayloadReady()){
     noteManualBackup(false);alert('지도 또는 탐지 사진을 아직 읽지 못해 백업 파일을 만들 수 없습니다. 잠시 후 다시 저장하세요.');
     return false;
   }
-  try{download('stayup-'+stampName()+'.json',exportPayload(true));noteManualBackup(true);return true;}
-  catch(error){noteManualBackup(false);alert(error.message);return false;}
+  var filename=backupFileName(false),requestedName=PRACTICE_MODE?'연습-'+filename:filename;
+  try{download(filename,exportPayload(true));noteManualBackup(true,requestedName);return true;}
+  catch(error){noteManualBackup(false,requestedName);alert(error.message);return false;}
 }
 
 /* ==========================================================================
@@ -6877,13 +6949,14 @@ var AUTOSAVE_MIN = 10;        /* 다운로드 폴백 주기(분) */
 var AUTOSAVE_FILE_MS = 20000; /* 파일 덮어쓰기 최소 간격 */
 var autoSaveHandle = null;    /* 세션 한정. 새로고침하면 다시 지정해야 한다 */
 var autoSaveAt = 0, autoSaveErr = '', autoSaveBusy = false, lastAutoSavedRev = -1;
+var autoSaveFilename='';
 var autoSavedMapVer = -1;     /* 지도를 마지막으로 보관에 포함한 판 번호 */
 var autoSaveGeneration=0;
 function resetAutoSaveSession(preserveAIFolder){
   if(!preserveAIFolder&&typeof aiFolderStop==='function')aiFolderStop('상황이 교체되어 폴더 연결을 해제했습니다. 다시 연결하세요.',false);
   /* 다른 상황의 기록을 이전 출동의 지정 파일에 덮지 않는다. 진행 중 쓰기는
      다음 비동기 경계에서 중단하고, 그 작업이 끝날 때까지 새 쓰기를 기다린다. */
-  autoSaveGeneration++;autoSaveHandle=null;autoSaveAt=0;autoSaveErr='';lastAutoSavedRev=-1;autoSavedMapVer=-1;
+  autoSaveGeneration++;autoSaveHandle=null;autoSaveAt=0;autoSaveErr='';lastAutoSavedRev=-1;autoSavedMapVer=-1;autoSaveFilename='';
   refreshAutoSavePill();
 }
 
@@ -6903,6 +6976,7 @@ function autoSaveLabel(){
 }
 function refreshAutoSavePill(){
   refreshManualBackupNotice();
+  document.querySelectorAll('[data-auto-file-status]').forEach(function(el){el.textContent=autoSaveFilename?'최근 자동 백업 파일: '+autoSaveFilename:'';el.hidden=!autoSaveFilename;});
   document.querySelectorAll('#autoSavePill,[data-auto-save-status]').forEach(function(el){
     el.textContent=autoSaveLabel();
     if(el.id==='autoSavePill')el.className='save-pill'+(!PRACTICE_MODE&&(!S.ui.autoSave||autoSaveErr)?' bad':'');
@@ -6916,7 +6990,7 @@ function pickAutoSaveFile(){
   }
   var pickerGeneration=autoSaveGeneration;
   window.showSaveFilePicker({
-    suggestedName:'stayup-'+stampName()+'.json',
+    suggestedName:backupFileName(true),
     types:[{description:'STAY UP 상황 데이터',accept:{'application/json':['.json']}}]
   }).then(function(h){
     if(pickerGeneration!==autoSaveGeneration||!ownsEditorLock())return;
@@ -6961,7 +7035,7 @@ function autoSaveTick(){
       });
     }).then(function(saved){
       if(!saved||!current())return;
-      autoSaveAt = Date.now(); lastAutoSavedRev = rev; autoSaveErr = '';
+      autoSaveAt = Date.now(); lastAutoSavedRev = rev; autoSaveErr = '';autoSaveFilename=handle.name||'';
       autoSavedMapVer = S.grid.mapVer;
     }, function(e){
       /* 권한이 끊기거나 파일이 사라지면 다운로드 방식으로 되돌아간다. */
@@ -6972,7 +7046,7 @@ function autoSaveTick(){
   }
   if(autoSaveAt && now - autoSaveAt < AUTOSAVE_MIN*60000) return;
   try{
-    download('stayup-자동보관-'+stampName()+'.json', exportPayload(true));
+    var filename=backupFileName(true);download(filename, exportPayload(true));autoSaveFilename=filename;
     autoSaveAt = now; lastAutoSavedRev = rev; autoSaveErr = '';
     autoSavedMapVer = S.grid.mapVer;
   }catch(e){ autoSaveErr = (e&&e.name)?e.name:String(e); }
@@ -7856,6 +7930,7 @@ function renderOnboarding(root){
 function updateNextStep(root){
   var cons=root.querySelector('.cons');if(!cons)return;
   var next=root.querySelector('.onboarding-next');if(!next){next=document.createElement('div');next.className='onboarding-next';cons.appendChild(next);}
+  var inline=root.querySelector('.step-nav');if(!inline){inline=document.createElement('nav');inline.className='step-nav';inline.setAttribute('aria-label','준비 단계 이동');}
   var welcome=!guidedStarted&&!hasIncidentContent();next.hidden=!onboardingOpen||welcome;
   var at=CONSOLE_FLOW.findIndex(function(step){return 'sec-'+step.id===consoleActiveSection;});
   var prev=at>0?CONSOLE_FLOW[at-1]:null,after=at>=0&&at<CONSOLE_FLOW.length-1?CONSOLE_FLOW[at+1]:null;
@@ -7865,6 +7940,14 @@ function updateNextStep(root){
     var primary=after?'<button class="btn primary" type="button" data-act="nav" data-sec="sec-'+after.id+'">다음: '+after.title+'</button>':at===CONSOLE_FLOW.length-1?'<button class="btn primary" type="button" data-act="export">상황 백업 저장</button>':'<button class="btn primary" type="button" data-act="nav" data-sec="sec-mission">준비 순서로 돌아가기</button>';
     next.innerHTML='<div><strong>'+(at<0?'추가 기능':(at+1)+' / '+CONSOLE_FLOW.length+' · '+CONSOLE_FLOW[at].title)+'</strong><span>'+(at===CONSOLE_FLOW.length-1?'내려받은 파일은 다운로드 목록에서 직접 확인하세요.':'아는 내용을 입력한 뒤 다음으로 이동하세요. 모르는 정보는 확인되지 않은 상태로 둘 수 있습니다.')+'</span><p class="note" data-manual-backup-status hidden></p></div><div class="row-tools">'+back+primary+'</div>';
   }
+  inline.hidden=next.hidden;
+  if(inline.dataset.target!==key){
+    inline.dataset.target=key;inline.innerHTML='<span>'+(at<0?'추가 기능':(at+1)+' / '+CONSOLE_FLOW.length)+'</span>';
+    var buttons=next.querySelector('.row-tools').cloneNode(true),exportButton=buttons.querySelector('[data-act="export"]');
+    if(exportButton){exportButton.remove();var hint=document.createElement('span');hint.className='note';hint.textContent='아래에서 상황 백업 저장';buttons.appendChild(hint);}
+    inline.appendChild(buttons);
+  }
+  var heading=root.querySelector('#'+consoleActiveSection+'>h2');if(heading&&heading.nextElementSibling!==inline)heading.after(inline);
   refreshManualBackupNotice();
 }
 async function startNewIncident(root){
