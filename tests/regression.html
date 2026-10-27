@@ -110,6 +110,8 @@ function drag(ids){
   /* Painting is now an explicit mode; the old sweep expectations stay intact. */
   W.setMapEditMode('paint');
   var host = W.document.getElementById('consMap');
+  /* 지도 준비 도구가 늘어나도 실제 보이는 지도에서 같은 쓸기를 검증한다. */
+  if(W.document.getElementById('consoleRoot').contains(host))W.scrollToSection(W.document.getElementById('consoleRoot'),host);
   var pts = ids.map(cellRect);
   var P = W.PointerEvent;
   host.dispatchEvent(new P('pointerdown', {bubbles:true, pointerId:1, button:0,
@@ -869,7 +871,7 @@ async function run(){
     autoPackages.length===2&&autoPackages.every(function(p){return typeof p.map==='string'&&p.map.indexOf('data:image/')===0;}),
     Math.round(W.__dlBytes[0]/1024) + 'KB → ' + Math.round(W.__dlBytes[1]/1024) + 'KB');
   ok('수동 내보내기는 항상 지도를 포함한다',
-    W.exportPayload(true).length > W.exportPayload(false).length * 2);
+    JSON.parse(W.exportPayload(true)).map===W.MAPDATA&&!Object.prototype.hasOwnProperty.call(JSON.parse(W.exportPayload(false)),'map'));
   var loadedIdentity=W.mapIdLoaded,downloadsBeforeMismatch=W.__dl.length;
   W.mapIdLoaded='이전-지도';
   var mismatchedExport=W.exportJson();W.mapIdLoaded=loadedIdentity;
@@ -898,6 +900,7 @@ async function run(){
   var staleApply=W.applyStateWithMap(staleState,W.MAPDATA);
   for(var lateWait=0;lateWait<20&&!resolveLatePut;lateWait++)await wait(25);
   W.mapBlobPut=realLatePut;
+  if(!resolveLatePut)throw new Error('늦은 지도 쓰기 시작 실패: '+W.SAVE_STATUS.message);
   var realClear=W.mapBlobClear,resolveClear;
   W.mapBlobClear=function(){return new Promise(function(resolve,reject){
     resolveClear=function(){realClear().then(resolve,reject);};

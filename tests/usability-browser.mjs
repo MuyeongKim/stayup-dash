@@ -67,7 +67,7 @@ try{
   await live.locator('#sec-data [data-sec="offlinePreparation"]').click();
   check('백업에서 지역 지도 준비로 바로 이동하고 입력값 보존',await live.locator('#tab-grid').getAttribute('aria-selected')==='true'&&await live.locator('details[data-fold="map-setup"]').evaluate(e=>e.open)&&await live.locator('#offlinePreparation h3').evaluate(e=>e===document.activeElement)&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
   check('빈 지도 준비 상태는 범위 누락과 환경에 맞는 다음 행동 명시',await live.locator('[data-offline-preparation="range"]').innerText().then(t=>t.includes('범위 미입력'))&&await live.locator('[data-offline-preparation="next"]').innerText().then(t=>process.argv.includes('--file')?t.includes('HTTPS'):t.includes('수색 범위')));
-  await live.locator('[data-sec="mapSourceSelect"]').click();
+  await live.getByRole('button',{name:'배경 선택으로',exact:true}).click();
   check('배경 선택 이동은 해당 선택칸에 초점을 두고 상황 보존',await live.locator('#mapSourceSelect').evaluate(e=>e===document.activeElement)&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
   await live.locator('#mapSourceSelect').selectOption('offline');await live.locator('[data-sec="onlineAreaSetup"]').click();
   check('새 범위 이동은 상세와 입력 위치만 열고 범위를 생성하지 않음',await live.locator('#onlineAreaSetup').evaluate(e=>e.open&&e.querySelector('summary')===document.activeElement)&&await live.evaluate(()=>exportPayload(true))===beforeBackupNav);
@@ -157,8 +157,8 @@ try{
   check('연습 안내에 실제 자동 보관 주기나 설정 이동을 섞지 않음',await practice.locator('#onboardingGuide [data-sec="sec-data"]').count()===0&&!await practice.locator('#onboardingGuide').innerText().then(t=>t.includes('30초')));
   const storage=await practice.evaluate(()=>({stateStorage:KEY,recoveryStorage:SNAPKEY,editorStorage:LOCKKEY,photoStorage:IDB_NAME,onlineStorage:ONLINE_KEYS_KEY}));
   check('연습 상태·복구·편집권·이미지·지도키 저장소 분리',
-    storage.stateStorage==='stayup.practice.v1'&&storage.recoveryStorage.startsWith('stayup.practice.')
-    &&storage.editorStorage.startsWith('stayup.practice.')&&storage.photoStorage==='stayup.practice'
+    storage.stateStorage==='stayup.practice4.v1'&&storage.recoveryStorage.startsWith('stayup.practice4.')
+    &&storage.editorStorage.startsWith('stayup.practice4.')&&storage.photoStorage==='stayup.practice.v4'
     &&storage.onlineStorage.startsWith('stayup.practice.'));
   await offlineMarker(practice,'stayup-practice-offline-regions-v1',true);
   const requests=[];practice.on('request',r=>{if(!r.url().startsWith(new URL(url).origin))requests.push(r.url());});

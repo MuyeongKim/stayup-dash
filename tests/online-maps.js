@@ -99,7 +99,8 @@ async function onlineMapReady(mock){
 function onlineMapScreenPoint(mock,x,y){
   var current=mock.current();if(!current)return null;
   var point=current.adapter.project(W.geoAt(x/100,y/100)),rect=current.element.getBoundingClientRect();
-  return {x:rect.left+point.x,y:rect.top+point.y};
+  var host=workspaceHost().getBoundingClientRect();
+  return {x:rect.left+point.x,y:rect.top+point.y,hx:host.left,hy:host.top};
 }
 async function onlineMapSetup(){
   await workspaceSetup();

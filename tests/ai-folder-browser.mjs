@@ -44,6 +44,7 @@ try{
   assert.deepEqual(native,{type:'FileSystemDirectoryHandle',kind:'directory',permission:'granted'});pass('real OS directory read permission / native handle');
   await publish(fixture);
   await page.evaluate(()=>{window.showDirectoryPicker=async()=>__handle;});
+  await page.locator('#tab-ai').click();
   await page.locator('[data-ai-action="folder"]').click();
   await page.waitForFunction((n)=>S.ai.candidates.length===n,expectedCount);
   assert.equal(await page.evaluate(()=>S.mission.title),'실제 폴더 보존 시험');pass('initial on-disk file automatically imported into existing mission');
@@ -68,7 +69,7 @@ try{
   await page.waitForFunction(()=>S.ai.candidates[0].review==='person');pass('manual file input remains functional after folder disconnect');
   await page.reload();await page.waitForFunction(()=>typeof aiFolder==='object');
   assert.equal(await page.evaluate(()=>aiFolder.session),null);assert.equal(await page.evaluate(()=>S.ai.candidates[0].responseNote),'실제 폴더 대응 보존');pass('reload restores records but never reconnects directory permission');
-  await page.locator('[data-ai-action="section"]').click();
+  await page.locator('#tab-ai').click();
   await page.screenshot({path:path.join(temp,'folder-console.png'),fullPage:true});
   console.log(JSON.stringify({passed,folder,native,screenshot:path.join(temp,'folder-console.png')}));
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

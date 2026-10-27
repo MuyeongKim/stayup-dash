@@ -13,13 +13,18 @@ async function runMapWorkspace(){
 
 function workspaceHost(){return W.document.getElementById('consMap');}
 function workspacePoint(x,y){
-  var rect=workspaceHost().querySelector('.mapfit').getBoundingClientRect();
-  return {x:rect.left+rect.width*x/100,y:rect.top+rect.height*y/100};
+  var rect=workspaceHost().querySelector('.mapfit').getBoundingClientRect(),host=workspaceHost().getBoundingClientRect();
+  return {x:rect.left+rect.width*x/100,y:rect.top+rect.height*y/100,hx:host.left,hy:host.top};
 }
 function workspacePointer(type,point,id,kind){
+  /* 좌표 검산은 순수하게 유지하고, 조작할 때만 지도를 화면 안으로 옮긴다. */
+  var root=W.document.getElementById('consoleRoot');
+  if(type==='pointerdown'&&root.contains(workspaceHost()))W.scrollToSection(root,workspaceHost());
+  var rect=workspaceHost().getBoundingClientRect(),x=point.x,y=point.y;
+  if(typeof point.hx==='number'){x+=rect.left-point.hx;y+=rect.top-point.hy;}
   workspaceHost().dispatchEvent(new W.PointerEvent(type,{bubbles:true,cancelable:true,
     pointerId:id||51,pointerType:kind||'mouse',isPrimary:!id||id===51,button:0,
-    buttons:type==='pointerup'||type==='pointercancel'?0:1,clientX:point.x,clientY:point.y}));
+    buttons:type==='pointerup'||type==='pointercancel'?0:1,clientX:x,clientY:y}));
 }
 function workspaceTap(point){
   workspacePointer('pointerdown',point);workspacePointer('pointerup',point);
