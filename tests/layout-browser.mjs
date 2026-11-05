@@ -50,6 +50,9 @@ try{
   const afterUpgrade=await page.evaluate(()=>exportPayload(true));await writeFile(path.join(out,'saved-after.json'),afterUpgrade);
   const previousRecord=JSON.parse(saved),updatedRecord=JSON.parse(afterUpgrade);
   delete previousRecord.appVersion;delete updatedRecord.appVersion;
+  // These additive defaults do not replace any existing operational field.
+  if(!Object.hasOwn(previousRecord.grid,'equipment')){check('이전 상황의 장비 표식은 빈 목록으로 시작',Array.isArray(updatedRecord.grid.equipment)&&updatedRecord.grid.equipment.length===0);delete updatedRecord.grid.equipment;}
+  if(!Object.hasOwn(previousRecord.grid,'viewLock')){check('이전 상황의 지도 화면은 자동 고정하지 않음',updatedRecord.grid.viewLock===null);delete updatedRecord.grid.viewLock;}
   check('앱 버전 표기 외 상황·격자·핀·인원·기체·후보 이미지·대응·이벤트를 그대로 유지',JSON.stringify(updatedRecord)===JSON.stringify(previousRecord));
   const readonly=await context.newPage();await readonly.goto(url);await readonly.waitForFunction(()=>typeof S!=='undefined'&&!ownsEditorLock());
   const readOnlyBefore=await readonly.evaluate(()=>exportPayload(true));

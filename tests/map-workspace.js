@@ -165,6 +165,8 @@ async function mapWorkspaceEdges(){
     &&labelRect.top>=hostRect.top-1&&labelRect.bottom<=hostRect.bottom+1);
   W.setPinMode('found');workspaceTap(workspacePoint(99,99));await wait(60);
   label=workspaceHost().querySelector('.pin.found .plb');labelRect=label.getBoundingClientRect();
+  // The tap scrolls the current map into view; compare against its current bounds.
+  hostRect=workspaceHost().getBoundingClientRect();
   ok('오른쪽 아래 가장자리에서도 핀 설명이 잘리지 않는다',
     workspaceNear(W.S.grid.pinFound.x,99)&&W.getComputedStyle(label).visibility!=='hidden'&&labelRect.right<=hostRect.right+1
     &&labelRect.bottom<=hostRect.bottom+1);

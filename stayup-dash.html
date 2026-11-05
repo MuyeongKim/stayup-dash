@@ -997,6 +997,33 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .map-fill{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
 .map-fill input{width:130px;min-width:0}
 .map-position{font-size:12px;line-height:1.45;color:var(--muted);padding:5px 0;overflow-wrap:anywhere;flex:0 0 auto}
+.equipment-tools{padding:10px 12px;margin:8px 0;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);font:14px/1.5 system-ui,sans-serif}
+.equipment-palette,.equipment-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.equipment-tools .btn{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.equipment-tools .note{margin:6px 0;font-size:12px}
+.equipment-tools summary{padding:8px 0;min-height:36px;cursor:pointer;font-size:13px;font-weight:650}
+.equipment-tools>summary{min-height:44px;font-size:14px}
+.equipment-body{padding-top:2px}
+.map-dialog .equipment-tools{padding:0 10px;margin:4px 0;flex:none}
+.map-dialog .equipment-tools>summary{min-height:32px;padding:6px 0}
+.map-dialog .equipment-body{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding-bottom:6px}
+.map-dialog .equipment-body .equipment-palette{margin:0}
+.map-dialog .equipment-body .note{margin:0;flex:1 1 160px}
+.map-dialog .equipment-body>details{font-size:12px}
+.map-dialog .map-position-tools{padding:6px 10px;margin-bottom:4px;flex:none;display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
+.map-dialog .map-position-tools p{margin:0;line-height:1.4;font-size:12px;flex:1 1 220px}
+.map-dialog .field-toolbar{margin:4px 0}
+.equipment-list .btn{max-width:100%;text-align:left;overflow-wrap:anywhere}
+.equipment-list svg{flex:none}
+.equipment-layer{position:absolute;inset:0;pointer-events:none;z-index:4}
+.equipment-marker{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;border:2px solid var(--control-border);border-radius:8px;color:var(--text);background:var(--surface);box-shadow:0 1px 4px #0005;display:grid;place-items:center;pointer-events:auto;cursor:pointer;padding:6px;touch-action:manipulation}
+.equipment-marker svg{width:28px;height:28px;pointer-events:none}
+.equipment-marker:focus-visible{outline:3px solid var(--info);outline-offset:3px;z-index:3}
+.equipment-label{position:absolute;top:46px;left:0;white-space:normal;width:max-content;overflow-wrap:anywhere;padding:3px 6px;border:1px solid var(--control-border);border-radius:4px;background:var(--surface);color:var(--text);font:700 12px/1.4 system-ui,sans-serif;box-shadow:0 1px 3px #0003;pointer-events:none}
+.equipment-label small{display:block;font-size:10px;font-weight:500}
+.equipment-placing{position:absolute;z-index:16;top:6px;left:6px;right:6px;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:7px 9px;border:2px solid var(--info);background:var(--surface);color:var(--text);font:700 13px/1.5 system-ui,sans-serif;border-radius:6px}
+.equipment-placing .btn{min-height:44px;flex:none}
+@media(max-width:480px){.equipment-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.equipment-palette .btn{justify-content:center}.equipment-placing{font-size:12px}.equipment-tools{padding:8px}.equipment-label{max-width:160px;white-space:normal;width:max-content}}
 .map-empty-actions{display:flex;gap:10px;align-items:center;padding:12px;background:var(--surface2);border:1px dashed var(--control-border);border-radius:6px;margin-top:8px}
 .map-empty-actions span{font-size:13px;color:var(--muted)}
 .offline-environment{padding:12px;border:1px solid var(--warn);border-radius:6px;background:var(--surface2);margin:10px 0}
@@ -1263,11 +1290,29 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .field-editbar{position:absolute;left:8px;bottom:8px;z-index:15;max-width:calc(100% - 16px);padding:7px;background:var(--surface);border:1px solid var(--control-border);border-radius:7px;display:flex;gap:6px;flex-wrap:wrap;font-size:13px;align-items:center}.field-editbar .btn{min-height:44px;padding:6px 9px;font-size:13px;white-space:normal}.field-editing{max-height:calc(100svh - 250px)}
 .map-dialog .field-quick{display:none}
 .field-dialog-safety{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px;border:1px solid var(--control-border);border-radius:6px;margin:8px 0;font-size:13px}.field-dialog-safety>span{flex:1 1 240px}.field-dialog-safety .btn{font-size:13px}.field-dialog-safety.danger{background:#7f1d1d;color:#fff}
+/* MAP_POSITION_STYLES */
+.map-position-tools{padding:12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);margin:0 0 10px}
+.map-position-tools p{margin:8px 0 0;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.map-position-tools.is-locked{border-color:var(--info)}
+.map-position-preview{height:320px;position:relative;isolation:isolate;border:1px solid var(--border2);border-radius:6px;overflow:hidden;background:var(--surface2);margin:10px 0}
+#mapPositionCanvas,.map-position-capture{position:absolute;inset:0}
+.map-position-capture{z-index:2;cursor:grab;touch-action:none}
+.map-position-capture:active{cursor:grabbing}
+.map-position-capture:focus-visible{outline:3px solid var(--info);outline-offset:-4px}
+.map-position-cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 26px/1 system-ui,sans-serif;color:#112d42;background:#fff;border:1px solid #112d42;border-radius:50%;padding:3px;z-index:3;pointer-events:none}
+.map-position-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;z-index:4;background:var(--surface2);pointer-events:none}
+.map-position-empty[hidden]{display:none}
+.map-position-warning{border-left:4px solid var(--warn);padding:12px;background:var(--surface2);margin:10px 0;line-height:1.6}
+.map-position-key{padding:10px;border:1px solid var(--border2);border-radius:6px;margin-bottom:10px}
+.map-position-key summary{font-weight:700;min-height:32px;cursor:pointer}
+.map-position-key p,.map-position-intro{line-height:1.65}
+@media(max-width:420px){.map-position-preview{height:260px}.map-position-tools .btn{min-height:44px}}
+/* MAP_POSITION_STYLES_END */
 </style>
 <style>
 /* 주간 입력 화면: 기존 탭 구조·경보 의미를 유지하고 면과 글자의 밝기를 분리한다. */
 :root{color-scheme:dark;--panel:var(--surface);--text2:var(--muted)}
-:is(.cons,.board,.map-dialog,.ai-detail)[data-theme="light"]{
+:is(.cons,.board,.map-dialog,.ai-detail,.field-dialog)[data-theme="light"]{
   color-scheme:light;--bg:#F2F5F8;--surface:#FFFFFF;--surface2:#EDF2F7;--surface3:#DFE8F0;
   --border:#C5D2DE;--border2:#A8BDCF;--control-border:#627C92;--text:#182F42;
   --muted:#425C72;--muted2:#4D6478;--ok:#157442;--warn:#815600;--danger:#B52130;--info:#086A9D;
@@ -1627,7 +1672,7 @@ function defaultState(){
          가로 실거리도 손입력이 아니라 계산값을 쓴다. 없으면 종전과 같이 픽셀 좌표계. */
       geo:null, ref1:null, ref2:null,
       mapNatW:0, mapNatH:0,   /* 축소 전 원본 픽셀 크기 (world file 해석에 필요) */
-      pinLast:null, pinFound:null, layout:null, regions:[], history:[]
+      pinLast:null, pinFound:null, layout:null, regions:[], history:[], viewLock:null, equipment:[]
     },
     ai:{runs:[],candidates:[]},
     events:[],
@@ -2054,6 +2099,7 @@ function migrate(raw){
   d.grid.offlineId=sanText(g.offlineId,128);
   d.grid.source=['naver','google','offline'].indexOf(g.source)>=0?g.source:'image';
   d.grid.mapType=g.mapType==='satellite'?'satellite':'roadmap';
+  d.grid.viewLock=mapPositionNormalizeLock(g.viewLock);
   d.grid.rows=sanInt(g.rows,1,12,5); d.grid.cols=sanInt(g.cols,1,12,6); d.grid.cells={};
   d.grid.generation=/^[a-z0-9_-]{3,100}$/i.test(String(g.generation||''))?String(g.generation):'legacy-grid';
   if(isPlainObject(g.cells)) Object.keys(g.cells).slice(0,144).forEach(function(k){
@@ -2073,6 +2119,7 @@ function migrate(raw){
   d.grid.widthMeters=sanNum(g.widthMeters,50,100000,2000,false);
   function pin(v){ return isPlainObject(v) ? {x:sanNum(v.x,0,100,50,false),y:sanNum(v.y,0,100,50,false)} : null; }
   d.grid.pinLast=pin(g.pinLast); d.grid.pinFound=pin(g.pinFound);
+  d.grid.equipment=equipmentNormalize(g.equipment);
   d.grid.mapNatW=sanInt(g.mapNatW,0,200000,0); d.grid.mapNatH=sanInt(g.mapNatH,0,200000,0);
   d.grid.geo=(function(v){
     if(!isPlainObject(v)) return null;
@@ -2620,14 +2667,14 @@ function readMapFromStore(){
 /* 이미지 본체를 저장소에 먼저 쓰고, 성공하면 상태를 동기로 커밋한다.
    상태 커밋이 실패하면 방금 쓴 블롭을 지워 고아를 남기지 않는다. */
 function hasSpatialData(state){
-  return !!(state.grid.layout||(state.grid.regions||[]).length||state.grid.pinLast||state.grid.pinFound||state.grid.geo||state.grid.ref1||state.grid.ref2
+  return !!(state.grid.layout||(state.grid.regions||[]).length||(state.grid.equipment||[]).length||state.grid.pinLast||state.grid.pinFound||state.grid.geo||state.grid.ref1||state.grid.ref2
     ||Object.keys(state.grid.cells).some(function(k){var c=state.grid.cells[k];return c&&(c.s||c.by);})
     ||state.drones.some(function(d){return !!d.zone;}));
 }
 function resetSpatialGrid(state,clearPins){
   state.grid.cells={};state.grid.generation=uid();
   state.drones.forEach(function(d){d.zone='';});
-  if(clearPins){state.grid.pinLast=null;state.grid.pinFound=null;state.grid.spatialReview=false;state.grid.layout=null;state.grid.regions=[];}
+  if(clearPins){state.grid.pinLast=null;state.grid.pinFound=null;state.grid.spatialReview=false;state.grid.layout=null;state.grid.regions=[];state.grid.equipment=[];state.grid.viewLock=null;}
 }
 var gridDimensionsDraft=null;
 function gridDimensionValue(key){
@@ -3011,7 +3058,7 @@ function fieldNormalizeGrid(raw){
     var geo=old.geo===null?null:old.geo;
     if(geo&&validateGeo(geo).err)throw Error('이전 지도 좌표가 올바르지 않습니다.');
     return {id:item.id,at:item.at,reason:sanText(item.reason,120),grid:{rows:old.rows,cols:old.cols,cells:cells,generation:sanText(old.generation,100),layout:FieldGeometry.layout(old.layout),regions:regions(old.regions),geo:geo?Object.assign({},geo):null,
-      mapId:old.mapId&&/^[a-z0-9_-]{3,100}$/i.test(old.mapId)?old.mapId:null,mapVer:sanInt(old.mapVer,0,2147483647,0),source:['image','naver','google','offline'].includes(old.source)?old.source:'image',mapW:sanInt(old.mapW,0,100000,0),mapH:sanInt(old.mapH,0,100000,0)},
+      mapId:old.mapId&&/^[a-z0-9_-]{3,100}$/i.test(old.mapId)?old.mapId:null,mapVer:sanInt(old.mapVer,0,2147483647,0),source:['image','naver','google','offline'].includes(old.source)?old.source:'image',mapW:sanInt(old.mapW,0,100000,0),mapH:sanInt(old.mapH,0,100000,0),equipment:equipmentNormalize(old.equipment)},
       drones:(Array.isArray(item.drones)?item.drones:[]).slice(0,50).map(function(d){return {id:sanText(d.id,80),name:sanText(d.name,80),zone:sanText(d.zone,40)};})};
   });
   return {layout:FieldGeometry.layout(raw.layout),regions:regions(raw.regions),history:history};
@@ -3021,7 +3068,7 @@ function archiveFieldGrid(state,reason){
   if(state.grid.history.length>=20)throw Error('구역 변경 이력이 20개입니다. 상황을 백업하고 새 수색으로 분리하세요. 기존 이력을 자동 삭제하지 않습니다.');
   var old=state.grid;
   state.grid.history.push({id:uid(),at:Date.now(),reason:reason,grid:{rows:old.rows,cols:old.cols,cells:JSON.parse(JSON.stringify(old.cells)),generation:old.generation,layout:old.layout?Object.assign({},old.layout):null,regions:JSON.parse(JSON.stringify(old.regions||[])),geo:old.geo?Object.assign({},old.geo):null,
-    mapId:old.mapId,mapVer:old.mapVer,source:old.source,mapW:old.mapW,mapH:old.mapH},drones:state.drones.map(function(d){return {id:d.id,name:d.name,zone:d.zone};})});
+    mapId:old.mapId,mapVer:old.mapVer,source:old.source,mapW:old.mapW,mapH:old.mapH,equipment:JSON.parse(JSON.stringify(old.equipment||[]))},drones:state.drones.map(function(d){return {id:d.id,name:d.name,zone:d.zone};})});
 }
 function fieldHistoryIds(state){return (state&&state.grid&&state.grid.history||[]).map(function(h){return h.grid.mapId;}).filter(Boolean);}
 function fieldAspect(){
@@ -6384,7 +6431,7 @@ function bindConsole(root){
     setTimeout(function(){
       broadcast();
       if(MAPDATA){ try{ peer.postMessage({ch:PEER_CHANNEL,type:'map',data:MAPDATA,practice:PRACTICE_MODE},PEER_ORIGIN); }catch(e){} }
-      renderConsole(MODE==='console' ? $('consoleRoot') : $('drawerIn'));
+      scheduleConsoleRefresh(MODE==='console' ? $('consoleRoot') : $('drawerIn'));
     }, 700);
   };
   var cd = root.querySelector('#btnCloseDrawer');
@@ -8044,10 +8091,11 @@ function fieldToolsHtml(){
     +'<details><summary>키보드로 꼭짓점 위치 입력·수정</summary><div class="f3">'+number('field-point-index','수정할 꼭짓점 번호',fieldForm.point.index,1,32)+number('field-point-x','가로 위치 (%)',fieldForm.point.x,0,100,.1)+number('field-point-y','세로 위치 (%)',fieldForm.point.y,0,100,.1)+'</div><div class="field-row"><button type="button" class="btn" data-field-action="point-add">이 위치에 점 추가</button><button type="button" class="btn" data-field-action="point-insert">선택점 뒤에 추가</button><button type="button" class="btn" data-field-action="point-edit">선택점 위치 수정</button><button type="button" class="btn" data-field-action="point-delete">선택점 삭제</button></div></details>'
     +'<details><summary>변경 전 구역 이력 ('+(S.grid.history||[]).length+'개)</summary><div class="field-history">';
   (S.grid.history||[]).slice().reverse().forEach(function(entry){
-    html+='<details><summary>'+esc(shortDateTime(entry.at)+' · '+entry.reason)+'</summary><p>격자 '+entry.grid.rows+'×'+entry.grid.cols+' · 자유 구역 '+entry.grid.regions.length+'개 · 이전 지도 '+esc(entry.grid.mapId||entry.grid.source)+'</p><table><tr><th>구역</th><th>상태·담당</th><th>당시 중심 좌표</th></tr>';
+    html+='<details><summary>'+esc(shortDateTime(entry.at)+' · '+entry.reason)+'</summary><p>격자 '+entry.grid.rows+'×'+entry.grid.cols+' · 자유 구역 '+entry.grid.regions.length+'개 · 장비 '+(entry.grid.equipment||[]).length+'개 · 이전 지도 '+esc(entry.grid.mapId||entry.grid.source)+'</p><table><tr><th>구역</th><th>상태·담당</th><th>당시 중심 좌표</th></tr>';
     Object.keys(entry.grid.cells).forEach(function(id){var c=entry.grid.cells[id],row=id.charCodeAt(0)-65,col=Number(id.slice(1))-1,p=FieldGeometry.point(entry.grid.layout,(col+.5)/entry.grid.cols,(row+.5)/entry.grid.rows),g=entry.grid.geo;
       html+='<tr><td>'+esc(id)+'</td><td>'+esc(CELL_ST[c.s]+' · '+(c.by||'담당 없음'))+'</td><td>'+(g?esc(fmtLatLon({lat:g.north+p.y*(g.south-g.north),lon:g.west+p.x*(g.east-g.west)})):'당시 좌표 미보정')+'</td></tr>';});
     html+='</table><p>'+esc(entry.drones.filter(function(d){return d.zone;}).map(function(d){return d.name+': '+d.zone;}).join(' · '))+'</p>';
+    if((entry.grid.equipment||[]).length)html+='<p>당시 장비 배치 (수동 표시)</p><ul>'+entry.grid.equipment.map(function(p){var g=entry.grid.geo;return '<li>'+esc((p.name||EQUIPMENT_TYPES[p.kind])+(p.kind==='drone'?' · '+equipmentRole(p):'')+' · '+(g?fmtLatLon({lat:g.north+(g.south-g.north)*p.y/100,lon:g.west+(g.east-g.west)*p.x/100}):'가로 '+p.x+'% · 세로 '+p.y+'%'))+'</li>';}).join('')+'</ul>';
     entry.grid.regions.forEach(function(area){var g=entry.grid.geo;html+='<details><summary>'+esc((area.name||'자유 구역')+' · '+CELL_ST[area.s]+' · '+(area.by||'담당 없음'))+'</summary><ol>'+area.points.map(function(p){return '<li>'+esc(g?fmtLatLon({lat:g.north+p.y*(g.south-g.north),lon:g.west+p.x*(g.east-g.west)}):'가로 '+(p.x*100).toFixed(2)+'% · 세로 '+(p.y*100).toFixed(2)+'%')+'</li>';}).join('')+'</ol></details>';});
     html+='</details>';
   });
@@ -8307,6 +8355,188 @@ function openCoordinatePicker(){
 }
 document.addEventListener('click',function(ev){var button=ev.target.closest('[data-field-action]');if(!button)return;if(button.dataset.fieldAction==='message')openFieldMessage();if(button.dataset.fieldAction==='coordinate')openCoordinatePicker();});
 
+/* MAP_POSITION_TOOLS: saved camera lock is separate from the fixed search geometry. */
+function mapPositionNormalizeLock(raw){
+  if(!isPlainObject(raw)||raw.source!=='naver'||!Number.isFinite(raw.lat)||!Number.isFinite(raw.lon)||!Number.isFinite(raw.zoom)
+    ||Math.abs(raw.lat)>85||Math.abs(raw.lon)>180||raw.zoom<1||raw.zoom>21)return null;
+  return {lat:raw.lat,lon:raw.lon,zoom:raw.zoom,source:'naver'};
+}
+function mapPositionLock(){
+  var lock=mapPositionNormalizeLock(S.grid.viewLock);
+  return lock&&geoOK()&&S.grid.source===lock.source&&effectiveMapSource()===lock.source?lock:null;
+}
+function mapPositionScope(){return [SESSION_EPOCH,stateLifecycleSeq,S.grid.generation,S.grid.mapId,S.grid.mapVer,JSON.stringify(S.grid.geo)].join('|');}
+function mapPositionHasUncalibrated(){return !geoOK()&&!!(S.grid.hasMap||MAPDATA||hasSpatialData(S));}
+function mapPositionEnforce(rec){
+  var lock=mapPositionLock();if(!lock||!rec||rec.source!==lock.source||!rec.adapter||rec.error||rec.fitting)return false;
+  var adapter=rec.adapter,v=mapViewState(rec.host),center=adapter.getCenter();
+  if(rec.width!==rec.host.clientWidth||rec.height!==rec.host.clientHeight){rec.width=rec.host.clientWidth;rec.height=rec.host.clientHeight;adapter.resize();}
+  rec.baseZoom=lock.zoom;v.zoom=rec.zoom=1;v.x=rec.x=0;v.y=rec.y=0;
+  if(Math.abs(adapter.getZoom()-lock.zoom)>1e-8)adapter.setZoom(lock.zoom);
+  if(!center||Math.abs(center.lat-lock.lat)>1e-9||Math.abs(center.lon-lock.lon)>1e-9)adapter.setCenter({lat:lock.lat,lon:lock.lon});
+  return true;
+}
+function mountMapPositionTools(){
+  ['consMap','mapWrap'].forEach(function(id){
+    var host=$(id),workspace=host&&host.closest('[data-map-workspace]');if(!workspace)return;
+    var bar=workspace.querySelector('[data-map-position-tools]');
+    if(!bar){
+      bar=document.createElement('div');bar.className='map-position-tools';bar.dataset.mapPositionTools=id;
+      bar.innerHTML=(id==='consMap'?'<div class="row-tools"><button type="button" class="btn primary" data-position-action="open">네이버지도 위치 맞추기</button><button type="button" class="btn" data-position-action="lock-current" hidden>현재 화면 고정</button><button type="button" class="btn" data-position-action="unlock" hidden>고정 해제</button></div>':'')+'<p data-position-status role="status"></p>';
+      workspace.insertBefore(bar,workspace.firstChild);
+    }
+    var lock=mapPositionLock(),status=bar.querySelector('[data-position-status]');
+    var text=lock?'화면 고정됨 · 이동·확대 잠금 · 장비·핀·구역 기록은 계속할 수 있습니다.'
+      :S.grid.viewLock&&effectiveMapSource()==='offline'?'저장한 지역 지도로 전환됨 · 네이버지도 화면 고정은 다시 연결되면 적용됩니다.'
+      :id==='consMap'?'① 네이버지도 위치 맞추기 → ② 이 위치로 지도 고정 → ③ 장비·핀 배치':'지도 화면은 자유롭게 이동할 수 있습니다.';
+    if(status.textContent!==text)status.textContent=text;bar.classList.toggle('is-locked',!!lock);bar.hidden=id==='mapWrap'&&!lock&&!(S.grid.viewLock&&effectiveMapSource()==='offline');
+    bar.querySelectorAll('[data-position-action]').forEach(function(button){
+      var action=button.dataset.positionAction;button.disabled=!ownsEditorLock();
+      if(action==='unlock')button.hidden=!lock;
+      if(action==='lock-current')button.hidden=!!lock||S.grid.source!=='naver'||!onlineMapReady(host);
+    });
+    workspace.querySelectorAll('[data-map-action]').forEach(function(button){
+      if(['zoom-in','zoom-out','fit','pan-left','pan-right','pan-up','pan-down'].includes(button.dataset.mapAction)){
+        if(lock){button.disabled=true;button.dataset.positionDisabled='1';}
+        else if(button.dataset.positionDisabled){button.disabled=false;delete button.dataset.positionDisabled;}
+      }
+    });
+    if(lock){var zoom=workspace.querySelector('[data-map-zoom]');if(zoom)zoom.textContent='고정 · '+Math.round(lock.zoom*10)/10+'단계';host.classList.remove('map-pan-enabled');}
+  });
+}
+function commitMapPosition(lock,scope,geo,type){
+  if(!ensureEditor()||scope!==mapPositionScope()){mapMsg('상황·지도 또는 수색 범위가 바뀌었습니다. 위치를 다시 확인하세요.','warn');return false;}
+  if(fieldEdit){mapMsg('진행 중인 격자·자유 구역 초안을 먼저 저장하거나 취소하세요.','warn');return false;}
+  if(mapPositionHasUncalibrated()){mapMsg('기존 사진·표식의 좌표를 먼저 보정하세요. 기존 자료는 유지했습니다.','warn');return false;}
+  lock=mapPositionNormalizeLock(lock);if(!lock)return false;
+  if(!geoOK()&&(!geo||onlineGeoError(geo))){mapMsg('화면에 보이는 지도의 범위를 확인하고 다시 시도하세요.','warn');return false;}
+  if(!saveRecoveryPoint('네이버지도 화면 고정 전')){mapMsg('복구본을 만들 수 없어 지도 고정을 중단했습니다.','err');return false;}
+  var next=migrate(S);next.grid.source='naver';next.grid.viewLock=lock;if(type)next.grid.mapType=type==='satellite'?'satellite':'roadmap';
+  if(!geoOK()){next.grid.geo=Object.assign({},geo,{src:'online',at:Date.now()});next.grid.generation=uid();}
+  touchState(next);if(!persistCandidate(next))return false;
+  cancelMapInteraction();pinMode=null;mapEditMode='view';offlineFallback=false;S=next;lastSeenUpdated=S.meta.updated;
+  broadcast();renderAll();mapMsg('네이버지도 화면을 고정했습니다. 기존 수색 범위·표식·기록을 유지하며 장비를 배치할 수 있습니다.','ok');return true;
+}
+function unlockMapPosition(){
+  if(!ensureEditor()||!S.grid.viewLock)return false;
+  if(fieldEdit){mapMsg('진행 중인 격자·자유 구역 초안을 먼저 저장하거나 취소하세요.','warn');return false;}
+  var next=migrate(S);next.grid.viewLock=null;touchState(next);if(!persistCandidate(next))return false;
+  cancelMapInteraction();S=next;lastSeenUpdated=S.meta.updated;
+  Object.keys(onlineHosts).forEach(function(id){var rec=onlineHosts[id];if(!rec.adapter||rec.error)return;var z=rec.adapter.getZoom(),v=mapViewState(rec.host);rec.baseZoom=Math.max(1,z-3);v.zoom=rec.zoom=Math.pow(2,z-rec.baseZoom);v.x=rec.x=0;v.y=rec.y=0;});
+  broadcast();renderAll();mapMsg('화면 고정을 해제했습니다. 현재 위치는 유지하며 이동·확대할 수 있습니다. 수색 범위와 장비 위치는 바뀌지 않습니다.','ok');return true;
+}
+function openMapPosition(){
+  if(!ensureEditor())return;
+  if(fieldEdit){mapMsg('진행 중인 격자·자유 구역 초안을 먼저 저장하거나 취소하세요.','warn');return;}
+  if(typeof equipmentDraft!=='undefined'&&equipmentDraft){mapMsg('진행 중인 장비 배치를 먼저 완료하거나 취소하세요.','warn');return;}
+  var scope=mapPositionScope(),keys=getOnlineKeys(),fileMode=!/^https?:$/.test(location.protocol),uncalibrated=mapPositionHasUncalibrated();
+  var dialog=fieldDialog('네이버지도 위치 맞추기','<p class="map-position-intro">지도를 이동·확대해 현장 위치를 맞춘 뒤 <b>이 위치로 지도 고정</b>을 누르세요. 기존 수색 범위·구역·표식·기록은 그대로 유지합니다.</p>'
+    +(fileMode?'<div class="map-position-warning">파일을 직접 연 화면에서는 네이버지도를 연결할 수 없습니다. HTTPS 또는 localhost 주소로 실행하세요. 기존 사진 지도와 입력 내용은 유지됩니다.</div>':'')
+    +(uncalibrated?'<div class="map-position-warning">기존 사진·표식에 좌표가 없습니다. 지도·격자 설정에서 사진 좌표를 먼저 보정해야 같은 위치로 옮길 수 있습니다. 지금은 미리보기만 가능합니다.</div>':'')
+    +'<details class="map-position-key"'+(!keys.naver?' open':'')+'><summary>① 네이버지도 연결 설정'+(keys.naver?' · 키 저장됨':'')+'</summary><p>네이버 Maps에서 Web Dynamic Map과 현재 웹 주소를 등록한 뒤 브라우저용 Client ID를 입력하세요. Client Secret은 입력하지 않습니다. 키는 이 브라우저에만 저장되며 상황 백업에는 넣지 않습니다. 이용량에 따라 비용이 발생할 수 있습니다.</p><label>브라우저용 NAVER Client ID<input id="mapPositionKey" type="password" autocomplete="off" spellcheck="false" placeholder="'+(keys.naver?'저장된 키 사용 · 변경할 때만 입력':'웹 지도용 Client ID 입력')+'"></label><p><a href="https://guide.ncloud-docs.com/docs/maps-app" target="_blank" rel="noopener noreferrer">네이버 인증키·웹 주소 등록 안내</a></p></details>'
+    +'<div class="field-row"><button type="button" class="btn" id="mapPositionConnect"'+(fileMode?' disabled':'')+'>'+(!keys.naver?'키 저장하고 지도 불러오기':'네이버지도 불러오기')+'</button><label>지도 종류<select id="mapPositionType"><option value="roadmap">일반지도</option><option value="satellite"'+(S.grid.mapType==='satellite'?' selected':'')+'>위성지도</option></select></label></div>'
+    +'<p><b>② 위치 맞추기</b> · 지도를 끌거나 방향키로 이동합니다. 확대·축소 버튼 또는 + / − 키를 사용하세요.</p>'
+    +'<div class="map-position-preview"><div id="mapPositionCanvas"></div><div class="map-position-capture" tabindex="0" role="group" aria-label="네이버지도 미리보기. 방향키로 이동, 더하기와 빼기 키로 확대와 축소."></div><span class="map-position-cross" aria-hidden="true">＋</span><span class="map-position-empty">지도를 불러오면 여기에 표시됩니다.</span></div>'
+    +'<div class="field-row"><button type="button" class="btn" data-position-preview="in" disabled>확대</button><button type="button" class="btn" data-position-preview="out" disabled>축소</button><button type="button" class="btn" data-position-preview="range"'+(!geoOK()?' hidden':'')+' disabled>기존 수색 범위 보기</button></div>'
+    +'<details><summary>좌표를 알고 있다면 직접 이동</summary><div class="f2"><label>위도<input id="mapPositionLat" type="number" step="any" min="-85" max="85"></label><label>경도<input id="mapPositionLon" type="number" step="any" min="-180" max="180"></label></div><button type="button" class="btn" id="mapPositionJump" disabled>이 좌표로 이동</button></details>'
+    +'<p id="mapPositionCamera" role="status">아직 지도 위치를 선택하지 않았습니다.</p><p class="note">'+(geoOK()?'화면을 다른 지역으로 옮겨도 기존 수색 범위 자체는 바뀌지 않습니다. 범위 밖에는 장비·핀을 배치할 수 없습니다. 위치를 놓쳤다면 기존 수색 범위 보기를 누르세요.':'기존 수색 범위가 없는 경우에만 지금 보이는 범위를 새 수색 범위로 지정합니다.')+' 화면 고정은 오프라인 저장이 아닙니다.</p>'
+    +'<div class="field-row"><button type="button" class="btn primary" id="mapPositionApply" disabled>③ 이 위치로 지도 고정</button><button type="button" class="btn" data-field-close>취소</button></div>');
+  dialog.dataset.mapPosition='';dialog.dataset.theme=viewPreferences.consoleTheme;
+  var canvas=dialog.querySelector('#mapPositionCanvas'),capture=dialog.querySelector('.map-position-capture'),apply=dialog.querySelector('#mapPositionApply'),connect=dialog.querySelector('#mapPositionConnect'),type=dialog.querySelector('#mapPositionType');
+  var adapter=null,request=0,drag=null,connectedType='roadmap',operationFailed=false;
+  function current(){return dialog.open&&Number(dialog.dataset.seq)===stateLifecycleSeq&&dialog.dataset.epoch===SESSION_EPOCH&&scope===mapPositionScope()&&ownsEditorLock();}
+  function update(){
+    if(!adapter||!dialog.open)return;var center=adapter.getCenter(),zoom=adapter.getZoom();
+    if(!center)return;dialog.querySelector('#mapPositionCamera').textContent='화면 중심 '+center.lat.toFixed(6)+', '+center.lon.toFixed(6)+' · 확대 '+Math.round(zoom*10)/10+'단계 · 아직 적용하지 않았습니다.';
+    apply.disabled=!current()||uncalibrated||operationFailed||type.value!==connectedType;
+    var bounds=!geoOK()&&!uncalibrated?previewGeo():null,boundsError=!geoOK()&&!uncalibrated&&(!bounds||onlineGeoError(bounds));
+    if(boundsError)apply.disabled=true;
+    if(!current())fieldStatus(dialog,'상황·지도 또는 편집권이 바뀌었습니다. 창을 닫고 위치 맞추기를 다시 시작하세요.');
+    else if(boundsError)fieldStatus(dialog,'수색 범위가 너무 넓거나 지도 경계를 벗어났습니다. 현장 위치로 이동한 뒤 지도를 더 확대하세요.');
+    else if(uncalibrated)fieldStatus(dialog,'기존 사진·표식의 좌표를 먼저 보정하세요. 기존 자료는 유지됩니다.');
+    else if(!operationFailed&&type.value===connectedType)fieldStatus(dialog,'실제 현장 위치와 지형을 대조하세요. 위치를 맞춘 뒤 아래의 고정 버튼을 누릅니다.');
+  }
+  function previewGeo(){if(!adapter)return null;var nw=adapter.unproject({x:0,y:0}),se=adapter.unproject({x:canvas.clientWidth,y:canvas.clientHeight});return nw&&se?{north:nw.lat,south:se.lat,west:nw.lon,east:se.lon}:null;}
+  function setReady(ready){dialog.querySelectorAll('[data-position-preview],#mapPositionJump').forEach(function(b){b.disabled=!ready;});apply.disabled=!ready||uncalibrated||!current();dialog.querySelector('.map-position-empty').hidden=ready;}
+  function dispose(){request++;drag=null;if(adapter){adapter.destroy();adapter=null;}}
+  dialog.fieldDispose=dispose;
+  connect.onclick=async function(){
+    if(!current()){fieldStatus(dialog,'상황·지도 또는 편집권이 바뀌었습니다. 창을 닫고 다시 시작하세요.');return;}
+    var own=++request;drag=null;operationFailed=false;if(adapter){adapter.destroy();adapter=null;}canvas.replaceChildren();setReady(false);
+    try{
+      var entered=dialog.querySelector('#mapPositionKey').value.trim();
+      if(entered){var saved=getOnlineKeys();saved.naver=entered;if(!saveOnlineKeys(saved))throw Error('키 형식을 확인하거나 저장공간을 확인하세요.');dialog.querySelector('#mapPositionKey').value='';}
+      var error=onlineEnvironmentError('naver');if(error)throw Error(error);
+      var lock=mapPositionLock(),center=lock?{lat:lock.lat,lon:lock.lon}:geoOK()?geoAt(.5,.5):coordinateStatus().ok?{lat:S.mission.lat,lon:S.mission.lon}:{lat:36.5,lon:127.8};
+      var bounds=geoOK()?S.grid.geo:{north:Math.min(84.99,center.lat+.05),south:Math.max(-84.99,center.lat-.05),east:Math.min(179.99,center.lon+.05),west:Math.max(-179.99,center.lon-.05)};
+      connectedType=type.value;fieldStatus(dialog,'네이버지도를 불러오는 중입니다.');
+      await onlineSDK.load('naver',getOnlineKeys().naver);if(!current()||own!==request)return;
+      var created=await onlineSDK.create('naver',canvas,{geo:bounds,center:center,zoom:lock?lock.zoom:geoOK()||coordinateStatus().ok?14:7,type:connectedType},update,function(message){if(dialog.open&&own===request){operationFailed=true;setReady(false);fieldStatus(dialog,message);}});
+      if(!current()||own!==request){created.destroy();return;}adapter=created;
+      if(geoOK()&&!lock)await Promise.resolve(adapter.fitBounds(S.grid.geo));
+      if(!current()||own!==request)return;setReady(true);dialog.querySelector('.map-position-key').open=false;connect.textContent='네이버지도 불러오기';update();
+    }catch(error){if(dialog.open&&own===request){operationFailed=true;setReady(false);fieldStatus(dialog,error.message);}}
+  };
+  type.onchange=function(){if(adapter){apply.disabled=true;fieldStatus(dialog,'지도 종류를 바꿨습니다. 네이버지도 불러오기를 다시 눌러 확인하세요.');}};
+  capture.onpointerdown=function(ev){if(!adapter||operationFailed||ev.button!==0)return;ev.preventDefault();drag={x:ev.clientX,y:ev.clientY,id:ev.pointerId};capture.setPointerCapture(ev.pointerId);};
+  capture.onpointermove=function(ev){if(!adapter||!drag||drag.id!==ev.pointerId)return;ev.preventDefault();adapter.panBy(drag.x-ev.clientX,drag.y-ev.clientY);drag.x=ev.clientX;drag.y=ev.clientY;update();};
+  capture.onpointerup=capture.onpointercancel=function(){drag=null;update();};
+  capture.onkeydown=function(ev){if(!adapter||operationFailed)return;var moves={ArrowLeft:[-100,0],ArrowRight:[100,0],ArrowUp:[0,-100],ArrowDown:[0,100]};if(moves[ev.key]){ev.preventDefault();adapter.panBy.apply(adapter,moves[ev.key]);}else if(['+','=','-','_'].includes(ev.key)){ev.preventDefault();adapter.setZoom(clamp(adapter.getZoom()+(ev.key==='+'||ev.key==='='?1:-1),1,21));}update();};
+  dialog.querySelectorAll('[data-position-preview]').forEach(function(button){button.onclick=async function(){
+    if(!adapter||operationFailed)return;var action=button.dataset.positionPreview;
+    if(action==='range'){try{await Promise.resolve(adapter.fitBounds(S.grid.geo));}catch(error){fieldStatus(dialog,error.message);}}else adapter.setZoom(clamp(adapter.getZoom()+(action==='in'?1:-1),1,21));update();
+  };});
+  dialog.querySelector('#mapPositionJump').onclick=function(){
+    var lat=dialog.querySelector('#mapPositionLat').value.trim(),lon=dialog.querySelector('#mapPositionLon').value.trim();
+    if(!lat||!lon||!Number.isFinite(Number(lat))||!Number.isFinite(Number(lon))||Math.abs(Number(lat))>85||Math.abs(Number(lon))>180){fieldStatus(dialog,'위도 -85~85, 경도 -180~180 범위의 숫자 두 개를 입력하세요.');return;}
+    if(adapter){adapter.setCenter({lat:Number(lat),lon:Number(lon)});update();}
+  };
+  apply.onclick=function(){
+    if(!adapter||operationFailed||uncalibrated||!current()||type.value!==connectedType){fieldStatus(dialog,'지도·수색 범위·편집권이 바뀌었거나 기존 사진의 좌표 보정이 필요합니다. 확인 후 다시 시작하세요.');return;}
+    var center=adapter.getCenter(),lock={lat:center.lat,lon:center.lon,zoom:adapter.getZoom(),source:'naver'},geo=null;
+    if(!geoOK()){
+      var nw=adapter.unproject({x:0,y:0}),se=adapter.unproject({x:canvas.clientWidth,y:canvas.clientHeight});
+      if(!nw||!se){fieldStatus(dialog,'지도 범위를 읽지 못했습니다. 다시 불러오세요.');return;}
+      geo={north:nw.lat,south:se.lat,west:nw.lon,east:se.lon};var error=onlineGeoError(geo);
+      if(error){fieldStatus(dialog,error);return;}
+      if(!confirm('현재 화면에 보이는 범위를 새 수색 범위로 지정하고 지도를 고정할까요? 기존 상황·인원·기체·활동기록은 유지합니다.'))return;
+    }
+    if(commitMapPosition(lock,scope,geo,connectedType)){dialog.close();}else fieldStatus(dialog,'지도를 고정하지 못했습니다. 안내와 저장 상태를 확인하세요.');
+  };
+  if(keys.naver&&!fileMode)connect.click();else fieldStatus(dialog,fileMode?'웹 주소로 실행하면 네이버지도를 연결할 수 있습니다.':uncalibrated?'기존 사진 좌표 보정 후 고정할 수 있습니다. 먼저 연결 설정을 확인하세요.':'연결 설정은 처음 한 번만 필요합니다. Client ID를 입력하고 지도 불러오기를 누르세요.');
+}
+var positionSetMapViewBase=setMapView;
+setMapView=function(host,patch){if(mapPositionLock())return mapViewState(host);return positionSetMapViewBase(host,patch);};
+var positionSyncMapInteractionBase=syncMapInteractionUi;
+syncMapInteractionUi=function(host){positionSyncMapInteractionBase(host);if(host&&mapPositionLock())host.classList.remove('map-pan-enabled');};
+var positionResetMapViewBase=resetMapView;
+resetMapView=function(host){if(mapPositionLock())return mapViewState(host);return positionResetMapViewBase(host);};
+var positionFitOnlineBase=fitOnlineMap;
+fitOnlineMap=function(host){var rec=host&&onlineHosts[host.id];if(mapPositionEnforce(rec)){drawOnlineMap(rec);syncMapInteractionUi(host);return;}return positionFitOnlineBase(host);};
+var positionDrawOnlineBase=drawOnlineMap;
+drawOnlineMap=function(rec){mapPositionEnforce(rec);positionDrawOnlineBase(rec);};
+var positionBuildGridBase=buildGrid;
+buildGrid=function(host,interactive){
+  positionBuildGridBase(host,interactive);if(!host)return;
+  var down=host.onpointerdown,move=host.onpointermove;
+  host.onpointerdown=function(ev){if(mapPositionLock()&&!pinMode&&mapEditMode!=='paint'&&!fieldEdit)return;return down&&down.call(this,ev);};
+  host.onpointermove=function(ev){if(mapPositionLock()&&mapGesture&&mapGesture.host===host&&mapGesture.mode!=='paint'){if(Math.hypot(ev.clientX-mapGesture.startX,ev.clientY-mapGesture.startY)>8)mapGesture.moved=true;return;}return move&&move.call(this,ev);};
+  if(mapPositionLock())host.classList.remove('map-pan-enabled');mountMapPositionTools();
+};
+var positionUpdateMapWorkspaceBase=updateMapWorkspaceUi;
+updateMapWorkspaceUi=function(host){positionUpdateMapWorkspaceBase(host);mountMapPositionTools();};
+var positionRenderConsoleBase=renderConsole;
+renderConsole=function(root){positionRenderConsoleBase(root);mountMapPositionTools();};
+document.addEventListener('click',function(ev){
+  var button=ev.target.closest('[data-position-action]');if(!button)return;
+  if(button.dataset.positionAction==='open')openMapPosition();
+  if(button.dataset.positionAction==='unlock')unlockMapPosition();
+  if(button.dataset.positionAction==='lock-current'){
+    var rec=onlineHosts.consMap;if(!rec||!onlineMapReady($('consMap')))return;var center=rec.adapter.getCenter();
+    commitMapPosition({lat:center.lat,lon:center.lon,zoom:rec.adapter.getZoom(),source:'naver'},mapPositionScope());
+  }
+});
+/* MAP_POSITION_TOOLS_END */
 /* Versioned field geometry retains the images needed by previous layouts. */
 var fieldHistoryImages=Object.create(null),fieldImageLoads=Object.create(null),fieldStaging=Object.create(null);
 function fieldExtraHistoryIds(state){return Array.from(new Set(fieldHistoryIds(state))).filter(function(id){return id!==state.grid.mapId;});}
@@ -8443,7 +8673,7 @@ document.addEventListener('keydown', function(ev){
 
 /* 보기와 첫 사용 안내는 업무 상태·백업 형식과 분리한다. */
 function hasIncidentContent(){
-  return !!(S.mission.title||S.mission.location||S.subject.name||S.drones.length||S.crew.length||S.events.length||S.grid.hasMap||Object.keys(S.grid.cells).length||S.ai.runs.length);
+  return !!(S.mission.title||S.mission.location||S.subject.name||S.drones.length||S.crew.length||S.events.length||S.grid.hasMap||(S.grid.equipment||[]).length||Object.keys(S.grid.cells).length||S.ai.runs.length);
 }
 function themeControls(target){
   return '<div class="view-theme" role="group" aria-label="'+(target==='console'?'입력':'현황')+' 화면 테마"><span>'+(target==='console'?'입력':'현황')+'</span>'
@@ -8573,6 +8803,208 @@ document.addEventListener('click',function(ev){
 /* ==========================================================================
    S13. 부팅
    ========================================================================== */
+/* MAP_EQUIPMENT: manual placements share the map's original coordinate space. */
+var EQUIPMENT_TYPES={vehicle:'차량',pump:'펌프차',ambulance:'구급차',command:'지휘차',drone:'드론'};
+var equipmentDraft=null,equipmentGesture=null;
+function equipmentNormalize(raw){
+  if(raw===undefined)return [];
+  if(!Array.isArray(raw)||raw.length>100)throw Error('지도 장비는 최대 100개까지 보관합니다.');
+  var ids=Object.create(null),links=Object.create(null);
+  return raw.map(function(p){
+    if(!isPlainObject(p)||!/^[a-z0-9_-]{3,100}$/i.test(p.id||'')||ids[p.id])throw Error('지도 장비 식별자가 올바르지 않습니다.');
+    if(!['vehicle','pump','ambulance','command','drone'].includes(p.kind)||![p.x,p.y,p.updatedAt].every(Number.isFinite)||p.x<0||p.x>100||p.y<0||p.y>100||p.updatedAt<0||p.updatedAt>Number.MAX_SAFE_INTEGER)throw Error('지도 장비의 종류·위치·수정시각을 확인하세요.');
+    ids[p.id]=true;var droneId=p.kind==='drone'?sanText(p.droneId,80):'',role=p.kind==='drone'&&p.positionRole==='reported'?'reported':'team';
+    if(droneId&&!/^[a-z0-9_-]{3,80}$/i.test(droneId))throw Error('연결 기체 식별자를 확인하세요.');
+    if(droneId){var key=droneId+':'+role;if(links[key])throw Error('같은 기체·위치 종류의 중복 배치를 확인하세요.');links[key]=true;}
+    return {id:p.id,kind:p.kind,name:sanText(p.name,80),droneId:droneId,positionRole:role,x:p.x,y:p.y,updatedAt:p.updatedAt};
+  });
+}
+function equipmentScope(){return [SESSION_EPOCH,stateLifecycleSeq,S.grid.generation,S.grid.mapId,S.grid.mapVer,JSON.stringify(S.grid.geo)].join('|');}
+function equipmentName(item){var d=item.droneId&&S.drones.find(function(d){return d.id===item.droneId;});return d&&d.name||item.name||EQUIPMENT_TYPES[item.kind];}
+function equipmentRole(item){return item.kind==='drone'?(item.positionRole==='reported'?'기체 보고 위치':'조종팀·이착륙 지점'):'';}
+function equipmentIcon(kind){
+  var shape=kind==='drone'?'<circle cx="5" cy="5" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="m7 7 10 10M7 17 17 7"/><rect x="9" y="9" width="6" height="6" rx="1"/>'
+    :'<path d="M3 17V7h11v10M14 10h4l3 4v3H3M4 7V5h9v2"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>'
+    +(kind==='pump'?'<circle cx="8.5" cy="11.5" r="2.5"/><path d="M8.5 9v5M6 11.5h5"/>':kind==='ambulance'?'<path d="M9 9v5M6.5 11.5h5"/>':kind==='command'?'<path d="M17 10V3l4 2-4 2"/>':'');
+  return '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+shape+'</svg>';
+}
+function equipmentAllowed(){
+  if(!ensureEditor())return false;
+  if(fieldEdit){mapMsg('진행 중인 구역 초안을 먼저 저장하거나 취소한 뒤 장비를 배치하세요.','warn');return false;}
+  if(!S.grid.hasMap&&!geoOK()){mapMsg('사진 또는 온라인·저장 지도를 먼저 준비한 뒤 장비를 배치하세요.','warn');return false;}
+  return mapEditsAllowed('view')&&ensureMapReviewed();
+}
+function equipmentApply(items){
+  if(!ensureEditor())return false;
+  var next=JSON.parse(JSON.stringify(S));next.grid.equipment=equipmentNormalize(items);touchState(next);
+  if(!persistCandidate(next))return false;
+  cancelMapInteraction();S=next;lastSeenUpdated=S.meta.updated;broadcast();renderAll();return true;
+}
+function equipmentCancel(){equipmentDraft=null;equipmentGesture=null;equipmentRenderAll();}
+function equipmentBegin(item,original){
+  if(!equipmentAllowed())return false;
+  setMapEditMode('view');setPinMode(null);
+  equipmentDraft={item:Object.assign({},item),original:original?JSON.stringify(original):'',scope:equipmentScope()};
+  equipmentGesture=null;equipmentRenderAll();focusFieldMap();
+  var first=$('consMap').querySelector('.gcell[tabindex="0"]');if(first)first.focus({preventScroll:true});
+  return true;
+}
+function equipmentPlace(x,y){
+  var draft=equipmentDraft;
+  if(!draft||draft.scope!==equipmentScope()||!equipmentAllowed())return false;
+  if(![x,y].every(Number.isFinite)||x<0||x>100||y<0||y>100)return false;
+  var items=S.grid.equipment||[],old=items.find(function(p){return p.id===draft.item.id;});
+  if(draft.original&&(!old||JSON.stringify(old)!==draft.original)){equipmentCancel();mapMsg('장비 정보가 바뀌어 배치를 취소했습니다. 다시 선택하세요.','warn');return false;}
+  if(draft.item.kind==='drone'&&!old&&!S.drones.some(function(d){return d.id===draft.item.droneId;})){equipmentCancel();mapMsg('연결 기체가 없어 배치하지 않았습니다. 드론 등록을 확인하세요.','warn');return false;}
+  if(!old&&items.length>=100){mapMsg('장비는 최대 100개입니다. 필요 없는 배치를 해제하세요.','warn');return false;}
+  var placed=Object.assign({},draft.item,{x:+x.toFixed(5),y:+y.toFixed(5),updatedAt:Date.now()});
+  var next=old?items.map(function(p){return p.id===old.id?placed:p;}):items.concat([placed]);
+  if(!equipmentApply(next)){mapMsg('장비 위치를 저장하지 못했습니다. 기존 위치를 유지했으니 다시 시도하세요.','err');return false;}
+  equipmentCancel();focusFieldMap();var marker=$('consMap').querySelector('[data-equipment-id="'+placed.id+'"]');if(marker)marker.focus({preventScroll:true});mapMsg(equipmentName(placed)+' 배치 완료 · 수동으로 표시한 위치입니다.','ok');return true;
+}
+function equipmentDialog(kind,id){
+  var existing=id&&(S.grid.equipment||[]).find(function(p){return p.id===id;});
+  if(!existing&&!equipmentAllowed())return;
+  if(existing)kind=existing.kind;
+  if(!Object.prototype.hasOwnProperty.call(EQUIPMENT_TYPES,kind))return;
+  var editable=ownsEditorLock(),scope=equipmentScope(),original=existing?JSON.stringify(existing):'',isDrone=kind==='drone';
+  var suggested=existing?existing.name:EQUIPMENT_TYPES[kind]+' '+((S.grid.equipment||[]).filter(function(p){return p.kind===kind;}).length+1);
+  var html='<p>'+(existing?'지도에 수동으로 표시한 위치입니다.':'이름을 확인한 뒤 지도에서 배치할 곳을 누르세요.')+'</p>'
+    +'<label class="f"><span>장비 이름</span><input id="equipmentName" maxlength="80" value="'+esc(suggested)+'"'+(!editable||isDrone?' readonly':'')+'></label>';
+  if(isDrone){
+    html+='<label class="f"><span>등록된 드론</span><select id="equipmentDrone"'+(!editable?' disabled':'')+'><option value="">기체를 선택하세요</option>';
+    if(existing&&existing.droneId&&!S.drones.some(function(d){return d.id===existing.droneId;}))html+='<option selected value="'+esc(existing.droneId)+'">연결된 기체 없음 · '+esc(existing.name)+'</option>';
+    html+=S.drones.map(function(d){return '<option value="'+esc(d.id)+'"'+(existing&&existing.droneId===d.id?' selected':'')+'>'+esc(d.name||'이름 없는 기체')+' · '+esc(DRONE_ST[d.status])+'</option>';}).join('')+'</select></label>'
+      +'<label class="f"><span>표시할 위치의 의미</span><select id="equipmentRole"'+(!editable?' disabled':'')+'><option value="team">조종팀·이착륙 지점</option><option value="reported"'+(existing&&existing.positionRole==='reported'?' selected':'')+'>기체 보고 위치 (수동)</option></select></label><p class="note">실시간 위치 추적이 아닙니다. 지도 배치로 기체 상태·배터리는 바뀌지 않습니다.</p>';
+    if(!S.drones.length&&!existing)html+='<p>먼저 드론 관리에서 기체를 등록하세요.</p>';
+  }
+  if(existing){
+    var d=existing.droneId&&S.drones.find(function(d){return d.id===existing.droneId;});
+    html+='<p>수동 표시 · '+esc(shortDateTime(existing.updatedAt))+' 수정'+(geoOK()?' · '+esc(fmtLatLon(geoAt(existing.x/100,existing.y/100))):' · 사진 기준 위치')+'</p>'
+      +(d?'<p>'+esc(DRONE_ST[d.status])+' · 배터리 '+num(d.battery,0)+'% · '+esc(d.pilot?'조종자 '+d.pilot:'조종자 미지정')+'</p>':'');
+  }
+  html+='<div class="field-row">'+(editable?(existing?'<button type="button" class="btn primary" data-equipment-action="save">이름·연결 저장</button><button type="button" class="btn" data-equipment-action="move">위치 옮기기</button><button type="button" class="btn danger" data-equipment-action="remove">배치 해제</button>':'<button type="button" class="btn primary" data-equipment-action="place">지도에 배치하기</button>'):'')+'<button type="button" class="btn" data-field-close>닫기</button></div>';
+  var dialog=fieldDialog(EQUIPMENT_TYPES[kind]+' '+(existing?'배치 정보':'배치'),html),name=dialog.querySelector('#equipmentName'),drone=dialog.querySelector('#equipmentDrone'),role=dialog.querySelector('#equipmentRole');dialog.dataset.theme=viewPreferences.consoleTheme;
+  if(existing)dialog.fieldReturnTarget=document.querySelector('#consMap [data-equipment-id="'+existing.id+'"]');
+  function syncDrone(){
+    if(!drone)return;var d=S.drones.find(function(d){return d.id===drone.value;});
+    name.value=d?d.name||'이름 없는 기체':existing?existing.name:'';
+    var place=dialog.querySelector('[data-equipment-action="place"]');if(place)place.disabled=!d;
+  }
+  if(drone){drone.onchange=syncDrone;syncDrone();}
+  dialog.querySelectorAll('[data-equipment-action]').forEach(function(button){button.onclick=function(){
+    if(!fieldDialogCurrent(dialog)||scope!==equipmentScope()){fieldStatus(dialog,'지도 또는 편집권이 바뀌었습니다. 닫고 다시 선택하세요.');return;}
+    var current=existing&&(S.grid.equipment||[]).find(function(p){return p.id===existing.id;});
+    if(existing&&(!current||JSON.stringify(current)!==original)){fieldStatus(dialog,'장비 정보가 바뀌었습니다. 닫고 다시 확인하세요.');return;}
+    var action=button.dataset.equipmentAction;
+    if(action==='remove'){
+      if(!confirm(equipmentName(existing)+'의 지도 배치만 해제할까요? 등록된 기체·활동기록은 유지됩니다.'))return;
+      if(equipmentApply(S.grid.equipment.filter(function(p){return p.id!==existing.id;}))){dialog.close();mapMsg('지도 배치를 해제했습니다. 등록 정보·기록은 유지했습니다.','ok');}else fieldStatus(dialog,'저장 실패 · 기존 배치를 유지했습니다.');return;
+    }
+    if(!name.value.trim()){fieldStatus(dialog,'장비 이름을 입력하세요.');name.focus();return;}
+    var item=Object.assign({},existing||{id:uid(),kind:kind,x:50,y:50,updatedAt:0},{name:name.value.trim(),droneId:drone?drone.value:'',positionRole:role?role.value:'team'});
+    if(drone&&!item.droneId){fieldStatus(dialog,'등록된 드론을 선택하세요.');return;}
+    var duplicate=item.droneId&&(S.grid.equipment||[]).find(function(p){return p.id!==item.id&&p.droneId===item.droneId&&p.positionRole===item.positionRole;});
+    if(duplicate&&existing){fieldStatus(dialog,'같은 기체의 같은 위치 종류가 이미 배치돼 있습니다. 해당 표식을 선택하세요.');return;}
+    if(duplicate){item.id=duplicate.id;current=duplicate;}
+    if(action==='save'){
+      item.updatedAt=Date.now();if(equipmentApply(S.grid.equipment.map(function(p){return p.id===item.id?item:p;}))){dialog.close();mapMsg('장비 표시 정보를 저장했습니다.','ok');}else fieldStatus(dialog,'저장 실패 · 입력은 유지했습니다.');
+    }else if(equipmentBegin(item,current)){dialog.close();setTimeout(function(){if(equipmentDraft){focusFieldMap();var cell=$('consMap').querySelector('.gcell[tabindex="0"]');if(cell)cell.focus({preventScroll:true});}},0);if(duplicate)mapMsg('이미 배치된 기체입니다. 지도에서 새 위치를 누르면 기존 표식을 옮깁니다.','ok');}
+  };});
+}
+function equipmentMount(){
+  var workspace=$('consMapWorkspace'),host=$('consMap');if(!workspace||!host)return;
+  var panel=workspace.querySelector('[data-equipment-tools]');
+  if(!panel){panel=document.createElement('details');panel.className='equipment-tools';panel.dataset.equipmentTools='';panel.open=true;panel.innerHTML='<summary data-equipment-heading>장비 배치</summary><div class="equipment-body"><div class="equipment-palette">'+Object.keys(EQUIPMENT_TYPES).map(function(kind){return '<button type="button" class="btn" data-equipment-kind="'+kind+'">'+equipmentIcon(kind)+'<span>'+EQUIPMENT_TYPES[kind]+'</span></button>';}).join('')+'</div><p class="note">종류 선택 → 지도에서 위치 선택 · 수동 표시이며 실시간 위치가 아닙니다.</p><details><summary data-equipment-summary></summary><div class="equipment-list"></div></details></div>';workspace.insertBefore(panel,host);}
+  panel.querySelectorAll('[data-equipment-kind]').forEach(function(b){b.disabled=!ownsEditorLock();});
+  var items=S.grid.equipment||[];panel.querySelector('[data-equipment-summary]').textContent='배치한 장비 '+items.length+'개 · 목록에서 찾기';
+  panel.querySelector('[data-equipment-heading]').textContent='장비 배치 · '+items.length+'개';
+  panel.querySelector('.equipment-list').innerHTML=items.length?items.map(function(p){return '<button type="button" class="btn" data-equipment-open="'+esc(p.id)+'">'+equipmentIcon(p.kind)+'<span>'+esc(equipmentName(p))+(equipmentRole(p)?' · '+esc(equipmentRole(p)):'')+'</span></button>';}).join(''):'<p class="note">배치할 장비 종류를 위에서 선택하세요.</p>';
+}
+function equipmentPaint(host){
+  if(!host)return;var fit=host.querySelector('.mapfit');if(!fit)return;
+  if(equipmentDraft&&equipmentDraft.scope!==equipmentScope())equipmentDraft=null;
+  var items=S.grid.equipment||[],online=isOnlineMap(),rec=onlineHosts[host.id];
+  if(online&&(!rec||!onlineMapReady(host)))return;
+  var layer=fit.querySelector('.equipment-layer');if(!layer){layer=document.createElement('div');layer.className='equipment-layer';fit.appendChild(layer);}
+  var signature=JSON.stringify(items.map(function(p){return [p,equipmentName(p)];}));
+  if(layer.dataset.signature!==signature){
+    layer.dataset.signature=signature;
+    layer.innerHTML=items.map(function(p){var label=equipmentName(p),role=equipmentRole(p),shortRole=p.kind==='drone'?(p.positionRole==='reported'?'기체·수동':'조종팀'):'';return '<button type="button" class="equipment-marker" data-equipment-id="'+esc(p.id)+'" aria-label="'+esc(label+(role?' · '+role:'')+' · 수동 표시 · '+shortDateTime(p.updatedAt)+' 수정 · 배치 정보')+'">'+equipmentIcon(p.kind)+'<span class="equipment-label">'+esc(label)+(role?'<small>'+esc(shortRole)+'</small>':'')+'</span></button>';}).join('');
+  }
+  items.forEach(function(p){
+    var el=layer.querySelector('[data-equipment-id="'+p.id+'"]');
+    if(online){var tl=rec.adapter.project({lat:S.grid.geo.north,lon:S.grid.geo.west}),pt=rec.adapter.project(geoAt(p.x/100,p.y/100));el.style.left=pt.x-tl.x+'px';el.style.top=pt.y-tl.y+'px';}
+    else{el.style.left=p.x+'%';el.style.top=p.y+'%';}
+  });
+  var bar=host.querySelector('.equipment-placing');
+  if(host.id==='consMap'&&equipmentDraft){
+    if(!bar){bar=document.createElement('div');bar.className='equipment-placing';bar.setAttribute('role','status');bar.innerHTML='<span></span><button type="button" class="btn" data-equipment-action="cancel">배치 취소</button>';host.appendChild(bar);}
+    bar.querySelector('span').textContent=equipmentName(equipmentDraft.item)+' 배치 중 · 지도 누르기 또는 방향키 후 Enter';
+  }else if(bar)bar.remove();
+  var bounds=host.getBoundingClientRect(),markers=Array.from(layer.querySelectorAll('.equipment-marker'));
+  markers.forEach(function(el){var r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;el.style.visibility=x>=bounds.left&&x<=bounds.right&&y>=bounds.top&&y<=bounds.bottom?'':'hidden';});
+  var obstacles=Array.from(host.querySelectorAll('.pin .plb,.equipment-marker')).filter(function(el){return getComputedStyle(el).visibility!=='hidden';}).map(function(el){return el.getBoundingClientRect();});
+  function overlap(a,b){return Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));}
+  markers.forEach(function(el){
+    if(el.style.visibility==='hidden')return;
+    var r=el.getBoundingClientRect(),label=el.querySelector('.equipment-label');label.style.maxWidth=Math.max(80,Math.min(220,bounds.width-24))+'px';
+    var lr=label.getBoundingClientRect(),candidates=[];
+    [4,28,52,76].forEach(function(gap){[r.bottom+gap,r.top-lr.height-gap].forEach(function(y){[r.left+r.width/2-lr.width/2,r.left,r.right-lr.width].forEach(function(x){
+      x=clamp(x,bounds.left+6,Math.max(bounds.left+6,bounds.right-lr.width-6));y=clamp(y,bounds.top+6,Math.max(bounds.top+6,bounds.bottom-lr.height-6));
+      var rect={left:x,top:y,right:x+lr.width,bottom:y+lr.height},score=obstacles.reduce(function(s,b){return s+overlap(rect,b);},0)*1000+Math.abs(y-r.bottom)+Math.abs(x-(r.left+r.width/2-lr.width/2));candidates.push({rect:rect,score:score});
+    });});});
+    candidates.sort(function(a,b){return a.score-b.score;});var chosen=candidates[0].rect;obstacles.push(chosen);
+    label.style.left=chosen.left-r.left+'px';label.style.top=chosen.top-r.top+'px';
+  });
+}
+function equipmentRenderAll(){equipmentMount();equipmentPaint($('consMap'));equipmentPaint($('mapWrap'));}
+var equipmentBuildBase=buildGrid;
+buildGrid=function(host,interactive){equipmentBuildBase(host,interactive);equipmentPaint(host);};
+var equipmentDrawBase=drawOnlineMap;
+drawOnlineMap=function(rec){equipmentDrawBase(rec);equipmentPaint(rec.host);};
+var equipmentFitBase=fitMapBox;
+fitMapBox=function(host){var result=equipmentFitBase(host);equipmentPaint(host);return result;};
+var equipmentConsoleBase=renderConsole;
+renderConsole=function(root){equipmentConsoleBase(root);equipmentRenderAll();};
+var equipmentOpenMapBase=openMapWorkspace,equipmentCloseMapBase=closeMapWorkspace,equipmentFoldBeforeLarge=null;
+openMapWorkspace=function(id){var panel=$('consMapWorkspace')&&$('consMapWorkspace').querySelector('[data-equipment-tools]');if(id==='consMap'&&panel){equipmentFoldBeforeLarge=panel.open;panel.open=false;}return equipmentOpenMapBase(id);};
+closeMapWorkspace=function(){var result=equipmentCloseMapBase();var panel=$('consMapWorkspace')&&$('consMapWorkspace').querySelector('[data-equipment-tools]');if(panel&&equipmentFoldBeforeLarge!==null)panel.open=equipmentFoldBeforeLarge;equipmentFoldBeforeLarge=null;return result;};
+document.addEventListener('click',function(ev){
+  var kind=ev.target.closest('[data-equipment-kind]'),marker=ev.target.closest('[data-equipment-id],[data-equipment-open]'),cancel=ev.target.closest('[data-equipment-action="cancel"]');
+  if(kind){equipmentDialog(kind.dataset.equipmentKind);return;}
+  if(marker){if(equipmentDraft){mapMsg('지도에서 배치를 마치거나 배치 취소를 누른 뒤 정보를 확인하세요.','warn');return;}equipmentDialog('',marker.dataset.equipmentId||marker.dataset.equipmentOpen);return;}
+  if(cancel){equipmentCancel();mapMsg('장비 배치를 취소했습니다. 기존 배치는 유지했습니다.','ok');}
+});
+['pointerdown','pointermove','pointerup','pointercancel'].forEach(function(type){document.addEventListener(type,function(ev){
+  if(ev.target.closest('.equipment-placing')||!equipmentDraft&&ev.target.closest('.equipment-marker')){ev.stopImmediatePropagation();return;}
+  if(!equipmentDraft||!ev.target.closest('#consMap'))return;
+  ev.stopImmediatePropagation();
+  if(type==='pointerdown'){
+    if(ev.button!=null&&ev.button!==0||ev.isPrimary===false)return;
+    equipmentGesture={x:ev.clientX,y:ev.clientY,id:ev.pointerId};
+  }
+  if(type==='pointercancel')equipmentGesture=null;
+  if(type==='pointerup'){
+    var start=equipmentGesture;equipmentGesture=null;if(!start||start.id!==ev.pointerId||Math.hypot(ev.clientX-start.x,ev.clientY-start.y)>8)return;
+    var pt=getMapPoint($('consMap'),ev.clientX,ev.clientY);
+    if(pt){ev.preventDefault();equipmentPlace(pt.x,pt.y);}else mapMsg('현재 수색 지도 범위 안을 누르세요.','warn');
+  }
+},true);});
+document.addEventListener('keydown',function(ev){
+  if(!equipmentDraft)return;
+  if(ev.key==='Escape'){ev.preventDefault();ev.stopImmediatePropagation();equipmentCancel();return;}
+  if((ev.key==='Enter'||ev.key===' ')&&ev.target.closest('#consMap')&&ev.target.matches('.gcell')){
+    ev.preventDefault();ev.stopImmediatePropagation();var m=/^([A-L])(\d{1,2})$/.exec(ev.target.dataset.cell);if(!m)return;
+    var p=FieldGeometry.point(S.grid.layout,(Number(m[2])-.5)/gridCols(),(m[1].charCodeAt(0)-65+.5)/gridRows());equipmentPlace(p.x*100,p.y*100);
+  }
+},true);
+var equipmentPinBase=setPinMode;
+setPinMode=function(mode,root){if(mode)equipmentCancel();return equipmentPinBase(mode,root);};
+var equipmentEditBase=setMapEditMode;
+setMapEditMode=function(mode){equipmentCancel();return equipmentEditBase(mode);};
+/* MAP_EQUIPMENT_END */
+
 async function migrateLegacyStorage(){
   if(!STORAGE_OK||localStorage.getItem(KEY)!==null)return;
   if(localStorage.getItem(STORAGE_PREFIX+'migration.complete'))return;
