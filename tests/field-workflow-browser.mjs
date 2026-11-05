@@ -16,6 +16,7 @@ const server=createServer(async(req,res)=>{try{const u=new URL(req.url,'http://l
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/stayup-dash.html';
 const browser=await chromium.launch({channel:'chrome',headless:true}),context=await browser.newContext({viewport:{width:1366,height:900},serviceWorkers:'block',reducedMotion:'reduce'});
 const results=[],errors=[],external=[];const check=(name,pass,details)=>{results.push({name,pass:!!pass,details});console.log((pass?'PASS ':'FAIL ')+name);};
+async function openFieldTools(page){const tools=page.locator('#fieldTools');if(!await tools.evaluate(e=>e.open))await tools.locator(':scope > summary').click();}
 await context.route('**/*',route=>{const u=new URL(route.request().url());if(u.hostname==='127.0.0.1')return route.continue();external.push(u.origin);return route.abort();});
 context.on('page',p=>{p.on('pageerror',e=>errors.push(e.stack));p.on('dialog',d=>d.accept());});
 try{
@@ -62,7 +63,7 @@ try{
  await page.waitForFunction(()=>fieldSDKDestroyed===1);
  check('좌표 선택창 종료 시 지도 자원 해제',await page.evaluate(()=>fieldSDKDestroyed===1&&S.mission.lat===35.955&&S.mission.lon===127.255));
  await page.evaluate(()=>{onlineSDK.load=fieldSDKOriginal.load;onlineSDK.create=fieldSDKOriginal.create;localStorage.removeItem(ONLINE_KEYS_KEY);});
- await page.locator('#tab-grid').click();await page.locator('[data-field-action="tools"]').click();
+ await page.locator('#tab-grid').click();await openFieldTools(page);
  await page.locator('[data-field-action="rect"]').click();
  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  const mapRect=await page.locator('#consMap .mapfit').boundingBox();
@@ -104,7 +105,7 @@ try{
  await page.locator('.field-editbar [data-field-action="cancel"]').click();
  await page.locator('#fieldTools').evaluate(e=>{e.open=true;});await page.locator('#field-region-pick').selectOption(regionId);await page.locator('[data-field-action="region"]').click();
  await page.evaluate(()=>{S.grid.regions[0].by='다른 창에서 수정';commitLight();});
- await page.locator('.field-quick [data-field-action="tools"]').click();await page.locator('#fieldTools [data-field-action="region-apply"]').click();
+ await openFieldTools(page);await page.locator('#fieldTools [data-field-action="region-apply"]').click();
  check('편집 중 원래 구역이 변경되면 오래된 초안으로 덮어쓰지 않음',await page.evaluate(()=>S.grid.regions[0].by==='다른 창에서 수정')&&await page.locator('[data-field-hint]').innerText().then(t=>t.includes('바뀌어 적용하지')));
  await page.locator('#fieldTools [data-field-action="cancel"]').click();await page.locator('#fieldTools').evaluate(e=>{e.open=true;});await page.locator('#field-region-pick').selectOption(regionId);await page.locator('#field-region-by').fill('가상 A팀');await page.locator('[data-field-action="region-status"]').click();
  await page.waitForFunction(()=>mapPayloadReady());const backup=await page.evaluate(()=>exportPayload(true));await writeFile(path.join(out,'field-backup.json'),backup);

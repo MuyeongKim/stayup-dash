@@ -202,7 +202,7 @@ try{
 
   // Begin a real rectangle draft, then verify that equipment entry cannot erase
   // it or quietly switch the meaning of the next map gesture.
-  if(!await page.locator('#fieldTools').evaluate(e=>e.open))await page.locator('[data-field-action="tools"]').click();
+  if(!await page.locator('#fieldTools').evaluate(e=>e.open))await page.locator('#fieldTools>summary').click();
   await page.locator('[data-field-action="rect"]').click();
   const draftBefore=await page.evaluate(()=>JSON.stringify({fieldEdit,fieldForm}));
   await page.locator('[data-equipment-kind="vehicle"]').first().click();

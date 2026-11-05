@@ -16,11 +16,12 @@ const url=process.argv.includes('--file')?pathToFileURL(path.join(root,'stayup-d
 const browser=await chromium.launch({channel:'chrome',headless:true});
 const context=await browser.newContext({viewport:{width:1366,height:900},deviceScaleFactor:2,serviceWorkers:'block',reducedMotion:'reduce'});
 const results=[],errors=[],dialogs=[];
-const check=(name,pass)=>{results.push({name,pass:!!pass});console.log((pass?'PASS ':'FAIL ')+name);};
+const check=(name,pass,details)=>{results.push({name,pass:!!pass,details});console.log((pass?'PASS ':'FAIL ')+name);};
 const page=await context.newPage();page.setDefaultTimeout(7000);
 page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{dialogs.push(d.message());await d.accept();});
 const state=()=>page.evaluate(()=>JSON.parse(exportPayload(true)));
 async function next(expected){await page.locator('.onboarding-next .btn.primary').click();await page.waitForFunction(id=>consoleActiveSection==='sec-'+id,expected);check('다음 버튼으로 '+expected+' 입력 한 영역만 표시',await page.locator('[role="tabpanel"]:visible').count()===1&&await page.locator('#sec-'+expected).isVisible());}
+async function sourceChoices(){const choices=page.locator('[data-map-source-choices]');if(!await choices.evaluate(e=>e.open))await page.locator('[data-stage-action="change"]').click();}
 try{
   await page.goto(url);await page.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
   // Keep fake coordinates and browser downloads out of background timers.
@@ -43,24 +44,42 @@ try{
   const beforeMapChoice=await state();
   for(const [width,height] of [[1366,768],[390,844],[320,800]]){
     await page.setViewportSize({width,height});await page.locator('#tab-grid').click();
-    check(width+'px에서 빈 지도보다 사진 넣기·지역 지도 준비 버튼이 먼저 보임',await page.locator('.map-empty-actions').evaluate(el=>{
-      const r=el.getBoundingClientRect(),map=document.querySelector('#consMap').getBoundingClientRect();
+    const firstChoice=await page.locator('[data-map-source-choices]').evaluate(el=>{
+      const choice=el.querySelector('.map-stage-choices'),r=choice.getBoundingClientRect(),extra=el.querySelector('[data-stage-extra]'),map=document.querySelector('#consMap'),mapRect=map.getBoundingClientRect();
       const top=document.querySelector('.console-workspace-bar').getBoundingClientRect().bottom;
       const bottom=document.querySelector('.mobile-nav');const limit=bottom&&getComputedStyle(bottom).display!=='none'?bottom.getBoundingClientRect().top:innerHeight;
-      return r.top>=top-1&&r.bottom<=limit+1&&r.bottom<=map.top&&[...el.querySelectorAll('button')].every(b=>b.getBoundingClientRect().height>=44)&&document.documentElement.scrollWidth<=innerWidth+1;
-    }));
+      return {open:el.open,count:choice.children.length,top:r.top,bottom:r.bottom,allowedTop:top,allowedBottom:limit,buttonHeights:[...choice.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height),extraOpen:extra.open,extraHeight:extra.querySelector('summary').getBoundingClientRect().height,placeholderBelow:map.getClientRects().length===0||r.bottom<=mapRect.top,overflow:document.documentElement.scrollWidth>innerWidth+1};
+    });
+    check(width+'px에서 사진·온라인·저장 지도 세 선택과 접힌 추가 설정을 먼저 표시',firstChoice.open&&firstChoice.count===3&&firstChoice.top>=firstChoice.allowedTop-1&&firstChoice.bottom<=firstChoice.allowedBottom+1&&firstChoice.buttonHeights.every(h=>h>=44)&&!firstChoice.extraOpen&&firstChoice.extraHeight>=44&&firstChoice.placeholderBelow&&!firstChoice.overflow&&!await page.locator('[data-equipment-tools]').isVisible()&&!await page.locator('[data-position-action="open"]').isVisible(),firstChoice);
+    const extra=page.locator('[data-stage-extra]');await extra.locator(':scope > summary').click();
+    const accessible=[];
+    for(const button of await extra.locator('button').all()){
+      await button.scrollIntoViewIfNeeded();
+      // Browser auto-scroll ignores the fixed mobile navigation. Use the same
+      // wheel input as a person to reveal a control before hit-testing it.
+      for(let i=0;i<2;i++){
+        const scroll=await button.evaluate(e=>{const r=e.getBoundingClientRect(),bar=document.querySelector('.console-workspace-bar').getBoundingClientRect(),nav=document.querySelector('.mobile-nav'),limit=nav&&getComputedStyle(nav).display!=='none'?nav.getBoundingClientRect().top:innerHeight;return {needed:r.top<bar.bottom||r.bottom>limit,delta:(r.top+r.bottom-bar.bottom-limit)/2,x:r.left+r.width/2,y:Math.min(limit-20,bar.bottom+30)};});
+        if(!scroll.needed)break;
+        await page.mouse.move(scroll.x,scroll.y);await page.mouse.wheel(0,scroll.delta);
+        await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+      }
+      accessible.push(await button.evaluate(e=>{const r=e.getBoundingClientRect(),bar=document.querySelector('.console-workspace-bar').getBoundingClientRect(),nav=document.querySelector('.mobile-nav'),limit=nav&&getComputedStyle(nav).display!=='none'?nav.getBoundingClientRect().top:innerHeight;return {name:e.textContent.trim(),height:r.height,inside:r.top>=bar.bottom-1&&r.bottom<=limit+1,hit:document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('button')===e};}));
+    }
+    check(width+'px 추가 지도 설정에서 기존 기능 세 개를 44px 이상으로 접근하고 업무값 유지',accessible.length===3&&accessible.every(x=>x.height>=44&&x.inside&&x.hit)&&isDeepStrictEqual(await state(),beforeMapChoice),accessible);
+    await extra.locator(':scope > summary').click();await page.locator('#tab-grid').click();
     await page.screenshot({path:path.join(out,'empty-map-'+width+'.png'),scale:'css'});
   }
   await page.setViewportSize({width:1366,height:900});
-  await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
+  await sourceChoices();await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
   check('지역 지도 바로가기는 준비 안내를 펼치고 업무 자료를 유지',await page.locator('#offlinePreparation').isVisible()&&await page.locator('#sec-grid .setup-section').evaluate(e=>e.open)&&isDeepStrictEqual(await state(),beforeMapChoice));
   check('사진 파일과 저장 지역 지도 이름은 구분하고 저장 값은 유지',await page.locator('#mapSourceSelect option[value="image"]').innerText()==='지도·현장 사진'&&await page.locator('#mapSourceSelect option[value="offline"]').innerText()==='저장한 지역 지도'&&await page.locator('#consMap .mapnote').count()===0);
   await page.locator('#tab-grid').click();
-  await page.getByRole('button',{name:'지도 크게 보기',exact:true}).click();await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
-  check('큰 지도에서도 준비 바로가기는 지도를 닫고 안내에 초점을 연결',await page.locator('dialog.map-dialog').count()===0&&await page.locator('#offlinePreparation h3').evaluate(e=>e===document.activeElement)&&isDeepStrictEqual(await state(),beforeMapChoice));
   const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=1200;c.height=750;const g=c.getContext('2d');g.fillStyle='#dce9df';g.fillRect(0,0,c.width,c.height);g.fillStyle='#234a38';g.font='40px sans-serif';g.fillText('가상 지도 · 실제 지형 아님',60,100);return c.toDataURL('image/png').split(',')[1];});
   const fixture=path.join(out,'synthetic-map.png');await writeFile(fixture,Buffer.from(png,'base64'));
   const chooser=page.waitForEvent('filechooser');chooser.catch(()=>{});await page.locator('[data-act="mapfile"]').first().click();await(await chooser).setFiles(fixture);await page.waitForFunction(()=>S.grid.hasMap&&mapPayloadReady());
+  const beforeLargeChoice=await state();
+  await page.getByRole('button',{name:'지도 크게 보기',exact:true}).click();await page.locator('[data-map-tools-toggle]').click();await sourceChoices();await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
+  check('준비된 큰 지도에서도 도구의 준비 바로가기가 지도를 닫고 안내에 초점을 연결',await page.locator('dialog.map-dialog').count()===0&&await page.locator('#offlinePreparation h3').evaluate(e=>e===document.activeElement)&&isDeepStrictEqual(await state(),beforeLargeChoice));
   await next('safety');check('순서 이동과 입력 현황을 실제 비행승인으로 처리하지 않음',await page.evaluate(()=>S.safety.approval==='unknown'&&flightVerdict(new Date()).lv!=='ok'));
   await next('quick');check('첫 수색 기록은 일반 메모인 특이사항으로 시작',await page.locator('#evType').inputValue()==='note');
   await page.locator('#evType').selectOption('heat');await page.locator('#evText').fill('가상 열원 확인 메모 작성 중');

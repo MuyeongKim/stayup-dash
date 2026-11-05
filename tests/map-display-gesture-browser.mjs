@@ -57,7 +57,7 @@ try{
   await page.evaluate(()=>{window.setTimeout=__nativeDisplayTimeout;});
   await display.waitForFunction(()=>typeof S==='object'&&S.grid.hasMap&&mapPayloadReady());
   check('실제 현황 열기 버튼의 원본 700ms 콜백만 포착',await page.evaluate(()=>__displayCallbackCount===1&&typeof __displayCallback==='function'));
-  await page.locator('#tab-grid').click();await page.locator('[data-field-action="tools"]').click();await page.locator('[data-field-action="rect"]').click();
+  await page.locator('#tab-grid').click();if(!await page.locator('#fieldTools').evaluate(e=>e.open))await page.locator('#fieldTools>summary').click();await page.locator('[data-field-action="rect"]').click();
   await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
   const fit=await page.locator('#consMap .mapfit').boundingBox();
   check('드래그 시작과 끝이 실제 화면 안의 지도에 위치',fit&&fit.y+fit.height*.2>=0&&fit.y+fit.height*.7<900,fit);

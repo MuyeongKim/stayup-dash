@@ -23,6 +23,7 @@ page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{dialog
 const payload=()=>page.evaluate(()=>JSON.parse(exportPayload(true)));
 const unchanged=async before=>isDeepStrictEqual(await payload(),before);
 const next=()=>page.locator('.step-nav .btn.primary').click();
+async function sourceChoices(){const choices=page.locator('[data-map-source-choices]');if(!await choices.evaluate(e=>e.open))await page.locator('[data-stage-action="change"]').click();}
 async function downloadBackup(name){const ready=page.waitForEvent('download');ready.catch(()=>{});await page.locator('#sec-data [data-act="export"]').click();const file=await ready,dest=path.join(out,name+'.json');await file.saveAs(dest);return {name:file.suggestedFilename(),file:dest,data:JSON.parse(await readFile(dest,'utf8'))};}
 try{
   await page.goto(url);await page.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
@@ -66,10 +67,11 @@ try{
   check('예비 기체는 잔량 확인 후에도 미지정 조종자 표시를 유지',await card.locator('[data-drone-checks]').innerText().then(t=>t.includes('조종자 미지정')&&!t.includes('배터리 미확인'))&&await page.evaluate(()=>S.drones[0].battery===100&&S.drones[1].battery===83));
   const popup=context.waitForEvent('page');popup.catch(()=>{});await page.locator('#btnOpenDisplay').click();const display=await popup;await display.waitForFunction(()=>typeof S==='object'&&S.drones.length===2);
   check('현황 화면도 예비 기체의 미지정 조종자를 상태 근처에 표시',await display.locator('[data-drone-checks]').last().innerText().then(t=>t.includes('조종자 미지정')));await display.close();
-  await page.locator('#tab-grid').click();const beforeMap=await payload();await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
+  await page.locator('#tab-grid').click();const beforeMap=await payload();await sourceChoices();await page.getByRole('button',{name:'지역 지도 미리 저장',exact:true}).click();
   check('실행 환경에 맞게 지역 지도 제약과 현재 가능한 선택을 구분',isFile?await page.locator('[data-offline-environment]').isVisible()&&await page.locator('[data-offline-action="save"]').isDisabled()&&await page.locator('[data-offline-action="shell"]').isDisabled():!await page.locator('[data-offline-environment]').isVisible()&&await page.locator('[data-offline-action="save"]').isEnabled());
   if(isFile){await page.locator('.offline-environment summary').click();check('지역 지도 준비 방법·설명서 연결을 제공하고 업무 값 불변',await page.locator('.offline-environment').innerText().then(t=>t.includes('같은 주소')&&t.includes('저장 공간'))&&await page.locator('.offline-environment a').getAttribute('href')==='docs/user-guide.html#chapter-6'&&await unchanged(beforeMap));}
   const image=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=1000;c.height=650;c.getContext('2d').fillRect(0,0,1000,650);return c.toDataURL('image/png').split(',')[1];}),photo=path.join(out,'synthetic-map.png');await writeFile(photo,Buffer.from(image,'base64'));
+  if(!isFile)await sourceChoices();
   const chooser=page.waitForEvent('filechooser');chooser.catch(()=>{});await(isFile?page.getByRole('button',{name:'사진 지도로 계속하기',exact:true}):page.locator('#consMapWorkspace [data-act="mapfile"]')).click();await(await chooser).setFiles(photo);await page.waitForFunction(()=>S.grid.hasMap&&mapPayloadReady());
   check('지도 준비의 사진 선택으로 기존 기체·재고·기록을 유지하며 지도 적용',await page.evaluate(()=>S.grid.source==='image'&&S.drones[1].battery===83&&S.batteries.ready===1));
   await page.locator('#tab-data').click();const beforeBackup=await payload(),backup=await downloadBackup('named-backup');
