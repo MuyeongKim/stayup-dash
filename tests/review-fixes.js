@@ -313,11 +313,11 @@ async function reviewConsoleAndDisplay(){
   ok('글자 1.5배에서 핵심 KPI가 잘리거나 유인기 경보에 가리지 않는다',
     clippedKpis.length===0&&headerBelowBanner,
     clippedKpis.map(function(value){return value.id;}).join(', ')+(headerBelowBanner?'':'경보가 KPI 헤더를 가림'));
-  var footerTop=W.document.querySelector('#board .ticker').getBoundingClientRect().top;
+  var priorityBottom=W.document.querySelector('#board .ticker').getBoundingClientRect().bottom,viewBottom=W.innerHeight;
   var overflowingCards=Array.prototype.filter.call(W.document.querySelectorAll('#board .col>.card'),function(card){
-    return card.getBoundingClientRect().bottom>footerTop+2;
+    var r=card.getBoundingClientRect();return r.top<priorityBottom-2||r.bottom>viewBottom+2;
   });
-  ok('글자 1.5배에서도 출동 인원을 포함한 모든 카드가 하단 지휘부 지시를 침범하지 않는다',
+  ok('글자 1.5배에서도 출동 인원을 포함한 모든 카드가 지휘부 지시를 침범하지 않고 화면 안에 있다',
     overflowingCards.length===0,overflowingCards.map(function(card){return card.querySelector('h2').textContent;}).join(', '));
   var firstDrone=W.document.querySelector('#droneBody .drone');
   var clippedMetrics=Array.prototype.filter.call(firstDrone.querySelectorAll('.d-rows b'),function(metric){

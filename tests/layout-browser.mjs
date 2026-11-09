@@ -69,7 +69,7 @@ try{
       await display.locator('#displayPriority [data-priority-text]').waitFor();
       const m=await display.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width,height:r.height};};return {w:innerWidth,h:innerHeight,docWidth:document.documentElement.scrollWidth,docHeight:document.documentElement.scrollHeight,map:rect('#mapWrap'),priority:rect('#displayPriority'),main:rect('#board .cols')};});
       measurements.push({preset,...m});
-      check(`${w}×${h} ${preset}: 문서 넘침과 지시·본문 겹침 없음`,m.docWidth<=w+1&&m.docHeight<=h+1&&m.main.bottom<=m.priority.top+1&&m.priority.bottom<=h,m);
+      check(`${w}×${h} ${preset}: 문서 넘침 없이 지시는 머리 아래·본문 위에 겹침 없이 표시`,m.docWidth<=w+1&&m.docHeight<=h+1&&m.priority.top>=0&&m.priority.bottom<=m.main.top+1&&m.main.bottom<=h+1,m);
       check(`${w}×${h} ${preset}: 지도 폭·높이 확보`,m.map.width>=400&&m.map.height>=150,m.map);
       check(`${w}×${h} ${preset}: 우선 지시 전체 표시`,await display.locator('#displayPriority [data-priority-text]').evaluate(el=>el.scrollHeight<=el.clientHeight+1&&el.textContent.includes('지상팀에 전달')));
       check(`${w}×${h} ${preset}: 경보음 준비가 지시·상세 버튼을 가리지 않음`,await display.locator('#audioArm').evaluate(e=>{const a=e.getBoundingClientRect(),p=document.querySelector('#displayPriority').getBoundingClientRect();return a.bottom<=p.top||a.top>=p.bottom;}));
@@ -82,7 +82,7 @@ try{
   await page.evaluate(()=>{S.ui.scale=1.5;commit();});await display.waitForFunction(()=>S.ui.scale===1.5);
   check('노트북에서도 기존 글자 배율 조절 반영',await display.locator('#vGolden').evaluate(e=>parseFloat(getComputedStyle(e).fontSize))>normalFont);
   const scaled=await display.locator('#mapWrap').boundingBox(),scaledPriority=await display.locator('#displayPriority').boundingBox();
-  check('노트북 1.5배에서도 지도와 지시 유지',scaled.height>=150&&scaled.y+scaled.height<=scaledPriority.y&&scaledPriority.y+scaledPriority.height<=768,{scaled,scaledPriority});
+  check('노트북 1.5배에서도 지도와 지시 유지',scaled.height>=150&&scaledPriority.y>=0&&scaledPriority.y+scaledPriority.height<=scaled.y&&scaled.y+scaled.height<=768,{scaled,scaledPriority});
   await page.evaluate(()=>{S.ui.scale=1;commit();});
   await display.setViewportSize({width:1366,height:640});
   await display.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));

@@ -116,7 +116,7 @@ b,strong{font-weight:700}
   display:flex; align-items:center; gap:.45rem; white-space:nowrap;
 }
 .brand .su{color:var(--accent)}
-.brand .sep{color:var(--border2);font-weight:400}
+.brand .sep{color:var(--muted);font-weight:400}
 .brand .app-version{
   color:var(--muted);font-size:.88rem;font-weight:700;letter-spacing:.03em;
   background:var(--surface2);border:1px solid var(--border2);border-radius:99px;
@@ -328,6 +328,11 @@ b,strong{font-weight:700}
   border-radius:2px;line-height:1.2;padding:0 3px;pointer-events:none;
 }
 .gcell .by{padding:0 2px}
+.gcell[class*="pin-corner-"]{padding:3px}
+.gcell.pin-corner-tl{justify-content:flex-start;align-items:flex-start}
+.gcell.pin-corner-tr{justify-content:flex-start;align-items:flex-end}
+.gcell.pin-corner-bl{justify-content:flex-end;align-items:flex-start}
+.gcell.pin-corner-br{justify-content:flex-end;align-items:flex-end}
 .gcell.act{outline:.14rem solid var(--accent);outline-offset:-.14rem}
 .pin{
   position:absolute;width:0;height:0;pointer-events:none;z-index:5;
@@ -1460,6 +1465,15 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 [data-theme="light"] .log-row.k-heat .lk{background:#FFF0BD;color:#704F00}
 [data-theme="light"] .log-row.k-order .lk{background:#D9EFFF;color:#164D71}
 [data-theme="light"] .log-row.k-found .lx{color:#9F2030}
+/* 주간 상황판: 중요 기록 줄과 기체 수치 칸도 밝은 면 위 짙은 글자로 (야간 배경 잔존 방지) */
+[data-theme="light"] .log-row.k-found,[data-theme="light"] .log-row.k-accident{background:#FFF0F2;box-shadow:inset 4px 0 0 #B52130}
+[data-theme="light"] .log-row.k-heat{background:#FFF6D6;box-shadow:inset 4px 0 0 #A77C00}
+[data-theme="light"] .log-row.k-order{background:#E8F4FD;box-shadow:inset 4px 0 0 #086A9D}
+[data-theme="light"] .log-row.k-found .lt,[data-theme="light"] .log-row.k-accident .lt,[data-theme="light"] .log-row.k-heat .lt,[data-theme="light"] .log-row.k-order .lt{color:#33495C}
+[data-theme="light"] .log-row.k-accident .lx,[data-theme="light"] .log-row.k-heat .lx,[data-theme="light"] .log-row.k-order .lx{color:var(--text);font-weight:750}
+[data-theme="light"] .d-rows div{background:var(--surface2);box-shadow:inset 0 0 0 1px var(--border2,#C9D5E0)}
+[data-theme="light"] .d-rows b{color:var(--text)}
+.board[data-theme="light"] .brand .su{color:#B4410C}
 [data-theme="light"] .pb.on{background:#CCE8FA;color:#123D59;border-color:#086A9D}
 [data-theme="light"] .pb.p1.on{background:#FFE7A2;color:#594100}
 [data-theme="light"] .pb.p2.on{background:#BCE7CF;color:#15482C}
@@ -1500,6 +1514,85 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
   .cons .console-emergency{margin:8px 0}
   .cons input,.cons select,.cons textarea{scroll-margin-top:calc(var(--compact-verdict-height,52px) + 76px);scroll-margin-bottom:72px}
 }
+/* BOARD_WALL_STYLES: 벽에 거는 현황 화면은 멀리서 읽고 손대지 않는다.
+   지시는 위에 크게, 지도는 넓게, 조작 단추는 마우스를 움직일 때만, 넘치는 목록은 스스로 넘긴다. */
+@media(min-width:1001px){
+  .board,.board.far-view{grid-template-rows:auto auto minmax(0,1fr)}
+  .board>.hdr{order:0}
+  .board>.ticker.priority-card{order:1;min-height:0;height:auto;padding:.4rem .9rem;border-left-width:.45rem;gap:.3rem 1rem}
+  .board>.cols{order:2}
+  .board .ticker .priority-label{font-size:1.15rem;color:var(--muted)}
+  .board .priority-text,.board.far-view .priority-text{font-size:1.85rem!important;line-height:1.28;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  .board.far-view .priority-text{font-size:2.3rem!important}
+  .board .ticker .priority-details{top:calc(100% + 8px);bottom:auto;box-shadow:0 8px 28px #0008}
+  .board .ticker .priority-toggle{font-size:.95rem}
+  /* 지도 조작은 지도 위에 떠 있다가 가만히 있으면 사라진다. 지도 자리를 차지하지 않는다. */
+  .board .display-map-workspace{position:relative;gap:0}
+  .board #displayMapTools{position:absolute;top:.45rem;left:.45rem;right:.45rem;z-index:30;pointer-events:none;transition:opacity .35s}
+  .board #displayMapTools>*{pointer-events:auto;background:var(--surface);border-radius:6px;box-shadow:0 2px 10px #0005;padding:4px;margin:0;width:max-content;max-width:100%}
+  .board.wall-idle #displayMapTools:not(:focus-within){opacity:0}
+  .board .display-map-workspace>.map-position{position:absolute;left:.45rem;bottom:.35rem;z-index:20;background:var(--surface);color:var(--text);padding:1px 6px;border-radius:4px;max-width:calc(100% - 1rem)}
+  .board .display-map-workspace>.map-position:empty{display:none}
+  /* 진행률은 한 줄: 큰 % · 막대(아래 범례) · 추정반경 */
+  .board .card-grid .cov{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:.8rem;row-gap:.2rem;align-items:center}
+  .board .card-grid .cov-pct{grid-row:1/3;font-size:2.7rem}
+  .board .card-grid .cov-bar{grid-column:2;grid-row:1}
+  .board .card-grid .legend{grid-column:2;grid-row:2;flex:none;justify-content:flex-start;font-size:1.05rem;gap:.2rem .9rem;flex-wrap:wrap}
+  .board .card-grid .radchip{grid-column:3;grid-row:1/3}
+  /* 안전 항목은 이름과 값을 한 줄에 */
+  .board .card-safety .sf{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 .5rem;padding:.28rem .55rem}
+  .board .card-safety .sf .sl{flex:none}
+  .board .card-safety .sf:not(.wide) .sv{flex:1 0 auto;max-width:100%;white-space:normal;text-overflow:clip;overflow-wrap:anywhere;line-height:1.2}
+  .board .card-safety .sf.wide .sv{flex:1 1 12rem;min-width:0}
+  .board .card-safety .sf.wide .sv{-webkit-line-clamp:2;max-height:2.5em}
+  .board .card-safety .wx{margin-top:.3rem}
+  /* 경보 띠가 있을 때는 머리 숫자를 줄여 본문이 덜 밀리게 한다 */
+  .board.banner-on .kpi-v{font-size:min(3.2rem,24cqw)}
+  .board.banner-on .kpi-flight .kpi-v{font-size:min(2.6rem,18cqw)}
+  .board.banner-on .clock{font-size:2.4rem}
+  .board.banner-on .kpi{padding-top:.3rem;padding-bottom:.3rem}
+  /* 스스로 넘기는 목록: 몇 쪽 중 몇 쪽인지 머리에 표시 */
+  .board .wall-page{margin-left:.5rem;font:700 .95rem/1.2 system-ui,sans-serif;color:var(--text);background:var(--surface3);border:1px solid var(--border2);border-radius:99px;padding:.05rem .5rem;white-space:nowrap}
+  .board .last-update{font-size:.9rem;color:var(--muted);white-space:nowrap;margin-top:.1rem}
+  .board .last-update.stale{color:var(--warn);font-weight:700}
+  .board.banner-on .last-update{display:none}
+  /* 새로 바뀐 칸·기록: 테두리로 1분·1분30초 동안 표시, 처음 몇 초는 깜박여 눈길을 끈다 */
+  .board .gcell.wall-changed{box-shadow:inset 0 0 0 .3rem var(--accent),0 0 .8rem var(--accent);z-index:2}
+  .board .log-row.wall-new{outline:.18rem solid var(--accent);outline-offset:-.18rem}
+  .board .log-row.wall-new .lx::before{content:"새";background:var(--accent);color:#14100C;font-weight:900;padding:0 .3em;border-radius:.2em;margin-right:.3em}
+  @media(prefers-reduced-motion:no-preference){
+    .board .gcell.wall-changed,.board .log-row.wall-new{animation:wallflash 1s ease-in-out 4}
+  }
+  .board .wall-paged{scrollbar-width:none}
+  .board .wall-paged::-webkit-scrollbar{display:none}
+}
+.replay-dialog{width:min(760px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--text);padding:14px 16px;font:15px/1.5 system-ui,sans-serif}
+.replay-dialog::backdrop{background:#000a}
+.replay-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.replay-head h2{margin:0;font-size:18px}.replay-head .btn{min-height:44px}
+.replay-grid{border-collapse:separate;border-spacing:3px;width:100%;table-layout:fixed;margin:8px 0}
+.replay-grid th{font-size:13px;color:var(--muted);font-weight:700}
+.replay-grid td{border-radius:4px;text-align:center;padding:4px 2px;font-size:12px;line-height:1.2;color:#14202B;border:2px solid transparent}
+.replay-grid td b{display:block;font-size:13px}
+.replay-grid td.rs0{background:#E4EAF0;border-style:dashed;border-color:#8FA3B8}
+.replay-grid td.rs1{background:#FFE9A8;border-color:#A77C00}
+.replay-grid td.rs2{background:#BFE8CF;border-color:#2D7850}
+.replay-grid td.rs3{background:#FFD0D6;border-color:#B63443;border-style:double;border-width:3px}
+.replay-grid td.rchanged{box-shadow:0 0 0 3px var(--accent)}
+.replay-now{min-height:2.6em;margin:4px 0 8px}
+.replay-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.replay-controls .btn{min-height:44px;min-width:88px}
+.replay-slider{display:flex;align-items:center;gap:8px;flex:1 1 240px}.replay-slider input{flex:1;min-height:44px}
+.replay-empty{padding:12px;border:1px dashed var(--border2);border-radius:6px}
+@keyframes wallflash{0%,100%{filter:none}50%{filter:brightness(1.35)}}
+/* 낮은 벽 화면(높이 900px 이하)도 열을 스크롤하지 않는다. 모든 카드가 제 칸을 지키고, 넘친 내용은 카드 안에서 스스로 넘긴다. */
+@media(min-width:1001px) and (max-height:900px){
+  .board .col-l{display:grid!important;grid-template-rows:minmax(0,1.3fr) minmax(0,.85fr) minmax(0,1fr);overflow:hidden!important}
+  .board .col-r{display:grid!important;grid-template-rows:minmax(0,1.9fr) minmax(0,1fr);overflow:hidden!important}
+  .board.far-view .col-r{grid-template-rows:minmax(0,1.6fr) minmax(0,1fr)}
+  .board .col-l>.card,.board .col-r>.card{min-height:0!important;max-height:none!important}
+}
+/* BOARD_WALL_STYLES_END */
 </style>
 </head>
 <body>
@@ -1514,7 +1607,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 
   <header class="hdr">
     <div class="hdr-id">
-      <div class="brand"><span class="su">STAY UP</span><span class="sep">|</span>현장 상황판<span class="app-version" id="appVersion"></span></div>
+      <div class="brand"><span class="su">STAY UP</span><span class="sep" aria-hidden="true">|</span>현장 상황판<span class="app-version" id="appVersion"></span></div>
       <div class="mission" id="hMission">상황명 미입력</div>
       <div class="mission-sub" id="hLoc">수색 장소 미입력</div>
     </div>
@@ -1545,6 +1638,7 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
     <div class="hdr-clock">
       <div class="clock num" id="hClock">--:--:--</div>
       <div class="cdate" id="hDate">&nbsp;</div>
+      <div class="last-update" id="hUpdated" title="입력 화면에서 마지막으로 내용을 바꾼 시각"></div>
       <div class="clock-tools"><button class="theme-toggle" id="displayThemeToggle" type="button">야간</button>
       <button class="audio-arm" id="audioArm" type="button" hidden>&#9654;&#65038; 경보음 준비</button></div>
     </div>
@@ -4248,6 +4342,16 @@ function layoutMapPins(host){
     top=clamp(top,hr.top+6,Math.max(hr.top+6,hr.bottom-h-6));
     label.style.transform='none';label.style.bottom='auto';label.style.left=(left-pr.left)+'px';label.style.top=(top-pr.top)+'px';
   });
+  /* 핀이 놓인 칸은 칸 이름·담당을 핀 반대쪽 모서리로 비켜 둔다. 핀과 구역명이 서로 가리지 않는다. */
+  var cells=host.querySelectorAll('.gcell');
+  cells.forEach(function(cell){cell.classList.remove('pin-corner-tl','pin-corner-tr','pin-corner-bl','pin-corner-br');});
+  host.querySelectorAll('.pin').forEach(function(pin){
+    var dot=pin.querySelector('.pdot');if(!dot)return;var d=dot.getBoundingClientRect(),x=d.left+d.width/2,y=d.top+d.height/2;
+    for(var i=0;i<cells.length;i++){
+      var r=cells[i].getBoundingClientRect();
+      if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom){cells[i].classList.add('pin-corner-'+(y<r.top+r.height/2?'b':'t')+(x<r.left+r.width/2?'r':'l'));break;}
+    }
+  });
 }
 function syncMapInteractionUi(host){
   if(!host)return;
@@ -5980,6 +6084,7 @@ function eventHistoryHtml(){
   var recent=S.events.slice().sort(function(a,b){return b.t-a.t||num(b.recordedAt,b.t)-num(a.recordedAt,a.t);}).slice(0,3);
   return '<div class="item event-recent"><div class="item-h"><span class="ih-t">최근 기록</span></div>'
     +(recent.length?recent.map(eventRowHtml).join(''):'<div class="note">아직 기록이 없습니다.</div>')+'</div>'
+    +'<div class="row-tools"><button class="btn" type="button" data-act="replay">수색 진행 다시 보기</button></div>'
     +'<details class="settings-fold event-history" data-fold="event-history" id="eventHistory"><summary>전체 기록 조회 · 정정 · 취소 ('+S.events.length+'건)</summary><div class="item">'
     +'<div class="note">정정은 기록 내용 문구를 고칩니다. 대상·시각·구역을 바꾸려면 원본을 취소한 뒤 새로 기록하세요.</div>'
     +'<div class="event-filters"><label class="f"><span>내용 · 구역 · 날짜 검색</span><input id="eventSearch" type="search" value="'+esc(eventHistory.query)+'" placeholder="내용, A1, 날짜"></label>'
@@ -6327,7 +6432,7 @@ function consoleHtml2(){
     + '<section class="data-task" aria-label="지금 상황 백업"><h3>1. 지금 상황을 파일로 백업</h3>'
     + '<p class="note">아래 버튼으로 상황·사진·핀·구역·기록을 한 파일에 보관합니다. 다운로드 목록에서 실제 파일을 확인하세요. 브라우저 저장·복구본과 별도의 파일입니다.</p>'
     + '<div class="row-tools"><button class="btn primary" data-act="export">상황 백업 저장</button>'
-      + '<button class="btn" data-act="report">보고서용 기록 복사</button></div><p class="note" data-manual-backup-status role="status" aria-live="polite"></p>'
+      + '<button class="btn" data-act="report">보고서용 기록 복사</button><button class="btn" data-act="briefing">교대·보고용 한 장 요약</button></div><p class="note" data-manual-backup-status role="status" aria-live="polite"></p>'
     + '<p class="note">저장 지역 지도의 본체는 상황 백업 파일에 포함되지 않습니다. 지역 지도를 쓴다면 지도 파일도 따로 보관하세요.</p>'
     + '<button class="btn" data-act="nav" data-sec="offlinePreparation">지역 지도 파일 보관으로</button></section>'
     + '<section class="data-task" aria-label="자동 백업 설정"><h3>2. 작업 중 자동 백업 설정</h3><div class="row-tools">'
@@ -6797,6 +6902,8 @@ function bindConsole(root){
     else if(act === 'export'){ exportJson(); }
     else if(act === 'import'){ root.querySelector('#importFile').click(); }
     else if(act === 'report'){ copyReport(); }
+    else if(act === 'briefing'){ openBriefing(); }
+    else if(act === 'replay'){ openReplay(b); }
     else if(act === 'recover'){
       var recoveryPick=root.querySelector('#recoveryPick');
       restoreRecovery(recoveryPick&&recoveryPick.value);
@@ -6870,7 +6977,7 @@ function bindConsole(root){
   if(!ownsEditorLock()){
     root.querySelectorAll('input,textarea,select,button').forEach(function(el){
       var act=el.getAttribute('data-act');
-      var safe=act==='takecontrol'||act==='export'||act==='report'||act==='nav'||act==='verdictnav'||act==='eventpage'
+      var safe=act==='takecontrol'||act==='export'||act==='report'||act==='briefing'||act==='replay'||act==='nav'||act==='verdictnav'||act==='eventpage'
         ||['eventSearch','eventTypeFilter','eventStatusFilter'].indexOf(el.id)>=0
         ||el.hasAttribute('data-map-layer')||(el.hasAttribute('data-map-action')&&el.dataset.mapAction!=='paint')
         ||el.hasAttribute('data-priority-toggle')
@@ -9232,6 +9339,228 @@ document.addEventListener('keydown',function(ev){
   if(ev.key==='Escape'&&mapStageToolsOpen&&!(painting||mapGesture||pinMode)&&!document.querySelector('dialog.field-dialog[open]')){ev.preventDefault();ev.stopImmediatePropagation();mapStagePanelClose(true);}
 },true);
 /* MAP_STAGE_LAYOUT_END */
+
+/* BOARD_WALL: 벽 화면 보조 동작. 업무 자료는 바꾸지 않고 보이는 방식만 다룬다. */
+var wallIdleTimer=0,wallPageTimer=0;
+function wallBoardActive(){var b=$('board');return !!(b&&!b.hidden&&MODE==='display'&&window.matchMedia('(min-width:1001px)').matches);}
+function wallWake(){
+  var b=$('board');if(!b)return;b.classList.remove('wall-idle');
+  clearTimeout(wallIdleTimer);wallIdleTimer=setTimeout(function(){var bd=$('board');if(bd)bd.classList.add('wall-idle');},4000);
+}
+['mousemove','pointerdown','keydown','focusin','wheel'].forEach(function(type){document.addEventListener(type,function(){if(MODE==='display')wallWake();},{passive:true,capture:true});});
+var wallBaseBoardOffset=setBoardOffset;
+setBoardOffset=function(bn,shown){var b=$('board');if(b)b.classList.toggle('banner-on',!!shown);return wallBaseBoardOffset(bn,shown);};
+/* 화면에 다 들어가지 않는 목록은 몇 초마다 다음 쪽으로 넘긴다. 첫 쪽(최신·중요)은 두 배로 오래 보인다.
+   마우스를 올리거나 초점이 들어가 있으면 멈춘다. */
+var WALL_LISTS=['subjBody','crewBody','droneBody','logBody','battBody','safetyBody'];
+var wallPages={};
+function wallPageBadge(list,text){
+  var head=list.parentElement&&list.parentElement.querySelector('.card-h');if(!head)return;
+  var badge=head.querySelector('.wall-page');
+  if(!text){if(badge)badge.remove();return;}
+  if(!badge){badge=document.createElement('span');badge.className='wall-page';badge.setAttribute('aria-hidden','true');var h2=head.querySelector('h2');if(h2)h2.after(badge);else head.appendChild(badge);}
+  if(badge.textContent!==text)badge.textContent=text;
+}
+function wallPageTick(){
+  var now=Date.now(),reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  WALL_LISTS.forEach(function(id){
+    var list=$(id);if(!list)return;
+    var st=wallPages[id]||(wallPages[id]={page:0,at:now});
+    var view=list.clientHeight,total=list.scrollHeight;
+    if(!wallBoardActive()||!view||total<=view+4){list.classList.remove('wall-paged');wallPageBadge(list,'');st.page=0;st.at=now;return;}
+    list.classList.add('wall-paged');
+    var pages=Math.ceil((total-4)/view);if(st.page>=pages)st.page=0;
+    var card=list.parentElement,held=card&&(card.matches(':hover')||card.contains(document.activeElement));
+    var dwell=st.page===0?16000:8000;
+    if(!held&&now-st.at>=dwell){st.page=(st.page+1)%pages;st.at=now;}
+    if(held)st.at=now;
+    var top=st.page===pages-1&&st.page>0?total-view:st.page*view;
+    if(!held&&Math.abs(list.scrollTop-top)>2)list.scrollTo({top:top,behavior:reduce?'auto':'smooth'});
+    wallPageBadge(list,(st.page+1)+'/'+pages+' 쪽');
+  });
+}
+/* 마지막 입력 시각: 화면이 멈춘 것인지 상황이 조용한 것인지 구분하게 한다. */
+function wallTwo(n){return (n<10?'0':'')+n;}
+function wallFreshness(){
+  var el=$('hUpdated');if(!el)return;var u=S.meta&&S.meta.updated;
+  if(!u){if(el.textContent)el.textContent='';return;}
+  var d=new Date(u),m=Math.max(0,Math.floor((Date.now()-u)/60000));
+  var text='입력 갱신 '+wallTwo(d.getHours())+':'+wallTwo(d.getMinutes())+' · '+(m<1?'방금':m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전');
+  if(el.textContent!==text)el.textContent=text;el.classList.toggle('stale',m>=15);
+}
+/* 바뀐 것 강조: 현황 창을 연 뒤 새로 들어온 기록과 상태가 바뀐 칸을 잠시 표시한다. 처음 연 순간의 내용은 표시하지 않는다. */
+var WALL_NEW_MS=90000,WALL_CELL_MS=60000;
+var wallSeenEvents=null,wallNewEvents={},wallPrevCells=null,wallPrevGridKey='',wallChangedCells={};
+function wallMarkEvents(){
+  var body=$('logBody');if(!body)return;var now=Date.now();
+  var ev=S.events.slice().sort(function(a,b){return b.t-a.t;});
+  body.querySelectorAll('.log-row').forEach(function(row,i){var e=ev[i];row.classList.toggle('wall-new',!!(e&&wallNewEvents[e.id]>now));});
+}
+var wallBaseRenderLog=renderLog;
+renderLog=function(){
+  wallBaseRenderLog.apply(this,arguments);
+  if(MODE!=='display')return;
+  var now=Date.now(),fresh=false;
+  if(wallSeenEvents===null){wallSeenEvents={};S.events.forEach(function(e){wallSeenEvents[e.id]=1;});}
+  else S.events.forEach(function(e){if(!wallSeenEvents[e.id]){wallSeenEvents[e.id]=1;wallNewEvents[e.id]=now+WALL_NEW_MS;fresh=true;}});
+  if(fresh&&wallPages.logBody){wallPages.logBody.page=0;wallPages.logBody.at=now;var lb=$('logBody');if(lb)lb.scrollTop=0;}
+  wallMarkEvents();
+};
+function wallMarkCells(host){
+  var now=Date.now(),cur={},key=gridRows()+'x'+gridCols()+'|'+(S.grid.mapId||'')+'|'+(S.meta.epoch||'');
+  Object.keys(S.grid.cells||{}).forEach(function(k){var c=S.grid.cells[k]||{};cur[k]=(c.s||0)+'|'+(c.by||'');});
+  if(wallPrevCells&&key===wallPrevGridKey){
+    var all={};Object.keys(cur).concat(Object.keys(wallPrevCells)).forEach(function(k){all[k]=1;});
+    Object.keys(all).forEach(function(k){if((cur[k]||'0|')!==(wallPrevCells[k]||'0|'))wallChangedCells[k]=now+WALL_CELL_MS;});
+  }else wallChangedCells={};
+  wallPrevCells=cur;wallPrevGridKey=key;
+  host.querySelectorAll('.gcell').forEach(function(el){el.classList.toggle('wall-changed',wallChangedCells[el.dataset.cell]>now);});
+}
+var wallBaseBuildGrid=buildGrid;
+buildGrid=function(host){var result=wallBaseBuildGrid.apply(this,arguments);if(MODE==='display'&&host&&host.id==='mapWrap')wallMarkCells(host);return result;};
+function wallExpireMarks(){
+  var now=Date.now(),wrap=$('mapWrap');
+  if(wrap)wrap.querySelectorAll('.gcell.wall-changed').forEach(function(el){if(!(wallChangedCells[el.dataset.cell]>now))el.classList.remove('wall-changed');});
+  wallMarkEvents();
+}
+if(MODE==='display'){wallWake();wallPageTimer=setInterval(function(){wallPageTick();wallFreshness();wallExpireMarks();},1000);wallFreshness();}
+/* BOARD_WALL_END */
+
+/* BRIEFING: 교대 브리핑·상급 보고용 한 장 요약. 현재 상태를 읽기만 하고 새 창에 인쇄용으로 그린다. */
+function briefingHtml(){
+  var now=new Date(),st=gridStats(),R=gridRows(),C=gridCols();
+  var k=[['골든타임 잔여',kpiGolden(now)],['일몰까지',kpiSunset(now)],['비행 가능 판정',kpiFlight(now)],['출동 경과',kpiElapsed(now)]];
+  var stamp=now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate())+' '+hhmm(now);
+  var cellColor=['#FFFFFF','#FFE9A8','#BFE8CF','#FFD0D6'];
+  var grid='<table class="g"><tr><th></th>';
+  for(var c=0;c<C;c++)grid+='<th>'+(c+1)+'</th>';grid+='</tr>';
+  for(var r=0;r<R;r++){
+    grid+='<tr><th>'+String.fromCharCode(65+r)+'</th>';
+    for(var c2=0;c2<C;c2++){var id=String.fromCharCode(65+r)+(c2+1),cell=S.grid.cells[id]||{s:0,by:''},sv=intv(cell.s,0);
+      grid+='<td style="background:'+cellColor[sv]+'"><b>'+id+'</b><span>'+esc(CELL_ST[sv])+'</span>'+(cell.by?'<small>'+esc(cell.by)+'</small>':'')+'</td>';}
+    grid+='</tr>';
+  }
+  grid+='</table>';
+  function pinText(label,pin){if(!pin)return '';var g=geoOK()?geoAt(pin.x/100,pin.y/100):null;return '<li>'+label+': 지도 '+Math.round(pin.x)+'%, '+Math.round(pin.y)+'%'+(g?' · '+esc(fmtLatLon(g)):'')+'</li>';}
+  var drones=S.drones.map(function(d){return '<tr><td>'+esc(d.name||'기체')+'</td><td>'+esc(DRONE_ST[d.status]||'-')+'</td><td>'+Math.round(num(d.battery,0))+'%<br><small>'+esc(batteryStamp(d,now.getTime()))+'</small></td><td>'+esc(d.zone||'—')+'</td><td>'+esc(d.pilot||'-')+(d.observer?' · '+esc(d.observer):'')+'</td></tr>';}).join('')||'<tr><td colspan="5">등록 기체 없음</td></tr>';
+  var active=S.crew.filter(function(c){return !c.outAt;});
+  var crew=active.map(function(c){var from=tms(c.inAt),span=from?now.getTime()-from:0,tired=c.role==='조종'&&span>SHIFT_WARN_MIN*60000;
+    return '<tr'+(tired?' class="hot"':'')+'><td>'+esc(c.name||'-')+'</td><td>'+esc(c.role||'-')+'</td><td>'+(from?durHM(span):'-')+(tired?' · 교대 권고':'')+'</td></tr>';}).join('')||'<tr><td colspan="3">현행 인원 없음</td></tr>';
+  var appr={unknown:'미확인',none:'미신청',pending:'신청중',done:'승인완료',na:'해당없음'}[S.safety.approval]||'-';
+  var safety=[['유인기',S.safety.manned?'진입 · 즉시 착륙':'없음'],['비행승인',appr],['야간 특별승인',S.safety.nightApproval?'보유':'없음'],
+    ['관제권/금지구역',((S.safety.ctrlZone?'관제권 ':'')+(S.safety.noFly?'금지구역':''))||'해당없음'],
+    ['풍속/돌풍',(S.weather.wind==null?'-':S.weather.wind)+' / '+(S.weather.gust==null?'-':S.weather.gust)+' m/s'],
+    ['강수확률',S.weather.precip==null?'-':S.weather.precip+'%'],['기상 관측',S.weather.observedAt?shortDateTime(S.weather.observedAt):'-']];
+  var keyTypes={found:1,heat:1,order:1,accident:1};
+  var sorted=S.events.filter(function(e){return !e.voided;}).sort(function(a,b){return b.t-a.t;});
+  var keyEv=sorted.filter(function(e){return keyTypes[e.type];}).slice(0,8),recent=sorted.filter(function(e){return !keyTypes[e.type];}).slice(0,8);
+  function evRows(list){return list.map(function(e){return '<tr class="'+(EV_CLASS[e.type]||'')+'"><td>'+esc(shortDateTime(e.t))+'</td><td>'+esc(EV_TYPE[e.type]||e.type)+'</td><td>'+(e.zone?'<b>'+esc(e.zone)+'</b> ':'')+esc(e.text)+'</td></tr>';}).join('')||'<tr><td colspan="3">없음</td></tr>';}
+  var f=latestFound(),prio=(S.mission.priorityOrder||'').trim()||(S.mission.orders||'').trim().slice(0,160);
+  var css='*{box-sizing:border-box}body{font:13px/1.45 system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#111;margin:0;padding:14mm 12mm;background:#fff}'
+    +'h1{font-size:20px;margin:0}h2{font-size:14px;margin:12px 0 5px;border-bottom:2px solid #222;padding-bottom:2px}'
+    +'.top{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:3px solid #E85D04;padding-bottom:6px}.meta{color:#444;text-align:right;font-size:12px}'
+    +'.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.kpi div{border:1px solid #999;border-radius:4px;padding:5px 7px}.kpi b{display:block;font-size:20px}.kpi small{color:#444}'
+    +'.lv-danger b,.lv-crit b{color:#B00020}.lv-warn b{color:#8A5A00}.lv-ok b{color:#126B36}'
+    +'.prio{margin-top:8px;border:2px solid #E85D04;border-radius:4px;padding:6px 8px;font-size:15px;font-weight:700}'
+    +'.found{margin-top:6px;border:2px solid #B00020;padding:5px 8px;font-weight:800;color:#B00020}'
+    +'.two{display:grid;grid-template-columns:1.15fr 1fr;gap:12px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:3px 5px;vertical-align:top;text-align:left}'
+    +'.g td{text-align:center;padding:2px;font-size:11px;line-height:1.2}.g td b{display:block;font-size:12px}.g td span,.g td small{display:block}.g th{background:#eee;text-align:center;font-size:11px}'
+    +'.k-found td,.k-accident td{background:#FFE5E8}.k-heat td{background:#FFF3C9}.k-order td{background:#E6F2FC}tr.hot td{background:#FFE5E8}'
+    +'.ev td:nth-child(-n+2){white-space:nowrap;width:1%}ul{margin:4px 0;padding-left:18px}.foot{margin-top:10px;color:#555;font-size:11px;border-top:1px solid #aaa;padding-top:4px}'
+    +'.bar{position:sticky;top:0;display:flex;gap:8px;justify-content:flex-end;margin:-8mm 0 6mm}.bar button{font:inherit;font-weight:700;padding:8px 14px;min-height:44px;cursor:pointer}'
+    +'@media print{.bar{display:none}body{padding:0;font-size:10.5px;line-height:1.3}h1{font-size:17px}h2{font-size:12px;margin:7px 0 3px}.kpi b{font-size:16px}.prio{font-size:13px;padding:4px 6px}td,th{padding:1px 4px}.g td{font-size:9.5px}.g td b{font-size:10.5px}.foot{margin-top:6px}@page{size:A4;margin:9mm}}';
+  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>STAY UP 상황 요약 '+esc(stamp)+'</title><style>'+css+'</style></head><body>'
+    +'<div class="bar"><button type="button" onclick="window.print()">인쇄 · PDF 저장</button><button type="button" onclick="window.close()">닫기</button></div>'
+    +'<div class="top"><div><h1>'+(PRACTICE_MODE?'[연습] ':'')+esc(S.mission.title||'상황명 미입력')+'</h1><div>'+esc(S.mission.location||'수색 장소 미입력')+'</div></div>'
+    +'<div class="meta">교대·보고용 상황 요약<br>작성 '+esc(stamp)+' · STAY UP v'+esc(APP_VERSION)+'</div></div>'
+    +'<div class="kpi">'+k.map(function(x){return '<div class="lv-'+esc(x[1].lv)+'"><small>'+x[0]+'</small><b>'+esc(x[1].v)+(x[1].u?' '+esc(x[1].u):'')+'</b><small>'+esc(x[1].detail||x[1].s||'')+'</small></div>';}).join('')+'</div>'
+    +'<div class="prio">현재 우선 지시 · '+esc(prio||'미입력')+'</div>'
+    +(f?'<div class="found">발견 · '+esc(shortDateTime(f.t))+' '+(f.zone?esc(f.zone)+' ':'')+esc(f.text)+'</div>':'')
+    +'<div class="two"><div><h2>수색구역 · 진행 '+st.pct+'%</h2>'+grid
+      +'<div>완료 '+st.n[2]+' · 수색중 '+st.n[1]+' · 재수색 '+st.n[3]+' · 미수색 '+st.n[0]+' (전체 '+st.total+')</div>'
+      +'<ul>'+pinText('최종목격',S.grid.pinLast)+pinText('발견',S.grid.pinFound)+'</ul>'
+    +'</div><div><h2>대상자</h2><div><b>'+esc(S.subject.name||'성명 미상')+'</b> '+(S.subject.age===0||S.subject.age?esc(S.subject.age)+'세 ':'')+esc(S.subject.sex||'')
+      +'<br>상의 '+esc(S.subject.topText||'미상')+' · 하의 '+esc(S.subject.botText||'미상')
+      +'<br>실종 '+esc((S.subject.missingAt||'-').replace('T',' '))+' · 최종목격 '+esc(S.subject.lastSeenPlace||'-')
+      +(S.subject.notes?'<br>특이사항 '+esc(S.subject.notes):'')+'</div>'
+      +'<h2>안전 · 기상</h2><table>'+safety.map(function(x){return '<tr><th>'+x[0]+'</th><td>'+esc(x[1])+'</td></tr>';}).join('')+'</table></div></div>'
+    +'<h2>기체</h2><table><tr><th>기체</th><th>상태</th><th>배터리</th><th>담당</th><th>조종·관측</th></tr>'+drones+'</table>'
+    +'<div class="two"><div><h2>중요 기록 (최근 8건)</h2><table class="ev">'+evRows(keyEv)+'</table></div><div><h2>현행 인원 '+active.length+'명</h2><table><tr><th>이름</th><th>역할</th><th>투입</th></tr>'+crew+'</table></div></div>'
+    +'<h2>최근 활동 (8건)</h2><table class="ev">'+evRows(recent)+'</table>'
+    +'<div class="foot">입력값 기준 요약입니다. 배터리·기상은 수동 입력 또는 모델값이며 실측·실시간 정보가 아닙니다. 개인정보가 포함될 수 있으니 출력물과 PDF는 업무 목적 외로 보관·전달하지 마십시오.</div>'
+    +'</body></html>';
+}
+/* REPLAY: 구역 완료·정정 기록을 시간순으로 다시 그린다. 업무 자료는 읽기만 한다. */
+function replayZoneIds(text){
+  var R=gridRows(),C=gridCols(),out={},re=/([A-L])(\d{1,2})(?:\s*[~\-–]\s*([A-L])(\d{1,2}))?/g,m;
+  function ok(r,c){return r>=0&&r<R&&c>=1&&c<=C;}
+  while((m=re.exec(String(text||'')))){
+    var r1=m[1].charCodeAt(0)-65,c1=parseInt(m[2],10),r2=m[3]?m[3].charCodeAt(0)-65:r1,c2=m[4]?parseInt(m[4],10):c1;
+    for(var r=Math.min(r1,r2);r<=Math.max(r1,r2);r++)for(var c=Math.min(c1,c2);c<=Math.max(c1,c2);c++)if(ok(r,c))out[String.fromCharCode(65+r)+c]=1;
+  }
+  return Object.keys(out);
+}
+function replaySteps(){
+  var cells={},steps=[],R=gridRows(),C=gridCols();
+  S.events.filter(function(e){return !e.voided;}).sort(function(a,b){return a.t-b.t;}).forEach(function(e){
+    var ch=null;
+    if(e.zoneStates&&typeof e.zoneStates==='object'){ch={};Object.keys(e.zoneStates).forEach(function(k){var m=/^([A-L])(\d{1,2})$/.exec(k);if(m&&m[1].charCodeAt(0)-65<R&&+m[2]<=C)ch[k]=clamp(intv(e.zoneStates[k],0),0,3);});}
+    if((!ch||!Object.keys(ch).length)&&e.type==='zone'){var ids=replayZoneIds(e.zone+' '+e.text);if(ids.length){ch={};ids.forEach(function(k){ch[k]=2;});}}
+    if(!ch||!Object.keys(ch).length)return;
+    Object.keys(ch).forEach(function(k){cells[k]=ch[k];});
+    steps.push({t:e.t,ev:e,cells:Object.assign({},cells),changed:ch});
+  });
+  return steps;
+}
+var replayTimer=0;
+function openReplay(opener){
+  var steps=replaySteps(),R=gridRows(),C=gridCols(),dlg=document.createElement('dialog');
+  dlg.className='replay-dialog';dlg.setAttribute('aria-labelledby','replayTitle');
+  var table='<table class="replay-grid" aria-label="구역 상태"><tr><th></th>';
+  for(var c=1;c<=C;c++)table+='<th scope="col">'+c+'</th>';table+='</tr>';
+  for(var r=0;r<R;r++){table+='<tr><th scope="row">'+String.fromCharCode(65+r)+'</th>';for(var c3=1;c3<=C;c3++)table+='<td data-replay-cell="'+String.fromCharCode(65+r)+c3+'"></td>';table+='</tr>';}
+  table+='</table>';
+  dlg.innerHTML='<div class="replay-head"><h2 id="replayTitle">수색 진행 다시 보기</h2><button type="button" class="btn" data-replay="close">닫기</button></div>'
+    +'<p class="note">구역 <b>완료·정정</b>으로 남은 기록만 시간순으로 다시 그립니다. 수색중 표시만 바꾼 칸은 기록이 없어 나오지 않으므로 지금 지도와 다를 수 있습니다. 업무 자료는 바뀌지 않습니다.</p>'
+    +(steps.length?table
+      +'<div class="replay-now" role="status" aria-live="polite"></div>'
+      +'<div class="replay-controls"><button type="button" class="btn primary" data-replay="play">재생</button>'
+      +'<label class="replay-slider"><span>시점</span><input type="range" min="0" max="'+steps.length+'" value="'+steps.length+'" step="1" data-replay="seek" aria-label="다시 보기 시점"></label></div>'
+      :'<p class="replay-empty">아직 구역 완료 기록이 없습니다. 구역을 완료로 칠하거나 빠른기록의 구역완료를 남기면 여기서 순서대로 볼 수 있습니다.</p>');
+  document.body.appendChild(dlg);
+  var seek=dlg.querySelector('[data-replay="seek"]'),play=dlg.querySelector('[data-replay="play"]');
+  function show(i){
+    if(!steps.length)return;i=clamp(i,0,steps.length);var step=i?steps[i-1]:null,cells=step?step.cells:{},done=0,total=R*C;
+    dlg.querySelectorAll('[data-replay-cell]').forEach(function(td){
+      var id=td.dataset.replayCell,sv=cells[id]||0;if(sv===2)done++;
+      td.className='rs'+sv+(step&&step.changed[id]!==undefined?' rchanged':'');td.innerHTML='<b>'+id+'</b><span>'+CELL_ST[sv]+'</span>';
+      td.setAttribute('aria-label',id+' '+CELL_ST[sv]);
+    });
+    var now=dlg.querySelector('.replay-now');
+    now.innerHTML=step?'<b>'+esc(shortDateTime(step.t))+'</b> · 완료 '+done+'/'+total+' ('+Math.round(done/total*100)+'%) · '+esc(step.ev.text)+' <small>('+i+'/'+steps.length+')</small>':'<b>시작 전</b> · 완료 기록 없음 <small>(0/'+steps.length+')</small>';
+    if(seek&&+seek.value!==i)seek.value=String(i);
+  }
+  function stop(){clearInterval(replayTimer);replayTimer=0;if(play)play.textContent='재생';}
+  if(seek)seek.oninput=function(){stop();show(+seek.value);};
+  if(play)play.onclick=function(){
+    if(replayTimer){stop();return;}
+    if(+seek.value>=steps.length)show(0);
+    play.textContent='멈춤';
+    replayTimer=setInterval(function(){var n=+seek.value+1;if(n>steps.length){stop();return;}show(n);if(n>=steps.length)stop();},900);
+  };
+  dlg.querySelector('[data-replay="close"]').onclick=function(){dlg.close();};
+  dlg.addEventListener('keydown',function(ev){if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();dlg.close();}});
+  dlg.addEventListener('close',function(){stop();dlg.remove();if(opener&&opener.isConnected)opener.focus();});
+  show(steps.length);dlg.showModal();
+  (play||dlg.querySelector('[data-replay="close"]')).focus();
+  return dlg;
+}
+function openBriefing(){
+  var html;try{html=briefingHtml();}catch(e){alert('요약을 만들지 못했습니다: '+(e&&e.message||e));return false;}
+  var w=window.open('','_blank','width=1000,height=1000');
+  if(!w){alert('새 창이 차단되었습니다. 브라우저 주소창의 팝업 허용을 확인한 뒤 다시 누르세요.');return false;}
+  w.document.open();w.document.write(html);w.document.close();return true;
+}
 
 async function migrateLegacyStorage(){
   if(!STORAGE_OK||localStorage.getItem(KEY)!==null)return;
