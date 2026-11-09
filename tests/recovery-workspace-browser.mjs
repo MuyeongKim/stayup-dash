@@ -29,7 +29,7 @@ async function choice(page,name,reason){return page.locator('#recoveryPick optio
 async function restore(page,name,reason){await data(page);const c=await choice(page,name,reason);assert.ok(c,'Missing visible recovery choice');await page.locator('#recoveryPick').selectOption(c.value);await page.locator('[data-act="recover"]').click();await page.waitForFunction(name=>S.mission.title===name&&mapPayloadReady(),name);return c;}
 async function prepare(page,practice,name,color,cell){
   observe(page,practice?'practice':'live');await page.goto(base+(practice?'?practice=1':''));await page.waitForFunction(()=>typeof S==='object'&&ownsEditorLock());
-  if(await page.locator('#onboardingGuide').isVisible())await page.locator('[data-onboard-action="close"]').click();
+  if(await page.locator('#onboardingGuide').isVisible()){const close=page.locator('[data-onboard-action="close"]');await (await close.count()?close:page.locator('[data-onboard-action="new"]')).click();}
   if(practice)await reset(page);
   await page.evaluate(()=>{S.weather.auto=false;commitLight();});
   await title(page,name);if(!practice&&await page.locator('[data-path="ui.autoSave"]').isChecked())await page.locator('[data-path="ui.autoSave"]').uncheck();

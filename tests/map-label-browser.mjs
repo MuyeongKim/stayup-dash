@@ -65,6 +65,8 @@ try{
     if(w===1366){const a=await page.locator('#consMap [data-cell="A1"]').boundingBox(),b=await page.locator('#consMap [data-cell="A4"]').boundingBox();await page.screenshot({path:path.join(out,'map-labels-detail.png'),clip:{x:a.x-2,y:a.y-2,width:b.x+b.width-a.x+4,height:a.height+4},scale:'css'});}
   }
   await page.setViewportSize({width:1366,height:900});
+  const openTools=async()=>{if(!await page.locator('[data-map-tools-panel]').isVisible())await page.locator('[data-map-tools-toggle]').click();};
+  await openTools();
   await page.locator('dialog [data-map-action="paint"]').click();
   await page.locator('[data-act="paints"][data-v="3"]').click();
   const beforeCancel=await page.evaluate(()=>exportPayload(true));
@@ -72,14 +74,14 @@ try{
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.keyboard.press('Escape');await page.mouse.up();
   const restored=await labelContrast(page,'#consMap');
   check('쓸기 도중 Esc 취소는 원래 기록과 글자 받침을 함께 복원',await page.evaluate(()=>exportPayload(true))===beforeCancel&&await cell.locator('.cell-id').count()===1&&await cell.getAttribute('aria-label')==='A1 미수색 담당 드론'&&restored.count===34&&restored.min>=4.5);
-  await page.locator('dialog [data-act="pin"][data-p="last"]').click();
+  await openTools();await page.locator('dialog [data-act="pin"][data-p="last"]').click();
   await page.keyboard.press('ArrowRight');
   const pinTarget=await page.evaluate(()=>{const c=document.activeElement,r=c.getBoundingClientRect(),f=c.closest('.mapfit').getBoundingClientRect();return {id:c.dataset.cell,x:((r.left+r.right)/2-f.left)/f.width*100,y:((r.top+r.bottom)/2-f.top)/f.height*100};});
   await page.keyboard.press('Enter');
   const pinResult=await page.evaluate(()=>({pin:S.grid.pinLast,mode:pinMode}));
   check('키보드로 핀을 배치하고 화면·좌표 표시에 반영',pinTarget.id==='A2'&&await page.locator('#consMap .pin.last .pdot').isVisible()&&pinResult.mode===null&&pinResult.pin.x===25&&pinResult.pin.y===10,{pinTarget,pinResult});
   const beforePinCancel=await page.evaluate(()=>exportPayload(true));
-  await page.locator('dialog [data-act="pin"][data-p="last"]').click();await page.keyboard.press('Escape');
+  await openTools();await page.locator('dialog [data-act="pin"][data-p="last"]').click();await page.keyboard.press('Escape');
   check('첫 Esc는 핀 배치만 취소하고 기존 핀·기록과 큰 지도 유지',await page.locator('dialog').isVisible()&&await page.evaluate(v=>pinMode===null&&exportPayload(true)===v,beforePinCancel));
   await page.keyboard.press('Escape');
   check('두 번째 Esc로 큰 지도를 닫고 여는 버튼으로 초점 복귀',await page.locator('dialog').count()===0&&await page.locator('[data-map-host="consMap"][data-map-action="expand"]').evaluate(e=>e===document.activeElement));

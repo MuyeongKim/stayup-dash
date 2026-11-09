@@ -9225,7 +9225,7 @@ document.addEventListener('click',function(ev){
   if(b)mapStagePanelClose(false);
 },true);
 document.addEventListener('keydown',function(ev){
-  if(ev.key==='Escape'&&mapStageToolsOpen&&!document.querySelector('dialog.field-dialog[open]')){ev.preventDefault();ev.stopImmediatePropagation();mapStagePanelClose(true);}
+  if(ev.key==='Escape'&&mapStageToolsOpen&&!(painting||mapGesture||pinMode)&&!document.querySelector('dialog.field-dialog[open]')){ev.preventDefault();ev.stopImmediatePropagation();mapStagePanelClose(true);}
 },true);
 /* MAP_STAGE_LAYOUT_END */
 

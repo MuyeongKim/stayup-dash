@@ -18,7 +18,7 @@ const browser=await chromium.launch({channel:'chrome',headless:true});
 const context=await browser.newContext({viewport:{width:1366,height:900},deviceScaleFactor:3,serviceWorkers:'block',reducedMotion:'reduce'});
 const results=[],errors=[];
 const check=(name,pass,detail)=>{results.push({name,pass:!!pass,detail});console.log((pass?'PASS ':'FAIL ')+name);};
-async function reveal(page,item){await page.locator('#tab-'+item.sec).click();if(item.sec==='drone'){const fold=page.locator('#sec-drone details').first();if(!await fold.evaluate(e=>e.open))await fold.locator('summary').click();}return page.locator(item.selector);}
+async function reveal(page,item){await page.locator('#tab-'+item.sec).click();if(item.sec==='drone'){const fold=page.locator('#sec-drone details').filter({has:page.locator(item.selector)}).last();if(!await fold.evaluate(e=>e.open))await fold.locator(':scope>summary').click();}return page.locator(item.selector);}
 try{
   const page=await context.newPage();page.on('dialog',d=>d.accept());page.on('pageerror',e=>errors.push(e.message));
   await page.goto(url);await page.waitForFunction(()=>ownsEditorLock()&&S.drones.length===3);await page.locator('[data-onboard-action="close"]').click();

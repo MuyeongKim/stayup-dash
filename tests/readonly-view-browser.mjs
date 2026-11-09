@@ -51,7 +51,7 @@ try{
       await viewer.locator('details[data-fold="map-setup"]>summary').click();
       await viewer.waitForTimeout(2200);
       check('주기 갱신 후에도 지역 지도 저장·선택·파일 작업 잠금 유지',await viewer.locator('[data-offline-busy]').evaluateAll(els=>els.length>=7&&els.every(el=>el.disabled)));
-      await viewer.locator('[data-sec="mapSourceSelect"]').click();
+      await viewer.locator('[data-offline-range-links] [data-sec="mapSourceSelect"]').click();
       check('읽기 전용도 배경 안내 라벨로 이동하며 잠금·내용 유지',await viewer.locator('#mapSourceSelect').evaluate(e=>e.disabled&&e.closest('label')===document.activeElement)&&await viewer.evaluate(v=>!ownsEditorLock()&&exportPayload(true)===v,before));
       check('읽기 전용 창이 편집권을 가져오지 않음',await viewer.evaluate(()=>!ownsEditorLock())&&await owner.evaluate(()=>ownsEditorLock()));
       check('양쪽 상황·리비전·활동 기록이 보기 조작으로 바뀌지 않음',await viewer.evaluate(v=>exportPayload(true)===v,before)&&await owner.evaluate(v=>exportPayload(true)===v,before));
