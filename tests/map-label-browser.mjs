@@ -74,6 +74,11 @@ try{
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.keyboard.press('Escape');await page.mouse.up();
   const restored=await labelContrast(page,'#consMap');
   check('쓸기 도중 Esc 취소는 원래 기록과 글자 받침을 함께 복원',await page.evaluate(()=>exportPayload(true))===beforeCancel&&await cell.locator('.cell-id').count()===1&&await cell.getAttribute('aria-label')==='A1 미수색 담당 드론'&&restored.count===34&&restored.min>=4.5);
+  await openTools();await page.locator('[data-act="paints"][data-v="3"]').focus();
+  const mouseBefore=await page.evaluate(()=>exportPayload(true));
+  const a1=await cell.boundingBox(),a3=await page.locator('#consMap [data-cell="A3"]').boundingBox();
+  await page.mouse.move(a1.x+a1.width/2,a1.y+a1.height/2);await page.mouse.down();await page.mouse.move(a3.x+a3.width/2,a3.y+a3.height/2,{steps:6});await page.keyboard.press('Escape');await page.mouse.up();
+  check('도구 버튼에 초점이 있는 마우스 쓸기 중 Esc도 칠하기만 취소하고 큰 지도 유지',await page.evaluate(v=>exportPayload(true)===v&&mapDialog.open,mouseBefore)&&await page.locator('#consMap [data-cell="A2"]').evaluate(e=>e.classList.contains('s'+S.grid.cells.A2.s)&&!e.classList.contains('s3')));
   await openTools();await page.locator('dialog [data-act="pin"][data-p="last"]').click();
   await page.keyboard.press('ArrowRight');
   const pinTarget=await page.evaluate(()=>{const c=document.activeElement,r=c.getBoundingClientRect(),f=c.closest('.mapfit').getBoundingClientRect();return {id:c.dataset.cell,x:((r.left+r.right)/2-f.left)/f.width*100,y:((r.top+r.bottom)/2-f.top)/f.height*100};});

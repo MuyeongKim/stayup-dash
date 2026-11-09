@@ -2758,7 +2758,10 @@ function saveMap(dataUrl,meta,opSeq,opEpoch,fileSeq){
   var sameImage=!!(dataUrl&&MAPDATA&&dataUrl===MAPDATA),hadSpatial=S.grid.hasMap||hasSpatialData(S);
   if(!sameImage&&hadSpatial&&!confirm(dataUrl
       ?'다른 지도 이미지로 교체할까요?\n기존 구역 상태·담당, 기체 담당구역, 핀과 좌표 보정을 초기화합니다. 작업 전 상태는 복구본에 보관합니다.'
-      :'지도 이미지와 기존 구역 상태·담당, 기체 담당구역, 핀, 좌표 보정을 지울까요? 작업 전 상태는 복구본에 보관합니다.'))return Promise.resolve(false);
+      :'지도 이미지와 기존 구역 상태·담당, 기체 담당구역, 핀, 좌표 보정을 지울까요? 작업 전 상태는 복구본에 보관합니다.')){
+    mapMsg(dataUrl?'지도 교체를 취소했습니다. 기존 지도와 기록은 그대로입니다.':'지도 삭제를 취소했습니다. 기존 지도와 기록은 그대로입니다.','ok');
+    return Promise.resolve(false);
+  }
   if(hadSpatial&&!saveRecoveryPoint(dataUrl?'지도 교체 전':'지도 삭제 전')){
     mapMsg('복구본을 만들 수 없어 지도 변경을 중단했습니다. 저장공간을 확인하세요.','err');
     return Promise.resolve(false);
@@ -5251,7 +5254,7 @@ function mountMapDialog(hostId,restore){
   dialog.dataset.theme=hostId==='consMap'?viewPreferences.consoleTheme:viewPreferences.displayTheme;
   dialog.innerHTML='<div class="map-dialog-head"><h2>지도 크게 보기</h2><button type="button" class="btn" data-map-action="close">지도 닫기</button></div><div class="map-dialog-status" role="status"></div><div class="map-dialog-alert" hidden><div role="alert" data-map-alert-text></div><button type="button" class="btn" data-map-action="close">지도 닫고 전체 상태 확인</button></div>';
   var parent=host.closest('#consoleRoot,#drawerIn')||$('board');parent.appendChild(dialog);dialog.appendChild(workspace);mapDialog=dialog;
-  dialog.addEventListener('cancel',function(ev){ev.preventDefault();if(pinMode)setPinMode(null);else closeMapWorkspace();});
+  dialog.addEventListener('cancel',function(ev){ev.preventDefault();if(painting||mapGesture)cancelMapInteraction();else if(pinMode)setPinMode(null);else closeMapWorkspace();});
   dialog.showModal();
   fitMapBox(host);updateMapWorkspaceUi(host);
   if(!restore)dialog.querySelector('[data-map-action="close"]').focus();
@@ -8768,6 +8771,7 @@ document.addEventListener('keydown', function(ev){
     if(MODE === 'display'){if(mapExpandedTarget)closeMapWorkspace();toggleDrawer();}
     return;
   }
+  if(ev.key==='Escape'&&(painting||mapGesture)){ev.preventDefault();cancelMapInteraction();return;}
   if(ev.key==='Escape'&&pinMode){ev.preventDefault();setPinMode(null);return;}
   if(ev.key==='Escape'&&mapExpandedTarget){ev.preventDefault();closeMapWorkspace();return;}
   if(ev.key === 'Escape' && !$('drawer').hidden){ closeDrawer(); return; }
