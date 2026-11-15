@@ -46,11 +46,11 @@ try{
     await page.setViewportSize({width,height});await page.locator('#tab-grid').click();
     const firstChoice=await page.locator('[data-map-source-choices]').evaluate(el=>{
       const choice=el.querySelector('.map-stage-choices'),r=choice.getBoundingClientRect(),extra=el.querySelector('[data-stage-extra]'),map=document.querySelector('#consMap'),mapRect=map.getBoundingClientRect();
-      const top=document.querySelector('.console-workspace-bar').getBoundingClientRect().bottom;
+      const stick=consoleStickyEl(document.getElementById('consoleRoot')),top=stick?stick.getBoundingClientRect().bottom:0;
       const bottom=document.querySelector('.mobile-nav');const limit=bottom&&getComputedStyle(bottom).display!=='none'?bottom.getBoundingClientRect().top:innerHeight;
       return {open:el.open,count:choice.children.length,top:r.top,bottom:r.bottom,allowedTop:top,allowedBottom:limit,buttonHeights:[...choice.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height),extraOpen:extra.open,extraHeight:extra.querySelector('summary').getBoundingClientRect().height,placeholderBelow:map.getClientRects().length===0||r.bottom<=mapRect.top,overflow:document.documentElement.scrollWidth>innerWidth+1};
     });
-    check(width+'px에서 사진·온라인·저장 지도 세 선택과 접힌 추가 설정을 먼저 표시',firstChoice.open&&firstChoice.count===3&&firstChoice.top>=firstChoice.allowedTop-1&&firstChoice.bottom<=firstChoice.allowedBottom+1&&firstChoice.buttonHeights.every(h=>h>=44)&&!firstChoice.extraOpen&&firstChoice.extraHeight>=44&&firstChoice.placeholderBelow&&!firstChoice.overflow&&!await page.locator('[data-equipment-tools]').isVisible()&&!await page.locator('[data-position-action="open"]').isVisible(),firstChoice);
+    check(width+'px에서 사진·온라인·저장 지도·격자로 시작 네 선택과 접힌 추가 설정을 먼저 표시',firstChoice.open&&firstChoice.count===4&&firstChoice.top>=firstChoice.allowedTop-1&&firstChoice.bottom<=firstChoice.allowedBottom+1&&firstChoice.buttonHeights.every(h=>h>=44)&&!firstChoice.extraOpen&&firstChoice.extraHeight>=44&&firstChoice.placeholderBelow&&!firstChoice.overflow&&!await page.locator('[data-equipment-tools]').isVisible()&&!await page.locator('[data-position-action="open"]').isVisible(),firstChoice);
     const extra=page.locator('[data-stage-extra]');await extra.locator(':scope > summary').click();
     const accessible=[];
     for(const button of await extra.locator('button').all()){

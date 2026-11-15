@@ -505,9 +505,10 @@ async function run(){
   W.document.querySelector('[data-act="correctevent"][data-eid="'+targetId+'"]').click();
   ok('정정 두 자리가 없으면 원본을 무효화하지 않는다',!target.voided&&W.S.events.length===capEvents+1);
   W.MAX_EVENTS=W.S.events.length+2;
-  W.prompt=function(msg){return msg.indexOf('사유')>=0?'회귀검사 사유':'수정된 구역 기록';};
   W.renderConsole(W.document.getElementById('consoleRoot'));
-  W.document.querySelector('[data-act="correctevent"][data-eid="'+targetId+'"]').click();await wait(120);
+  W.document.querySelector('[data-act="correctevent"][data-eid="'+targetId+'"]').click();
+  W.document.getElementById('eventFixReason').value='회귀검사 사유';W.document.getElementById('eventFixText').value='수정된 구역 기록';
+  W.document.getElementById('eventFixApply').click();await wait(120);
   ok('정정 자리가 충분하면 대체기록과 정정이 함께 남는다',
     target.voided&&W.S.events.length===W.MAX_EVENTS
     &&W.S.events.slice(-2).every(function(e,i){return i===0||e.type==='correction';}));

@@ -28,7 +28,7 @@ async function settle(p){await p.evaluate(()=>new Promise(r=>requestAnimationFra
 async function bounds(p){return p.locator('#consMap').evaluate(e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};});}
 try{
   const p=await fresh();
-  check('빈 지도는 사진·온라인·저장 세 선택부터 표시',await p.locator('.map-stage-choices>button:visible').count()===3&&await p.locator('[data-map-source-choices]').evaluate(e=>e.open)&&!await p.locator('[data-position-action="open"]').isVisible());
+  check('빈 지도는 사진·온라인·저장·격자로 시작 네 선택부터 표시',await p.locator('.map-stage-choices>button:visible').count()===4&&await p.locator('[data-map-source-choices]').evaluate(e=>e.open)&&!await p.locator('[data-position-action="open"]').isVisible());
   check('지도 준비 전에는 장비·편집 도구를 앞세우지 않음',!await p.locator('[data-equipment-tools]').isVisible()&&!await p.locator('#fieldTools').isVisible()&&!await p.locator('[data-map-tools="consMap"]').isVisible());
   const empty=await payload(p);await p.locator('[data-stage-action="online"]').click();
   check('온라인을 선택하면 네이버 위치맞추기가 해당 단계에 표시',await p.locator('[data-position-action="open"]').isVisible()&&await payload(p)===empty);

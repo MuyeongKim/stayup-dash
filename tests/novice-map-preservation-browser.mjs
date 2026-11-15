@@ -37,7 +37,10 @@ async function newContext(viewport={width:1366,height:1000}){
   return context;
 }
 const payload=page=>page.evaluate(()=>JSON.parse(exportPayload(true)));
-const withoutVersion=raw=>{const value=structuredClone(raw);delete value.appVersion;return value;};
+/* 2026-11-15 지도 선(grid.lines)을 더했다. 구버전 자료를 새 앱으로 열면 빈 목록만 생겨야 하므로 빈 목록만 비교에서 뺀다. */
+const withoutVersion=raw=>{const value=structuredClone(raw);delete value.appVersion;
+  const strip=g=>{if(g&&Array.isArray(g.lines)&&g.lines.length===0)delete g.lines;};
+  strip(value.grid);((value.grid&&value.grid.history)||[]).forEach(h=>strip(h.grid));return value;};
 async function settle(page){await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));}
 async function changeChoices(page){
   const choices=page.locator('[data-map-source-choices]');

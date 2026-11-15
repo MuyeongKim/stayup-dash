@@ -105,7 +105,8 @@ try{
     await page.keyboard.press('Space');
     check(`${w}px 조작: Space로 상세 접기`,await toggle.getAttribute('aria-expanded')==='false');
     await page.evaluate(()=>window.scrollTo(0,1400));
-    const sticky=await page.locator('.console-workspace-bar').boundingBox(),verdict=await page.locator('.mobile-verdict').boundingBox();
+    const stickySel=await page.evaluate(()=>getComputedStyle(document.querySelector('.console-workspace-bar')).display==='contents'?'.operation-brief':'.console-workspace-bar');
+    const sticky=await page.locator(stickySel).boundingBox(),verdict=await page.locator('.mobile-verdict').boundingBox();
     check(`${w}px 조작: 지시와 안전 판정이 함께 상단 유지`,sticky.y>=-1&&sticky.y<=2&&verdict.y>=sticky.y&&verdict.y+verdict.height<h,{sticky,verdict});
     check(`${w}px 조작: 가로 넘침 없음`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     await page.screenshot({path:path.join(out,`console-${w}-scrolled.png`),fullPage:false});

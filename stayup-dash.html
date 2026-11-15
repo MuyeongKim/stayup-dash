@@ -545,8 +545,9 @@ b,strong{font-weight:700}
    70% 지점에 있다. 상단 바에 섹션 점프를 붙여 스크롤 없이 오갈 수 있게 한다. */
 /* 노트북 1대 + 대형 모니터 구성에서 기록자는 입력 화면만 본다. 골든타임·일몰·
    비행 판정·출동 경과를 보려고 고개를 돌리지 않게 상단 바에 축소판을 둔다. */
-.cons-top .ct-kpi{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;
-  padding-top:8px;border-top:1px solid var(--border)}
+.cons-top .ct-kpi{flex:1 1 55%;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;
+  padding-top:8px;border-top:1px solid var(--border);margin-right:-10px;padding-right:10px}
+.cons-top .ct-status{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-left:auto}
 .ct-kpi .ck{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
 .ct-kpi .ck em{font-style:normal;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em}
 .ct-kpi .ck b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
@@ -612,6 +613,10 @@ b,strong{font-weight:700}
 .mismatch .mm-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px}
 .mismatch .mm-row>span{flex:1 1 auto;min-width:0}
 .mismatch .note{margin-top:7px}
+.mismatch .mm-row .btn{min-height:44px;white-space:normal}
+[data-theme="light"] .mismatch{background:#FFF3CC;border-color:#A77C00;color:var(--text)}
+[data-theme="light"] .mismatch .mm-h{color:#624600}
+[data-theme="light"] .mismatch .note{color:var(--text)}
 
 label.f{display:block;margin-bottom:9px}
 label.f>span{display:block;font-size:13px;color:var(--muted);font-weight:700;margin-bottom:5px}
@@ -897,6 +902,15 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .quick-time:has(#evTimeLabel[hidden]){display:none}
 .quick-time select{min-width:130px}
 .quick-contract{margin-top:8px;color:var(--text)}
+.quick-contract[data-kind="saved"]{color:var(--ok);font-weight:750}
+.quick-contract[data-kind="warn"]{color:var(--warn);font-weight:750}
+/* 자주 쓰는 기록 종류: 목록을 열지 않고 한 번에 고른다 */
+.quick-types{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.quick-types .btn{min-height:44px;padding:8px 14px;font-size:14px;font-weight:700}
+.quick-types .btn[aria-pressed="true"]{background:var(--tab-selected);color:var(--tab-on-selected);border-color:var(--tab-selected);box-shadow:inset 0 -3px 0 var(--info)}
+#evEntityWrap[hidden]{display:none!important}
+/* 드론 카드에서 가장 자주 누르는 이륙·착륙·배터리 확인은 손가락 크기로 */
+.item-h .btn.drone-act,.inline .btn.drone-act{min-height:44px;font-size:14px;padding:8px 14px;font-weight:700}
 .field-error{display:block;color:#FCA5A5;font-size:13px;line-height:1.45;margin-top:5px;font-weight:600}
 .mobile-verdict,.mobile-nav,.mobile-more{display:none}
 .cons input,.cons select,.cons textarea{scroll-margin-top:180px;scroll-margin-bottom:90px}
@@ -908,6 +922,7 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
   .cons-top .ct-mode{margin-left:auto}
   .cons-top .spacer{display:none}
   .cons-top .save-pill,.cons-top .sync-pill{font-size:11px;padding:3px 6px}
+  .cons-top .ct-status{border-top:0;padding-top:0;margin-left:0;justify-content:flex-start}
   .cons-top #btnOpenDisplay{min-height:36px;font-size:12px;padding:5px 8px}
   .mobile-verdict{display:block;position:sticky;top:0;z-index:55;margin:0 -10px 10px;padding:8px 10px;background:#0A0F15;border-bottom:1px solid var(--control-border)}
   .mobile-verdict button{font-family:inherit;font-size:14px;font-weight:700;line-height:1.4;display:block;width:100%;text-align:left;background:var(--surface2);color:var(--text);border:1px solid var(--control-border);border-radius:6px;padding:9px 10px;min-height:44px}
@@ -921,6 +936,16 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
   .verdict-reasons li{align-items:stretch;flex-direction:column;gap:6px}
   .quick-targets{grid-template-columns:1fr 1fr}
   .quick-targets:has(#evEntityWrap:empty){grid-template-columns:1fr 1fr}
+  .quick-types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .quick-types .btn{padding:8px 4px}
+  /* 휴대폰: 종류 → 대상·구역 → 내용 순서로 한 화면에 들어오게. 거의 쓰지 않는 발생시각은 내용 아래로 */
+  .quick-entry{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:end}
+  .quick-entry>.quick-types,.quick-entry>.quick-message,.quick-entry>.quick-time,.quick-entry>.quick-contract{grid-column:1/-1;margin:0}
+  .quick-entry>.quick-targets{display:contents}
+  .quick-entry>.quick-message{order:5}
+  .quick-entry .quick-targets>label:has(#evTimeMode){order:6}
+  .quick-entry>.quick-time{order:7}
+  .quick-entry>.quick-contract{order:8}
   #sec-quick h2 #btnManned{flex:1 0 100%;margin-left:0;min-height:44px}
   .quick-message{grid-template-columns:1fr}
   .quick-message button{margin-top:0;min-height:44px}
@@ -1028,6 +1053,82 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .equipment-label small{display:block;font-size:10px;font-weight:500}
 .equipment-placing{position:absolute;z-index:16;top:6px;left:6px;right:6px;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:7px 9px;border:2px solid var(--info);background:var(--surface);color:var(--text);font:700 13px/1.5 system-ui,sans-serif;border-radius:6px}
 .equipment-placing .btn{min-height:44px;flex:none}
+/* MAP_DRAW_STYLES: 선·범위·표식 묶음. 선은 흰 테두리(casing) 위에 색 선을 겹쳐 사진 지도에서도 읽힌다. */
+.draw-group{margin:4px 0 8px}
+.draw-group-h{display:block;font-size:12.5px;font-weight:800;color:var(--muted);letter-spacing:.02em;margin:2px 0 0}
+.line-swatch{width:34px;height:10px;flex:none;overflow:visible}
+.line-swatch line{stroke-width:4;stroke-linecap:round}
+.k-route line,.k-route .ln,marker.k-route path{stroke:#1D6FE0;fill:#1D6FE0}
+.k-search line,.k-search .ln{stroke:#0E9F6E}
+.k-control line,.k-control .ln{stroke:#E5383B}
+.line-swatch.k-search line{stroke-dasharray:7 4}.line-swatch.k-control line{stroke-dasharray:5 3;stroke-width:5}
+.field-line-layer .map-line .ln,.field-line-layer .map-line .casing{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.field-line-layer .map-line .casing{stroke:#FFFFFFE6;stroke-width:8px}
+.field-line-layer .map-line .ln{stroke-width:4px}
+.field-line-layer .k-search .ln{stroke-dasharray:12 7}
+.field-line-layer .k-control .ln{stroke-width:5px;stroke-dasharray:14 6}
+.field-line-layer .k-control .casing{stroke-width:9px}
+.field-line-layer marker path{stroke:none}
+.field-line-layer .map-line .start{fill:#FFF;stroke-width:2.5px;vector-effect:non-scaling-stroke}
+.field-line-layer .k-route .start{stroke:#1D6FE0}.field-line-layer .k-search .start{stroke:#0E9F6E}.field-line-layer .k-control .start{stroke:#E5383B}
+.field-line-layer .map-line text{font:800 13px/1 system-ui,sans-serif;fill:#14202B;paint-order:stroke;stroke:#FFF;stroke-width:4px;stroke-linejoin:round}
+.field-line-layer .map-line .hit{fill:none;stroke:transparent;stroke-width:18px;pointer-events:stroke;cursor:pointer;vector-effect:non-scaling-stroke}
+.field-line-layer .draft-line .ln{stroke-dasharray:none;opacity:.9}
+.field-line-layer .line-vertex circle{fill:#FFF;stroke:#0284C7;stroke-width:3px;vector-effect:non-scaling-stroke}
+.field-line-layer .line-vertex text{font:800 13px system-ui;fill:#0B2A3C;paint-order:stroke;stroke:#FFF;stroke-width:4px}
+.field-line-layer .circle-draft circle{fill:#38BDF833;stroke:#0284C7;stroke-width:2.5px;stroke-dasharray:7 4;vector-effect:non-scaling-stroke}
+.field-line-layer .circle-draft .center{fill:#0284C7;stroke:#FFF;stroke-dasharray:none}
+.field-line-layer .circle-draft text{font:800 14px system-ui;fill:#0B2A3C;paint-order:stroke;stroke:#FFF;stroke-width:4px}
+.board .field-line-layer .map-line .ln{stroke-width:6px}.board .field-line-layer .map-line .casing{stroke-width:11px}
+.board .field-line-layer .k-control .ln{stroke-width:7px}.board .field-line-layer .k-control .casing{stroke-width:12px}
+.board .field-line-layer .map-line text{font-size:max(15px,1.05rem);stroke-width:5px}
+.line-editbar{position:absolute;left:8px;bottom:8px;z-index:15;max-width:calc(100% - 16px);padding:7px;background:var(--surface);border:1px solid var(--control-border);border-radius:7px;display:flex;gap:6px;flex-wrap:wrap;font-size:13px;align-items:center;box-shadow:0 4px 16px #0004}
+.line-editbar .btn{min-height:44px;padding:6px 10px;font-size:13px;white-space:normal}
+.line-editbar [data-draw-count]{font-weight:700}
+/* 휴대폰: 그리기 막대가 지도 아래쪽을 덮어 점을 못 찍지 않도록 화면 아래 메뉴 바로 위에 띄운다 */
+@media(max-width:600px){#consMap .line-editbar,#consMap .field-editbar{position:fixed;left:8px;right:8px;bottom:calc(66px + env(safe-area-inset-bottom));max-width:none;z-index:85;box-shadow:0 -4px 18px #0005}}
+/* 그리는 동안 손가락 끌기를 화면 스크롤로 빼앗기지 않게 한다(구역 초안 편집과 같은 방식) */
+.cons-map.line-drawing{cursor:crosshair;touch-action:none!important}
+.field-dialog .line-kind{grid-template-columns:repeat(3,minmax(0,1fr))}
+.field-dialog .line-kind .btn{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;font-size:15px}
+/* 표식 묶음 색: 사람(주황)·장소(보라)·기체(파랑)·차량(남색). 글자색 대비 4.5 이상 */
+.equipment-marker{border-radius:50%;border-width:3px;width:46px;height:46px;transition:transform .12s}
+.equipment-marker[data-group="people"]{background:#C2410C;border-color:#FFF;color:#FFF}
+.equipment-marker[data-group="place"]{background:#6D28D9;border-color:#FFF;color:#FFF;border-radius:10px}
+.equipment-marker[data-group="air"]{background:#1D4ED8;border-color:#FFF;color:#FFF}
+.equipment-marker[data-group="car"]{background:#1E293B;border-color:#FFF;color:#FFF;border-radius:10px}
+.equipment-marker:hover{transform:translate(-50%,-50%) scale(1.08)}
+#consMap .equipment-marker{cursor:grab;touch-action:none}
+#consMap .equipment-marker.dragging{cursor:grabbing;transform:translate(-50%,-50%) scale(1.15);box-shadow:0 8px 20px #0007;z-index:20}
+.equipment-palette .btn[data-group] svg{flex:none;width:26px;height:26px;padding:3px;border-radius:50%;color:#FFF}
+.equipment-palette .btn[data-group="people"] svg{background:#C2410C}.equipment-palette .btn[data-group="place"] svg{background:#6D28D9;border-radius:6px}
+.equipment-palette .btn[data-group="air"] svg{background:#1D4ED8}.equipment-palette .btn[data-group="car"] svg{background:#1E293B;border-radius:6px}
+.board .equipment-marker{width:52px;height:52px}.board .equipment-marker svg{width:32px;height:32px}
+.board .equipment-label{font-size:max(13px,.9rem)}
+/* 겹침 순서: 구역(6) 위에 선(6, 나중에 그림), 그 위에 표식(7), 맨 위에 최종목격·발견 핀(8) */
+.equipment-layer{z-index:7}.pin{z-index:8}
+/* 지도 위 도구 줄: 선·범위·표식을 한두 줄에 묶어 지도가 첫 화면에 들어오게 한다 */
+.equipment-tools .equipment-body{display:flex;flex-wrap:wrap;align-items:center;gap:8px 0}
+.equipment-body>.draw-group{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0;padding:0 14px;border-left:1px solid var(--border2)}
+.equipment-body>.draw-group:first-child{padding-left:0;border-left:0}
+.equipment-body>.draw-group .draw-group-h{margin:0 2px 0 0;white-space:nowrap}
+.equipment-body>.draw-group .equipment-palette{margin:0}
+.equipment-body>[data-draw-group="marks"]{flex:1 0 100%;padding-left:0;border-left:0}
+.equipment-body>.note{flex:1 1 20rem;margin:2px 12px 0 0}.equipment-body>details{flex:0 1 auto;margin:2px 0 0}
+.equipment-body>details[open]{flex:1 0 100%}
+.equipment-body .equipment-palette .btn{padding:4px 10px;font-size:13px;font-weight:650;gap:6px}
+.equipment-palette .btn[data-group] svg,.equipment-palette .btn[data-draw-area] svg{width:24px;height:24px}
+.map-tool-panel .equipment-tools .equipment-body{display:block}
+.map-tool-panel .equipment-body>.draw-group{padding:0;border-left:0;margin:6px 0}
+@media(max-width:600px){.equipment-tools .equipment-body{display:block}.equipment-body>.draw-group{padding:0;border-left:0;margin:6px 0}.equipment-body>.draw-group .draw-group-h{flex:1 0 100%}}
+/* 브라우저 기본 표면도 화면 색에 맞춘다: 선택 영역·입력 커서·스크롤 막대 */
+::selection{background:#F97316;color:#fff}
+input,textarea{caret-color:var(--accent)}
+html{scrollbar-color:var(--control-border) transparent}
+.cons *,.board *{scrollbar-width:thin}
+/* 입력 화면 우선 지시 카드: 현장 상황 공유가 있어도 상세 단추는 첫 줄 오른쪽에 둔다 */
+@media(min-width:1001px){#consolePriority .priority-toggle{grid-column:3;grid-row:1}#consolePriority .situation-message{grid-row:2}}
+/* MAP_DRAW_STYLES_END */
 @media(max-width:480px){.equipment-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.equipment-palette .btn{justify-content:center}.equipment-placing{font-size:12px}.equipment-tools{padding:8px}.equipment-label{max-width:160px;white-space:normal;width:max-content}}
 .map-empty-actions{display:flex;gap:10px;align-items:center;padding:12px;background:var(--surface2);border:1px dashed var(--control-border);border-radius:6px;margin-top:8px}
 .map-empty-actions span{font-size:13px;color:var(--muted)}
@@ -1279,6 +1380,22 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
   .cons .console-panel>h2{padding:12px;font-size:17px}
   .cons .console-panel .sec-b{padding:12px}
 }
+/* 세로 휴대 화면: 아래 메뉴가 화면 이동을 맡으므로 위쪽 메뉴 줄은 함께 고정하지 않는다.
+   고정되는 것은 우선 지시와 비행 판정·유인기 경보 한 줄뿐이다. 작업 공간이 화면의 절반 아래로 줄지 않게 한다. */
+@media(max-width:480px) and (min-height:601px){
+  .cons .console-workspace-bar{display:contents;position:static}
+  .cons .console-workspace-bar .operation-brief{position:sticky;top:0;z-index:60;background:var(--bg);padding:6px 0 8px;margin:0}
+  .cons .console-workspace-bar .ct-nav{position:static;margin-bottom:12px}
+  .cons .priority-card{padding:8px 10px;gap:4px 8px}
+  /* 우선 지시는 잘라 보이면 안 된다. 글자만 조금 줄이고 문장 전체를 고정 영역에 둔다. */
+  .cons .priority-card .priority-text{font-size:14.5px!important;line-height:1.35}
+  .console-alert-row{flex-wrap:nowrap;gap:6px;margin-top:6px}
+  .console-alert-row .mobile-verdict{flex:1 1 52%}
+  .console-alert-row .mobile-verdict button{font-size:12.5px;padding:6px 8px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  .console-emergency{flex:0 1 46%;width:auto}
+  .console-emergency #btnManned{width:100%;font-size:12.5px;padding:6px 8px;line-height:1.3}
+  .cons input,.cons select,.cons textarea{scroll-margin-top:200px}
+}
 .field-dialog{width:min(760px,calc(100vw - 24px));max-height:90svh;overflow:auto;border:1px solid var(--control-border);border-radius:10px;background:var(--surface);color:var(--text);padding:18px;font:15px/1.5 system-ui,sans-serif}
 .field-dialog::backdrop{background:#000a}.field-dialog h2{font-size:20px;margin:0 0 12px}.field-dialog p{font-size:14px;overflow-wrap:anywhere}
 .field-dialog label{display:block;margin:10px 0}.field-dialog input,.field-dialog textarea,.field-dialog select{display:block;font:inherit;color:var(--text);background:var(--surface2);border:1px solid var(--control-border);border-radius:5px;padding:9px;width:100%;min-height:44px;box-sizing:border-box}
@@ -1294,6 +1411,17 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 @media(max-width:600px){.field-quick .row-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.field-quick .btn{width:100%;padding:8px 5px}.field-quick .row-tools>:last-child{grid-column:1/-1}}
 .field-editbar{position:absolute;left:8px;bottom:8px;z-index:15;max-width:calc(100% - 16px);padding:7px;background:var(--surface);border:1px solid var(--control-border);border-radius:7px;display:flex;gap:6px;flex-wrap:wrap;font-size:13px;align-items:center}.field-editbar .btn{min-height:44px;padding:6px 9px;font-size:13px;white-space:normal}.field-editing{max-height:calc(100svh - 250px)}
 .map-dialog .field-quick{display:none}
+.field-dialog .fix-reasons{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 6px}
+.field-dialog .fix-reasons .btn{min-height:40px;font-size:14px}
+.field-dialog .message-kind{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 6px}
+.field-dialog .message-kind .btn{min-height:52px;font-size:16px;font-weight:750}
+.field-dialog .message-kind .btn.on{background:var(--tab-selected);color:var(--tab-on-selected);border-color:var(--tab-selected);box-shadow:inset 0 -4px 0 var(--info)}
+.field-dialog .message-help{margin:4px 0 8px;color:var(--muted)}
+.field-dialog .message-current{display:grid;gap:3px;padding:8px 10px;border:1px dashed var(--control-border);border-radius:6px;font-size:14px;overflow-wrap:anywhere}
+.field-dialog .message-current b{font-size:12.5px;color:var(--muted)}
+.field-dialog .message-count{margin:-4px 0 8px;font-size:13px;color:var(--muted);text-align:right}
+.field-dialog-safety [data-field-close][hidden]{display:none}
+.field-dialog-safety:not(.danger){border:0;border-bottom:1px solid var(--border);border-radius:0;padding:0 0 8px;color:var(--muted)}
 .field-dialog-safety{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px;border:1px solid var(--control-border);border-radius:6px;margin:8px 0;font-size:13px}.field-dialog-safety>span{flex:1 1 240px}.field-dialog-safety .btn{font-size:13px}.field-dialog-safety.danger{background:#7f1d1d;color:#fff}
 /* MAP_POSITION_STYLES */
 .map-position-tools{padding:12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);margin:0 0 10px}
@@ -1323,7 +1451,7 @@ summary:focus-visible{outline:3px solid #7DD3FC;outline-offset:2px}
 .map-stage-current [data-stage-action]{min-height:44px;flex:none;width:auto!important}
 .map-stage-current strong{min-width:0;flex:1;overflow-wrap:anywhere;word-break:keep-all}
 [data-map-source-choices]>summary{font-weight:750;min-height:44px;cursor:pointer;padding:10px 0;font-size:15px}
-.map-stage-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.map-stage-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .map-stage-choices .btn{min-height:52px!important;font-size:14px!important;line-height:1.45}
 .field-quick.stage-prepared{padding:8px 10px}
 .stage-prepared [data-map-source-choices]>summary{display:none}
@@ -1406,7 +1534,8 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .start-actions{display:flex;gap:8px;flex-wrap:wrap}
 .start-actions .btn{min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
 .cons.is-start{max-width:760px;padding-top:20px;padding-bottom:24px}
-.cons.is-start .cons-top>:not(.ct-brand):not(.ct-mode):not([data-act="takecontrol"]):not(.save-pill.bad):not(#btnCloseDrawer){display:none!important}
+.cons.is-start .cons-top>:not(.ct-brand):not(.ct-mode):not([data-act="takecontrol"]):not(.save-pill.bad):not(.ct-status):not(#btnCloseDrawer){display:none!important}
+.cons.is-start .ct-status{border-top:0;padding-top:0;margin-left:0}.cons.is-start .ct-status>:not(.save-pill.bad){display:none!important}
 .cons.is-start .console-workspace-bar,.cons.is-start .console-panel,.cons.is-start .mobile-nav,.cons.is-start .mobile-more,.cons.is-start #verdictHelp,.cons.is-start .onboarding-next{display:none!important}
 .cons.is-start .onboarding-guide{margin-top:24px;padding:28px}
 .cons.is-start .onboarding-heading h2{font-size:28px;margin-bottom:24px}
@@ -1522,8 +1651,16 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
   .board>.ticker.priority-card{order:1;min-height:0;height:auto;padding:.4rem .9rem;border-left-width:.45rem;gap:.3rem 1rem}
   .board>.cols{order:2}
   .board .ticker .priority-label{font-size:1.15rem;color:var(--muted)}
-  .board .priority-text,.board.far-view .priority-text{font-size:1.85rem!important;line-height:1.28;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-  .board.far-view .priority-text{font-size:2.3rem!important}
+  /* 지시는 80자까지 입력한다. 글자 배율을 키우거나 화면이 좁아도 두 줄에 들어가도록, 지시가 길 때만
+     글자를 줄인다. --prio-chars 는 두 줄로 나눴을 때 한 줄에 들어가야 하는 글자 수(wallFitPriority 가 넣는다).
+     이름표·단추 자리 23rem 을 뺀 폭을 그 글자 수로 나눈 값이 글자 크기의 상한이다. 그래도 넘치면 셋째 줄까지 보인다. */
+  .board .priority-text,.board.far-view .priority-text{font-size:clamp(18px,calc((100vw - 23rem) / var(--prio-chars,41)),1.85rem)!important;line-height:1.28;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+  .board.far-view .priority-text{font-size:clamp(18px,calc((100vw - 23rem) / var(--prio-chars,41)),2.3rem)!important}
+  /* 이름표·지시·상세 단추는 첫 줄, 현장 상황 공유는 그 아래 한 줄 전체에 벽에서 읽히는 크기로 */
+  .board .ticker .priority-label{grid-column:1;grid-row:1}
+  .board .ticker .priority-text{grid-column:2;grid-row:1}
+  .board .ticker .priority-toggle{grid-column:3;grid-row:1}
+  .board .ticker .situation-message:not([hidden]){grid-column:1/-1;grid-row:2;white-space:normal;font-size:1.15rem;line-height:1.3;font-weight:600;padding-top:.25rem;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
   .board .ticker .priority-details{top:calc(100% + 8px);bottom:auto;box-shadow:0 8px 28px #0008}
   .board .ticker .priority-toggle{font-size:.95rem}
   /* 지도 조작은 지도 위에 떠 있다가 가만히 있으면 사라진다. 지도 자리를 차지하지 않는다. */
@@ -1553,18 +1690,33 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
   .board.banner-on .kpi{padding-top:.3rem;padding-bottom:.3rem}
   /* 스스로 넘기는 목록: 몇 쪽 중 몇 쪽인지 머리에 표시 */
   .board .wall-page{margin-left:.5rem;font:700 .95rem/1.2 system-ui,sans-serif;color:var(--text);background:var(--surface3);border:1px solid var(--border2);border-radius:99px;padding:.05rem .5rem;white-space:nowrap}
-  .board .last-update{font-size:.9rem;color:var(--muted);white-space:nowrap;margin-top:.1rem}
-  .board .last-update.stale{color:var(--warn);font-weight:700}
-  .board.banner-on .last-update{display:none}
-  /* 새로 바뀐 칸·기록: 테두리로 1분·1분30초 동안 표시, 처음 몇 초는 깜박여 눈길을 끈다 */
-  .board .gcell.wall-changed{box-shadow:inset 0 0 0 .3rem var(--accent),0 0 .8rem var(--accent);z-index:2}
-  .board .log-row.wall-new{outline:.18rem solid var(--accent);outline-offset:-.18rem}
-  .board .log-row.wall-new .lx::before{content:"새";background:var(--accent);color:#14100C;font-weight:900;padding:0 .3em;border-radius:.2em;margin-right:.3em}
-  @media(prefers-reduced-motion:no-preference){
-    .board .gcell.wall-changed,.board .log-row.wall-new{animation:wallflash 1s ease-in-out 4}
-  }
   .board .wall-paged{scrollbar-width:none}
   .board .wall-paged::-webkit-scrollbar{display:none}
+  .board .wall-paged::after{content:"";display:block;height:var(--wall-pad,0px)}
+  /* 지도가 주인공: 안전·기상은 지도 아래 한 줄 띠로 줄이고, 양옆 열을 조금 좁혀 지도 면적을 넓힌다.
+     긴 값(인접기관 등)은 한 줄로 자르고 전체 문장은 마우스 설명·입력 화면에 남는다. */
+  .board .cols{grid-template-columns:calc(20 * var(--unit)) minmax(0,1fr) calc(24 * var(--unit))}
+  .board.far-view .cols{grid-template-columns:calc(19 * var(--unit)) minmax(0,1fr) calc(28 * var(--unit))}
+  .board .col-c{grid-template-rows:minmax(0,1fr) auto!important}
+  .board .card-safety>.card-h{padding:.25rem .7rem}
+  .board .card-safety>.card-h h2{font-size:1rem}
+  .board .card-safety>.card-h .h-right{font-size:.9rem}
+  .board .card-safety #safetyBody{display:flex;flex-wrap:wrap;gap:.3rem;padding:.3rem .5rem .45rem}
+  .board .card-safety .safety-row,.board .card-safety .wx{display:contents}
+  .board .card-safety .sf,.board .card-safety .wx .sf,.board .card-safety .wx .sf:last-child{flex:1 1 6rem;min-width:6rem;display:block;padding:.18rem .45rem;margin:0}
+  .board .card-safety .sf.wide{flex:2.2 1 11rem;min-width:11rem}
+  .board .card-safety .sf .sl{font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .board .card-safety .sf .sv,.board .card-safety .sf:not(.wide) .sv,.board .card-safety .sf.wide .sv{font-size:1.12rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-height:none;-webkit-line-clamp:unset}
+  /* 인접기관(헬기·타 기관 드론)은 안전에 직결되므로 자르지 않고 두 줄까지 보인다 */
+  .board .card-safety .sf.wide .sv{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:1rem;line-height:1.2}
+  .board .card-grid>.card-h{padding-top:.3rem;padding-bottom:.3rem}
+  .board .card-grid .cov-pct{font-size:2.3rem}
+  /* 진행률 한 줄: 큰 % · 막대 · 범례 · 추정반경 */
+  .board .card-grid .cov{grid-template-columns:auto minmax(6rem,1fr) auto auto;grid-template-rows:auto;padding-top:.2rem}
+  .board .card-grid .cov-pct{grid-row:1}.board .card-grid .cov-bar{grid-column:2;grid-row:1}
+  .board .card-grid .legend{grid-column:3;grid-row:1;flex-wrap:nowrap;white-space:nowrap}
+  .board .card-grid .radchip{grid-column:4;grid-row:1}
+  .board .field-region-layer text{font-size:max(14px,.95rem)!important;stroke-width:4px!important}
 }
 .replay-dialog{width:min(760px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--text);padding:14px 16px;font:15px/1.5 system-ui,sans-serif}
 .replay-dialog::backdrop{background:#000a}
@@ -1584,6 +1736,21 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
 .replay-controls .btn{min-height:44px;min-width:88px}
 .replay-slider{display:flex;align-items:center;gap:8px;flex:1 1 240px}.replay-slider input{flex:1;min-height:44px}
 .replay-empty{padding:12px;border:1px dashed var(--border2);border-radius:6px}
+/* 갱신 시각과 바뀐 것 강조는 화면 폭과 관계없이 적용한다(태블릿·세로 화면의 현황 창 포함). */
+.board .last-update{font-size:max(13px,.9rem);color:var(--muted);white-space:nowrap;margin-top:.1rem}
+.board .last-update.stale{color:var(--warn);font-weight:700}
+.board.banner-on .last-update{display:none}
+/* 새로 바뀐 칸·기록: 테두리로 1분·1분30초 동안 표시, 처음 몇 초는 깜박여 눈길을 끈다 */
+.board .gcell.wall-changed{box-shadow:inset 0 0 0 .3rem var(--accent),0 0 .8rem var(--accent);z-index:2}
+.board .log-row.wall-new{outline:.18rem solid var(--accent);outline-offset:-.18rem}
+.board .log-row.wall-new .lx::before{content:"새";background:var(--accent);color:#14100C;font-weight:900;padding:0 .3em;border-radius:.2em;margin-right:.3em}
+@media(prefers-reduced-motion:no-preference){
+  .board .gcell.wall-changed,.board .log-row.wall-new{animation:wallflash 1s ease-in-out 4}
+}
+/* 입력 창 없음 안내: 안전 경보(빨강)와 구분되는 노랑 띠. 주간·야간 모두 같은 색으로 대비를 지킨다. */
+.wall-offline{grid-column:1/-1;background:#F5B301;color:#1A1300;border:2px solid #7A5A00;border-radius:.45rem;padding:.3rem .8rem;font-size:max(15px,1.2rem);font-weight:800;line-height:1.3}
+.wall-offline[hidden]{display:none}
+.wall-offline::before{content:"\26A0\FE0E  "}
 @keyframes wallflash{0%,100%{filter:none}50%{filter:brightness(1.35)}}
 /* 낮은 벽 화면(높이 900px 이하)도 열을 스크롤하지 않는다. 모든 카드가 제 칸을 지키고, 넘친 내용은 카드 안에서 스스로 넘긴다. */
 @media(min-width:1001px) and (max-height:900px){
@@ -1638,10 +1805,11 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
     <div class="hdr-clock">
       <div class="clock num" id="hClock">--:--:--</div>
       <div class="cdate" id="hDate">&nbsp;</div>
-      <div class="last-update" id="hUpdated" title="입력 화면에서 마지막으로 내용을 바꾼 시각"></div>
+      <div class="last-update" id="hUpdated" title="마지막으로 자료가 바뀐 시각 (자동 기상 갱신 포함)"></div>
       <div class="clock-tools"><button class="theme-toggle" id="displayThemeToggle" type="button">야간</button>
       <button class="audio-arm" id="audioArm" type="button" hidden>&#9654;&#65038; 경보음 준비</button></div>
     </div>
+    <div class="wall-offline" id="wallOffline" role="status" aria-live="polite" hidden></div>
   </header>
 
   <main class="cols">
@@ -1812,7 +1980,7 @@ function defaultState(){
          가로 실거리도 손입력이 아니라 계산값을 쓴다. 없으면 종전과 같이 픽셀 좌표계. */
       geo:null, ref1:null, ref2:null,
       mapNatW:0, mapNatH:0,   /* 축소 전 원본 픽셀 크기 (world file 해석에 필요) */
-      pinLast:null, pinFound:null, layout:null, regions:[], history:[], viewLock:null, equipment:[]
+      pinLast:null, pinFound:null, layout:null, regions:[], history:[], viewLock:null, equipment:[], lines:[]
     },
     ai:{runs:[],candidates:[]},
     events:[],
@@ -2260,6 +2428,7 @@ function migrate(raw){
   function pin(v){ return isPlainObject(v) ? {x:sanNum(v.x,0,100,50,false),y:sanNum(v.y,0,100,50,false)} : null; }
   d.grid.pinLast=pin(g.pinLast); d.grid.pinFound=pin(g.pinFound);
   d.grid.equipment=equipmentNormalize(g.equipment);
+  d.grid.lines=linesNormalize(g.lines);
   d.grid.mapNatW=sanInt(g.mapNatW,0,200000,0); d.grid.mapNatH=sanInt(g.mapNatH,0,200000,0);
   d.grid.geo=(function(v){
     if(!isPlainObject(v)) return null;
@@ -2807,14 +2976,14 @@ function readMapFromStore(){
 /* 이미지 본체를 저장소에 먼저 쓰고, 성공하면 상태를 동기로 커밋한다.
    상태 커밋이 실패하면 방금 쓴 블롭을 지워 고아를 남기지 않는다. */
 function hasSpatialData(state){
-  return !!(state.grid.layout||(state.grid.regions||[]).length||(state.grid.equipment||[]).length||state.grid.pinLast||state.grid.pinFound||state.grid.geo||state.grid.ref1||state.grid.ref2
+  return !!(state.grid.layout||(state.grid.regions||[]).length||(state.grid.equipment||[]).length||(state.grid.lines||[]).length||state.grid.pinLast||state.grid.pinFound||state.grid.geo||state.grid.ref1||state.grid.ref2
     ||Object.keys(state.grid.cells).some(function(k){var c=state.grid.cells[k];return c&&(c.s||c.by);})
     ||state.drones.some(function(d){return !!d.zone;}));
 }
 function resetSpatialGrid(state,clearPins){
   state.grid.cells={};state.grid.generation=uid();
   state.drones.forEach(function(d){d.zone='';});
-  if(clearPins){state.grid.pinLast=null;state.grid.pinFound=null;state.grid.spatialReview=false;state.grid.layout=null;state.grid.regions=[];state.grid.equipment=[];state.grid.viewLock=null;}
+  if(clearPins){state.grid.pinLast=null;state.grid.pinFound=null;state.grid.spatialReview=false;state.grid.layout=null;state.grid.regions=[];state.grid.equipment=[];state.grid.lines=[];state.grid.viewLock=null;}
 }
 var gridDimensionsDraft=null;
 function gridDimensionValue(key){
@@ -3201,7 +3370,7 @@ function fieldNormalizeGrid(raw){
     var geo=old.geo===null?null:old.geo;
     if(geo&&validateGeo(geo).err)throw Error('이전 지도 좌표가 올바르지 않습니다.');
     return {id:item.id,at:item.at,reason:sanText(item.reason,120),grid:{rows:old.rows,cols:old.cols,cells:cells,generation:sanText(old.generation,100),layout:FieldGeometry.layout(old.layout),regions:regions(old.regions),geo:geo?Object.assign({},geo):null,
-      mapId:old.mapId&&/^[a-z0-9_-]{3,100}$/i.test(old.mapId)?old.mapId:null,mapVer:sanInt(old.mapVer,0,2147483647,0),source:['image','naver','google','offline'].includes(old.source)?old.source:'image',mapW:sanInt(old.mapW,0,100000,0),mapH:sanInt(old.mapH,0,100000,0),equipment:equipmentNormalize(old.equipment)},
+      mapId:old.mapId&&/^[a-z0-9_-]{3,100}$/i.test(old.mapId)?old.mapId:null,mapVer:sanInt(old.mapVer,0,2147483647,0),source:['image','naver','google','offline'].includes(old.source)?old.source:'image',mapW:sanInt(old.mapW,0,100000,0),mapH:sanInt(old.mapH,0,100000,0),equipment:equipmentNormalize(old.equipment),lines:linesNormalize(old.lines)},
       drones:(Array.isArray(item.drones)?item.drones:[]).slice(0,50).map(function(d){return {id:sanText(d.id,80),name:sanText(d.name,80),zone:sanText(d.zone,40)};})};
   });
   return {layout:FieldGeometry.layout(raw.layout),regions:regions(raw.regions),history:history};
@@ -3211,7 +3380,7 @@ function archiveFieldGrid(state,reason){
   if(state.grid.history.length>=20)throw Error('구역 변경 이력이 20개입니다. 상황을 백업하고 새 수색으로 분리하세요. 기존 이력을 자동 삭제하지 않습니다.');
   var old=state.grid;
   state.grid.history.push({id:uid(),at:Date.now(),reason:reason,grid:{rows:old.rows,cols:old.cols,cells:JSON.parse(JSON.stringify(old.cells)),generation:old.generation,layout:old.layout?Object.assign({},old.layout):null,regions:JSON.parse(JSON.stringify(old.regions||[])),geo:old.geo?Object.assign({},old.geo):null,
-    mapId:old.mapId,mapVer:old.mapVer,source:old.source,mapW:old.mapW,mapH:old.mapH,equipment:JSON.parse(JSON.stringify(old.equipment||[]))},drones:state.drones.map(function(d){return {id:d.id,name:d.name,zone:d.zone};})});
+    mapId:old.mapId,mapVer:old.mapVer,source:old.source,mapW:old.mapW,mapH:old.mapH,equipment:JSON.parse(JSON.stringify(old.equipment||[])),lines:JSON.parse(JSON.stringify(old.lines||[]))},drones:state.drones.map(function(d){return {id:d.id,name:d.name,zone:d.zone};})});
 }
 function fieldHistoryIds(state){return (state&&state.grid&&state.grid.history||[]).map(function(h){return h.grid.mapId;}).filter(Boolean);}
 function fieldAspect(){
@@ -4479,12 +4648,19 @@ document.addEventListener('click',function(ev){
   var button=ev.target.closest('button');
   if(button&&button.closest('#consMapWorkspace,dialog[data-map-position]'))mapFeedbackTrigger=button;
 },true);
+/* 입력 화면 위쪽에 고정된 영역. 넓은 화면은 메뉴까지 묶은 막대, 세로 휴대 화면은 지시·경보 묶음만 고정한다. */
+function consoleStickyEl(root){
+  if(!root)return null;
+  var bar=root.querySelector('.console-workspace-bar');if(bar&&getComputedStyle(bar).position==='sticky')return bar;
+  var brief=root.querySelector('.operation-brief');if(brief&&getComputedStyle(brief).position==='sticky')return brief;
+  return null;
+}
 function revealMapFeedback(el){
   if(!el||!el.isConnected||!el.getClientRects().length)return;
   var root=el.closest('#consoleRoot,#drawerIn'),scroll=scrollHost(el),r=el.getBoundingClientRect();
-  var bar=root&&root.querySelector('.console-workspace-bar'),nav=root&&root.querySelector('.mobile-nav');
+  var bar=consoleStickyEl(root),nav=root&&root.querySelector('.mobile-nav');
   var top=scroll?scroll.getBoundingClientRect().top:0,bottom=scroll?scroll.getBoundingClientRect().bottom:innerHeight;
-  if(bar&&getComputedStyle(bar).position==='sticky')top=Math.max(top,bar.getBoundingClientRect().bottom);
+  if(bar)top=Math.max(top,bar.getBoundingClientRect().bottom);
   if(nav&&getComputedStyle(nav).display!=='none')bottom=Math.min(bottom,nav.getBoundingClientRect().top);
   var delta=r.bottom>bottom-8?r.bottom-bottom+8:r.top<top+8?r.top-top-8:0;
   if(delta){if(scroll)scroll.scrollTop+=delta;else window.scrollBy(0,delta);}
@@ -5075,7 +5251,7 @@ function priorityContact(){
 }
 function consolePriorityHtml(){
   return '<section class="priority-card'+(priorityIsEmpty()?' is-empty':'')+(priorityOpen.console?' is-expanded':'')+'" id="consolePriority" tabindex="-1" aria-labelledby="consolePriorityLabel">'
-    +'<span class="priority-label"><span id="consolePriorityLabel" data-priority-label>현재 우선 지시'+(priorityIsEmpty()?' · 미입력':'')+'</span><button type="button" class="btn field-compose" data-field-action="message"'+(!ownsEditorLock()?' disabled':'')+'>전달사항 작성</button></span>'
+    +'<span class="priority-label"><span id="consolePriorityLabel" data-priority-label>현재 우선 지시'+(priorityIsEmpty()?' · 미입력':'')+'</span><button type="button" class="btn field-compose" data-field-action="message"'+(!ownsEditorLock()?' disabled':'')+'>지시·상황 전달</button></span>'
     +'<div class="priority-text" data-priority-text>'+esc(priorityText())+'</div>'
     +'<div class="situation-message" data-situation-message hidden></div>'
     +'<button type="button" class="btn priority-toggle" data-priority-toggle="console" aria-expanded="'+priorityOpen.console+'" aria-controls="consolePriorityDetails">'+(priorityOpen.console?'상세 접기':'상세 보기')+'</button>'
@@ -5262,18 +5438,18 @@ function handlePeerAction(m){
    S8. 전체 렌더 · 배율/밝기 적용
    ========================================================================== */
 /* 보기 설정은 현재 창에만 적용하며 출동 기록·반대쪽 창의 보기를 바꾸지 않는다. */
-var mapLayers={grid:true,by:true,radius:true,regions:true,fill:0.42};
+var mapLayers={grid:true,by:true,radius:true,regions:true,lines:true,fill:0.42};
 var mapExpandedTarget='',mapDialog=null,mapExpandPlaceholder=null,mapExpandBack=null;
 function mapToolsHtml(hostId,editable){
   function button(action,label){return '<button type="button" class="btn sm" data-map-host="'+hostId+'" data-map-action="'+action+'">'+label+'</button>';}
   return '<div class="map-tools" data-map-tools="'+hostId+'">'
-    +'<div class="map-tools-row">'+(editable?button('view','보기·이동')+button('paint','구역 칠하기'):'')
+    +'<div class="map-tools-row">'+(editable?button('view','보기·이동')+button('paint','구역 칠하기')+(hostId==='consMap'?'<button type="button" class="btn sm" data-draw-jump>선·범위·표식 ↓</button>':''):'')
     +button('zoom-out','축소')+'<output class="map-zoom" data-map-zoom="'+hostId+'">100%</output>'+button('zoom-in','확대')
     +button('fit','전체 맞춤')+button('expand','지도 크게 보기')+'</div>'
     +'<div class="offline-map-status" data-offline-map-status role="status" hidden><span></span><button type="button" class="btn sm" data-offline-action="reconnect">온라인 지도 다시 연결</button></div>'
     +'<details class="map-options"><summary>표시 설정 · 이동</summary><div class="map-options-body">'
     +'<div class="map-tools-row" aria-label="지도 이동">'+button('pan-left','← 왼쪽')+button('pan-right','오른쪽 →')+button('pan-up','↑ 위쪽')+button('pan-down','아래쪽 ↓')+'</div>'
-    +['grid','by','radius','regions'].map(function(key,i){return '<label class="chkline"><input type="checkbox" data-map-layer="'+key+'"'+(mapLayers[key]?' checked':'')+'>'+['격자','담당','추정반경','자유 구역'][i]+'</label>';}).join('')
+    +['grid','by','radius','regions','lines'].map(function(key,i){return '<label class="chkline"><input type="checkbox" data-map-layer="'+key+'"'+(mapLayers[key]?' checked':'')+'>'+['격자','담당','추정반경','자유 구역','선'][i]+'</label>';}).join('')
     +'<label class="map-fill">격자 채움 농도 <input type="range" min="0" max="100" step="5" data-map-layer="fill" value="'+Math.round(mapLayers.fill*100)+'"></label>'
     +'</div></details></div>';
 }
@@ -5712,10 +5888,10 @@ function scrollToSection(root,target){
   for(var parent=target.parentElement;parent&&parent!==root;parent=parent.parentElement){
     if(parent.tagName==='DETAILS'){parent.open=true;if(parent.dataset.fold)consoleFolds[parent.dataset.fold]=true;}
   }
-  var bar=root.querySelector('.console-workspace-bar')||root.querySelector('.cons-top');
+  var bar=consoleStickyEl(root);
   syncCompactConsole(root);
   var mobile=root.querySelector('.mobile-verdict'),nav=root.querySelector('.ct-nav');
-  var pad=(bar&&getComputedStyle(bar).position==='sticky'?bar.getBoundingClientRect().height:
+  var pad=(bar?bar.getBoundingClientRect().height:
     (mobile&&getComputedStyle(mobile).position==='fixed'?mobile.getBoundingClientRect().height:0)
     +(nav&&getComputedStyle(nav).position==='sticky'?nav.getBoundingClientRect().height:0))+10;
   var host=scrollHost(target), tTop=target.getBoundingClientRect().top;
@@ -6046,17 +6222,76 @@ function paintPalette(){
 function quickEntityKind(){
   var type=quickEv.type||'note';return type==='takeoff'||type==='landing'?'drone':type==='crew'?'crew':'';
 }
+function droneInAir(d){return d.status==='flying'||d.status==='commloss';}
+/* 이륙은 땅에 있는 기체, 착륙은 떠 있는 기체, 교대는 근무 중인 인원만 해당한다.
+   해당 대상이 하나뿐이면 미리 골라 둬서 무전 한 건을 목록 열기 없이 남긴다. */
+function quickEntityCandidates(){
+  var t=quickEv.type||'note';
+  if(t==='takeoff')return S.drones.filter(function(d){return !droneInAir(d);});
+  if(t==='landing')return S.drones.filter(droneInAir);
+  if(t==='crew')return S.crew.filter(function(c){return !c.outAt;});
+  return [];
+}
 function quickEntityHtml(){
   var kind=quickEntityKind();if(!kind)return '';
   var list=kind==='drone'?S.drones:S.crew;
   if(!list.some(function(x){return x.id===quickEv.entityId;}))quickEv.entityId='';
+  var fit=quickEntityCandidates();if(!quickEv.entityId&&fit.length===1)quickEv.entityId=fit[0].id;
   return '<span>'+(kind==='drone'?'기체':'인원')+'</span><select id="evEntity" aria-label="'+(kind==='drone'?'기록 대상 기체':'기록 대상 인원')+'" required>'
     +'<option value="">'+(kind==='drone'?'기체 선택':'인원 선택')+'</option>'
     +list.map(function(x,i){return '<option value="'+esc(x.id)+'"'+(quickEv.entityId===x.id?' selected':'')+'>'
-      +esc(x.name||(kind==='drone'?'기체':'인원')+' '+(i+1))+(kind==='crew'&&x.outAt?' (교대 종료)':'')+'</option>';}).join('')+'</select>';
+      +esc(x.name||(kind==='drone'?'기체':'인원')+' '+(i+1))+(kind==='drone'?' · '+(DRONE_ST[x.status]||''):'')+(kind==='crew'&&x.outAt?' (교대 종료)':'')+'</option>';}).join('')+'</select>';
 }
 function bindQuickEntity(root){
   var el=root.querySelector('#evEntity');if(el)el.onchange=function(){quickEv.entityId=el.value;clearFieldError(el);};
+}
+/* 자주 쓰는 기록은 목록을 열지 않고 한 번에 고른다. 나머지 종류는 기록 유형 목록에 그대로 있다. */
+var QUICK_TYPES=['note','takeoff','landing','heat','zone','crew'];
+function quickTypeButtonsHtml(){
+  return '<div class="quick-types" role="group" aria-label="자주 쓰는 기록 종류">'+QUICK_TYPES.map(function(k){
+    return '<button type="button" class="btn quick-type" data-quick-type="'+k+'" aria-pressed="'+((quickEv.type||'note')===k)+'">'+EV_TYPE[k]+'</button>';
+  }).join('')+'</div>';
+}
+function quickContractText(){
+  var t=quickEv.type||'note';
+  if(['takeoff','landing','crew','zone'].indexOf(t)>=0&&!quickEv.timeAuto)return '과거 시각으로 남기는 기록은 활동일지에만 남고 지금 상태는 바꾸지 않습니다.';
+  return {takeoff:'저장하면 고른 기체가 비행중으로 바뀌고 이륙시각이 남습니다.',
+    landing:'저장하면 고른 기체가 배터리교체로 바뀝니다. 새 배터리를 넣은 뒤 드론 관리에서 이륙대기로 바꾸세요.',
+    crew:'저장하면 고른 인원의 교대 종료시각이 지금으로 남습니다.',
+    zone:'저장하면 입력한 구역이 지도에서 완료로 칠해집니다. 여러 구역은 쉼표로 나눕니다.',
+    found:'발견을 기록하면 현황 화면 전체에 적색 경보와 경보음이 나갑니다.',
+    heat:'열원감지는 현황 화면 기록에서 중요 기록으로 강조됩니다.'}[t]
+    ||'활동일지와 현황 화면 기록에만 남습니다. 기체·인원·구역 상태는 바뀌지 않습니다.';
+}
+function quickContractSync(root){
+  var el=root.querySelector('#quickContract');if(!el)return;
+  el.textContent=quickContractText();el.dataset.kind=quickEv.type==='found'?'warn':'';
+}
+function quickTypeSync(root){
+  var sel=root.querySelector('#evType');if(sel&&sel.value!==(quickEv.type||'note'))sel.value=quickEv.type||'note';
+  root.querySelectorAll('[data-quick-type]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.quickType===(quickEv.type||'note')));});
+  var wrap=root.querySelector('#evEntityWrap');if(wrap){wrap.innerHTML=quickEntityHtml();wrap.hidden=!quickEntityKind();bindQuickEntity(root);}
+  quickContractSync(root);
+}
+/* 빠른기록 '지금' 저장과 함께 바뀌는 상태. 드론 관리의 이륙·착륙 단추, 인원의 교대 종료와 같은 결과를 낸다.
+   이미 그 상태면 아무것도 바꾸지 않는다(기록은 남는다). 바꾼 내용을 사람 말로 돌려준다. */
+function quickApplyState(t,entity,when,ids){
+  var at=localDateTime(new Date(when));
+  if(t==='takeoff'&&entity&&!droneInAir(entity)){
+    entity.status='flying';entity.tookOffAt=at;entity.sorties=intv(entity.sorties,0)+1;
+    return (entity.name||'기체')+' 상태 → 비행중';
+  }
+  if(t==='landing'&&entity&&droneInAir(entity)){
+    entity.status='swap';entity.tookOffAt='';return (entity.name||'기체')+' 상태 → 배터리교체';
+  }
+  if(t==='crew'&&entity&&!entity.outAt&&!(entity.inAt&&tms(at)<tms(entity.inAt))){
+    entity.outAt=at;return (entity.name||'인원')+' 교대 종료시각 기록';
+  }
+  if(t==='zone'&&ids&&ids.length){
+    ids.forEach(function(id){var c=S.grid.cells[id]||{s:0,by:''};c.s=2;S.grid.cells[id]=c;});
+    return ids.join(', ')+' 지도 → 완료';
+  }
+  return '';
 }
 function eventRowHtml(e){
   return '<div class="recent-event'+(e.voided?' event-voided':'')+'">'
@@ -6121,16 +6356,17 @@ function consoleHtml(){
     +'<button class="btn" type="button" data-act="newincident">새 수색 준비</button>'
     +themeControls('console')
     + '<div class="spacer"></div>'
+    + (!editor?'<button class="btn danger" data-act="takecontrol">이 창에서 입력하기</button>':'')
+    + '<button class="btn primary" id="btnOpenDisplay">현황 화면 열기</button>'
+    + (MODE==='display' ? '<button class="btn" id="btnCloseDrawer">닫기 (Esc)</button>' : '')
+    + '<div class="ct-kpi" id="ctKpi">'+consoleKpiCells()+'</div>'
+    + '<div class="ct-status" role="group" aria-label="저장·연결 상태">'
     + '<div class="save-pill'+(SAVE_STATUS.ok&&SAVE_STATUS.backupOk?'':' bad')+'" id="savePill">'
       +(SAVE_STATUS.ok?(SAVE_STATUS.backupOk?'저장·복구 정상':'저장 정상 · 복구본 실패'):'저장 실패')+'</div>'
     + '<div class="save-pill'+(!PRACTICE_MODE&&(!S.ui.autoSave||autoSaveErr)?' bad':'')+'" id="autoSavePill">'
       + esc(autoSaveLabel())+'</div>'
     + '<div class="sync-pill'+(peerConnected()?'':' off')+'" id="syncPill">'
-      + (peerConnected() ? '현황 화면 연결됨' : '현황 화면 미연결')+'</div>'
-    + (!editor?'<button class="btn danger" data-act="takecontrol">이 창에서 입력하기</button>':'')
-    + '<button class="btn primary" id="btnOpenDisplay">현황 화면 열기</button>'
-    + (MODE==='display' ? '<button class="btn" id="btnCloseDrawer">닫기 (Esc)</button>' : '')
-    + '<div class="ct-kpi" id="ctKpi">'+consoleKpiCells()+'</div>'
+      + (peerConnected() ? '현황 화면 연결됨' : '현황 화면 미연결')+'</div></div>'
     + '<nav class="ct-nav" role="tablist" aria-label="입력 메뉴">'
       + CONSOLE_SECTIONS.map(function(p){
           return '<button type="button" role="tab" id="tab-'+p[0]+'" aria-controls="sec-'+p[0]+'" aria-selected="'+(consoleActiveSection==='sec-'+p[0])+'" tabindex="'+(consoleActiveSection==='sec-'+p[0]?0:-1)+'" data-act="nav" data-sec="sec-'+p[0]+'"'+(p[0]==='ai'?' data-ai-action="section"':'')+'>'+p[1]+'</button>';
@@ -6165,18 +6401,19 @@ function consoleHtml(){
       + '<button class="btn alarm big'+(S.safety.manned?' on':'')+'" id="btnManned" aria-pressed="'+(S.safety.manned?'true':'false')+'">'
         + (S.safety.manned ? '유인기 경보 해제' : '\u26A0\uFE0E 유인기 진입 (전 기체 즉시 착륙)') + '</button>'
       + '<div class="quick-entry">'
+        + quickTypeButtonsHtml()
         + '<div class="quick-targets"><label class="f"><span>기록 유형</span><select id="evType" aria-label="기록 유형">'
           + Object.keys(EV_TYPE).map(function(k){
               return '<option value="'+k+'"'+(quickEv.type===k?' selected':'')+'>'+EV_TYPE[k]+'</option>'; }).join('')
         + '</select></label>'
-        + '<label class="f" id="evEntityWrap">'+quickEntityHtml()+'</label>'
+        + '<label class="f" id="evEntityWrap"'+(quickEntityKind()?'':' hidden')+'>'+quickEntityHtml()+'</label>'
         + '<label class="f"><span>구역</span><input id="evZone" aria-label="기록 구역" placeholder="예: A1" value="'+esc(quickEv.zone)+'"></label></div>'
         + '<div class="quick-message"><label class="f"><span>내용</span><input id="evText" aria-label="기록 내용" placeholder="내용 입력 후 Enter" value="'+esc(quickEv.text)+'"></label>'
         + '<button class="btn primary" id="btnAddEv">기록 남기기</button></div>'
         + '<div class="quick-time"><label class="f"><span>발생시각</span><select id="evTimeMode"><option value="now"'+(quickEv.timeAuto?' selected':'')+'>지금</option>'
         +'<option value="custom"'+(!quickEv.timeAuto?' selected':'')+'>과거 시각 지정</option></select></label>'
         + '<label class="f" id="evTimeLabel"'+(quickEv.timeAuto?' hidden':'')+'><span>사건 발생시각</span><input id="evTime" type="datetime-local" value="'+esc(quickEvTime())+'" aria-label="사건 발생시각"></label></div>'
-        + '<div class="note quick-contract" id="quickContract">기체·인원·구역의 현재 상태는 바뀌지 않습니다. 상태 변경은 각 항목의 조작 버튼을 사용하세요.</div>'
+        + '<div class="note quick-contract" id="quickContract" role="status" data-kind="'+(quickEv.type==='found'?'warn':'')+'">'+esc(quickContractText())+'</div>'
       + '</div>'
     + '</div>'
     + emergencyHistoryNotice()
@@ -6190,7 +6427,7 @@ function consoleHtml(){
                 + '<button class="btn sm primary" data-act="syncstate" data-kind="'+esc(x.kind)
                 + '" data-ref="'+esc(x.ref)+'" data-generation="'+esc(x.generation||'')+'" data-t="'+intv(x.t,0)+'">'+esc(x.btn)+'</button></div>';
             }).join('')
-          + '<div class="note">빠른기록은 타임라인에만 남습니다. 위 버튼을 누르면 해당 상태를 기록에 맞추고 정정 이력을 남깁니다.</div></div>';
+          + '<div class="note">과거 시각으로 남긴 기록이나 상태를 따로 바꾼 경우에 나타납니다. 위 단추를 누르면 상태를 기록에 맞추고 정정 이력을 남깁니다.</div></div>';
       })()
     + eventHistoryHtml()
     + '</div></div>';
@@ -6255,8 +6492,8 @@ function consoleHtml2(){
       + '<div class="item-h"><span class="ih-t">'+esc(d.name||('기체 '+(i+1)))+'</span>'
         + '<span class="ct-mode">'+esc(DRONE_ST[d.status]||'')+'</span>'
         + '<span class="spacer"></span>'
-        + '<button class="btn sm" data-act="takeoff" data-di="'+i+'"'+(d.tookOffAt?' disabled':'')+'>이륙 기록 (지금)</button>'
-        + '<button class="btn sm" data-act="land" data-di="'+i+'"'+(!d.tookOffAt?' disabled':'')+'>착륙 기록</button>'
+        + '<button class="btn drone-act'+(d.tookOffAt?'':' primary')+'" data-act="takeoff" data-di="'+i+'"'+(d.tookOffAt?' disabled':'')+'>이륙 기록 (지금)</button>'
+        + '<button class="btn drone-act'+(d.tookOffAt?' primary':'')+'" data-act="land" data-di="'+i+'"'+(!d.tookOffAt?' disabled':'')+'>착륙 기록</button>'
         + '</div>'
       + '<div class="drone-checks" data-drone-checks="'+esc(d.id)+'"'+(droneChecksHtml(d)?'':' hidden')+'>'+droneChecksHtml(d)+'</div>'
       + '<div class="f4">'
@@ -6266,7 +6503,7 @@ function consoleHtml2(){
         + fld('고도(m)','drones.'+i+'.alt','number','min="0" max="10000"')
       + '</div>'
       + '<div class="inline"><span class="battery-stamp" data-battery-stamp="'+esc(d.id)+'">'+esc(batteryStamp(d))+'</span>'
-        + '<button class="btn sm" data-act="confirmbattery" data-di="'+i+'">배터리 확인 (지금)</button></div>'
+        + '<button class="btn drone-act" data-act="confirmbattery" data-di="'+i+'">배터리 확인 (지금)</button></div>'
       + '<p class="note drone-state-help swap">실제 교체 후 새 배터리 잔량을 입력하고 상태를 이륙대기로 바꾸세요. 배터리 메뉴의 재고도 별도로 반영합니다.</p>'
       + '<p class="note drone-state-help ready">예비·대기 기체는 실제 잔량과 조종자를 확인하세요. 이륙대기 표시는 비행승인이나 준비 점검 완료를 뜻하지 않습니다.</p>'
       + '<details class="settings-fold battery-workflow" data-fold="battery-flow-'+esc(d.id)+'"'+(d.status==='swap'?' open':'')+'><summary>배터리 교체 순서</summary><ol><li>실제 착륙 후 착륙 기록을 남깁니다.</li><li>실제 교체에 사용한 재고를 확인합니다. <button class="btn" type="button" data-act="nav" data-sec="sec-batt" data-battery-drone="'+esc(d.id)+'">이 기체 교체 재고 확인</button></li><li>새 배터리의 실제 잔량을 입력합니다. <button class="btn" type="button" data-act="nav" data-sec="sec-drone" data-path-target="drones.'+i+'.battery">잔량 입력으로</button></li><li>기체 상태에서 실제 준비 상태에 맞춰 이륙대기를 선택합니다. <button class="btn" type="button" data-act="nav" data-sec="sec-drone" data-path-target="drones.'+i+'.status">상태 확인으로</button></li></ol><p class="note">재고·잔량·상태는 각각 확인해 반영합니다. 이 안내만으로 교체 완료나 비행승인을 처리하지 않습니다.</p></details>'
@@ -6573,8 +6810,9 @@ function bindConsole(root){
         el.value=currentDrone.status;
         card.querySelector('.item-h .ct-mode').textContent=DRONE_ST[currentDrone.status]||'';
         var locked=!ownsEditorLock();
-        card.querySelector('[data-act="takeoff"]').disabled=locked||!!currentDrone.tookOffAt;
-        card.querySelector('[data-act="land"]').disabled=locked||!currentDrone.tookOffAt;
+        var upBtn=card.querySelector('[data-act="takeoff"]'),downBtn=card.querySelector('[data-act="land"]');
+        upBtn.disabled=locked||!!currentDrone.tookOffAt;downBtn.disabled=locked||!currentDrone.tookOffAt;
+        upBtn.classList.toggle('primary',!currentDrone.tookOffAt);downBtn.classList.toggle('primary',!!currentDrone.tookOffAt);
       }
       scheduleConsoleRefresh(root);
       return;
@@ -6639,7 +6877,8 @@ function bindConsole(root){
       clearFieldError(el);
       quickEv[key] = upper ? el.value.toUpperCase() : el.value;
       if(key === 'time') quickEv.timeAuto = false;
-      if(key === 'type'){var wrap=root.querySelector('#evEntityWrap');if(wrap){wrap.innerHTML=quickEntityHtml();bindQuickEntity(root);}}
+      if(key === 'type'){quickEv.entityId='';quickTypeSync(root);}
+      if(key === 'type' || key === 'time')quickContractSync(root);
       if(key === 'zone'){
         var g = root.querySelector('#cellGeo');
         if(g) g.textContent = cellGeoLabel();
@@ -6654,8 +6893,20 @@ function bindConsole(root){
     if(!quickEv.timeAuto&&!quickEv.time)quickEv.time=localDateTime(new Date());
     var timeInput=root.querySelector('#evTime');clearFieldError(timeInput);
     timeInput.value=quickEvTime();root.querySelector('#evTimeLabel').hidden=quickEv.timeAuto;
+    quickContractSync(root);
     if(!quickEv.timeAuto)timeInput.focus();
   };
+  root.querySelectorAll('[data-quick-type]').forEach(function(button){
+    button.onclick=function(){
+      quickEv.type=button.dataset.quickType;quickEv.entityId='';
+      var sel=root.querySelector('#evType');if(sel){sel.value=quickEv.type;clearFieldError(sel);}
+      quickTypeSync(root);
+      /* 고른 뒤 바로 다음에 채울 칸으로 간다: 대상 → 구역 → 내용 순서. */
+      var entityEl=root.querySelector('#evEntity'),zoneEl=root.querySelector('#evZone');
+      var next=entityEl&&!entityEl.value?entityEl:(quickEv.type==='zone'||quickEv.type==='heat')&&zoneEl&&!zoneEl.value.trim()?zoneEl:root.querySelector('#evText');
+      if(next)next.focus();
+    };
+  });
   var more=root.querySelector('#btnMoreNav');
   if(more)more.onclick=function(){var menu=root.querySelector('#mobileMore');menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden));};
   if(!quickEv.type){ var ty=root.querySelector('#evType'); if(ty) quickEv.type=ty.value; }
@@ -6683,13 +6934,24 @@ function bindConsole(root){
       if(!valid){showFieldError(root.querySelector('#evZone'),'현재 격자의 구역을 입력하세요. 예: A1, A2',true);return;}
       metadata.zoneStates={};ids.forEach(function(id){metadata.zoneStates[id]=2;});
     }
-    if(!addEvent(t,x||EV_TYPE[t],z,false,when,metadata))return;
+    /* '지금' 기록은 무전으로 들은 현재 사건이다. 기록만 남고 기체가 계속 비행중으로 보이면
+       현황 화면이 거짓이 되므로 상태도 함께 바꾼다. 과거 시각 기록은 지금처럼 이력만 남긴다. */
+    var live=quickEv.timeAuto,ids=t==='zone'?Object.keys(metadata.zoneStates||{}):null;
+    if(live&&t==='zone')metadata.stateAction='zoneState';
+    if(!addEvent(t,x||EV_TYPE[t],z,true,when,metadata))return;
+    var applied=live?quickApplyState(t,entity,when,ids):'';
+    if(!commit())return;
     quickEv.zone=''; quickEv.text=''; quickEv.time=''; quickEv.timeAuto=true;
+    /* 다음 무전은 대개 다른 종류다. 직전 종류(예: 열원감지)가 남으면 일반 메모가 중요 기록으로 저장된다. */
+    quickEv.type='note'; quickEv.entityId='';
     ['evEntity','evZone','evText','evTime'].forEach(function(id){clearFieldError(root.querySelector('#'+id));});
     var zEl=root.querySelector('#evZone'), xEl=root.querySelector('#evText');
     if(zEl) zEl.value=''; if(xEl) xEl.value='';
     var tEl=root.querySelector('#evTime'); if(tEl) tEl.value=quickEvTime();
     root.querySelector('#evTimeMode').value='now';root.querySelector('#evTimeLabel').hidden=true;
+    quickTypeSync(root);
+    var contract=root.querySelector('#quickContract');
+    if(contract){contract.textContent='✓ 저장했습니다 · '+EV_TYPE[t]+(applied?' · '+applied:'')+' · 다음 기록 종류는 특이사항으로 돌아갑니다.';contract.dataset.kind='saved';}
     if(xEl)xEl.focus();
   }
   var ab = root.querySelector('#btnAddEv'); if(ab) ab.onclick = pushEv;
@@ -6755,7 +7017,7 @@ function bindConsole(root){
       }
       return;
     }
-    if(['export','report'].indexOf(act)<0&&!ensureEditor())return;
+    if(['export','report','briefing','replay'].indexOf(act)<0&&!ensureEditor())return;
     var di = b.getAttribute('data-di'), ci = b.getAttribute('data-ci');
     var d = di != null ? S.drones[+di] : null;
 
@@ -6773,7 +7035,9 @@ function bindConsole(root){
       if(setDroneStatus(d,'swap'))commit();
     }
     else if(act === 'deldrone' && d){
-      if(confirm((d.name||'기체')+'을 삭제할까요?')){ S.drones.splice(+di,1); commit(); }
+      if(confirm((d.name||'기체')+' 기체를 목록에서 삭제할까요? 삭제 전 상태는 복구본에 보관합니다.')){
+        if(!saveRecoveryPoint('기체 삭제 전')){alert('복구본을 만들 수 없어 삭제를 중단했습니다.');return;}
+        S.drones.splice(+di,1); commit(); }
     }
     else if(act === 'sens' && d){
       var s = b.getAttribute('data-s');
@@ -6844,22 +7108,7 @@ function bindConsole(root){
       w.lat=cst.lat;w.lon=cst.lon;w.confirmed=true;w.confirmedAt=Date.now();w.error='';commit();
     }
     else if(act==='voidevent'||act==='correctevent'){
-      var fromHistory=!!b.closest('#eventHistory'),eid=b.getAttribute('data-eid'),oe=null;
-      S.events.forEach(function(e){if(e.id===eid)oe=e;});if(!oe||oe.voided)return;
-      if(!requireEventSlots(act==='correctevent'?2:1,act==='correctevent'?'기록 정정':'기록 취소',oe.emergency===true))return;
-      var reason=prompt(act==='correctevent'?'정정 사유를 입력하세요.':'취소 사유를 입력하세요.','오입력');
-      if(reason===null)return;
-      if(!reason||!reason.trim()){alert('감사기록을 위해 사유가 필요합니다.');return;}
-      if(act==='correctevent'){
-        var ntx=prompt('올바른 내용을 입력하세요. 대상·시각·구역 변경은 취소 후 새로 기록하세요.',oe.text);if(ntx==null||!ntx.trim())return;
-        oe.voided=true;oe.voidedAt=Date.now();oe.voidReason=reason.trim();
-        addEvent(oe.type,ntx.trim(),oe.zone,true,oe.t,oe);
-        addEvent('correction',shortDateTime(oe.t)+' 기록 정정 · '+reason.trim(),oe.zone,true,undefined,{emergency:oe.emergency===true,gridGeneration:oe.gridGeneration});
-      }else{
-        oe.voided=true;oe.voidedAt=Date.now();oe.voidReason=reason.trim();
-        addEvent('correction',shortDateTime(oe.t)+' 기록 취소 · '+reason.trim(),oe.zone,true,undefined,{emergency:oe.emergency===true,gridGeneration:oe.gridGeneration});
-      }
-      if(commit()&&fromHistory)focusEventHistoryResults(root);
+      openEventFix(b.getAttribute('data-eid'),act==='correctevent',!!b.closest('#eventHistory'),root);
     }
     else if(act==='refpick'){setPinMode(b.getAttribute('data-r'),root);}
     else if(act==='geoapply'){
@@ -8298,8 +8547,8 @@ function mountFieldTools(){
   if(!quick.hasAttribute('data-map-stage')){
     quick.dataset.mapStage='';quick.innerHTML='<div class="map-stage-current"><strong data-map-stage-current></strong><button type="button" class="btn" data-stage-action="change">지도 바꾸기</button></div>'
       +'<details data-map-source-choices><summary>먼저 사용할 지도를 고르세요</summary><div class="map-stage-choices">'
-      +'<button type="button" class="btn primary" data-act="mapfile">지도·현장 사진 넣기</button><button type="button" class="btn" data-stage-action="online">온라인 지도 선택</button><button type="button" class="btn" data-act="nav" data-sec="offlinePreparation">지역 지도 미리 저장</button></div>'
-      +'<p class="note">사진 파일, 인터넷 지도, 미리 저장한 지역 지도 중 하나를 선택하세요. 선택만으로 기존 자료가 바뀌지 않습니다.</p><div data-map-stage-online hidden></div>'
+      +'<button type="button" class="btn primary" data-act="mapfile">지도·현장 사진 넣기</button><button type="button" class="btn" data-stage-action="online">온라인 지도 선택</button><button type="button" class="btn" data-act="nav" data-sec="offlinePreparation">지역 지도 미리 저장</button><button type="button" class="btn" data-stage-action="gridonly">지도 없이 격자로 시작</button></div>'
+      +'<p class="note">사진 파일, 인터넷 지도, 미리 저장한 지역 지도 중 하나를 선택하세요. 지도가 아직 없으면 격자만으로 구역을 칠할 수 있습니다. 선택만으로 기존 자료가 바뀌지 않습니다.</p><div data-map-stage-online hidden></div>'
       +'<details data-stage-extra><summary>추가 지도 설정</summary><div class="row-tools"><button type="button" class="btn" data-field-action="paste">지도 캡처 붙여넣기</button><button type="button" class="btn" data-act="nav" data-sec="mapSourceSelect">구글·다른 지도 설정</button><button type="button" class="btn" data-field-action="tools">격자·자유 구역 설정</button></div></details></details><p data-field-hint role="status" aria-live="polite"></p>';
     quick.querySelector('[data-map-source-choices]').addEventListener('toggle',function(){if(this.isConnected&&mapStageReady())mapStageState().choices=this.open;});
   }
@@ -8453,7 +8702,7 @@ function fieldDialog(title,html){
   var previous=document.querySelector('dialog.field-dialog');if(previous){previous.close();previous.remove();}
   var back=document.activeElement,backAction=back&&back.dataset.fieldAction,dialog=document.createElement('dialog');dialog.className='field-dialog';
   dialog.innerHTML='<h2>'+esc(title)+'</h2><div class="field-dialog-safety" role="status"><span></span><button type="button" class="btn" data-field-close>닫고 전체 상태 확인</button></div>'+html+'<p class="field-status" role="status" aria-live="polite"></p>';
-  document.body.appendChild(dialog);dialog.dataset.seq=stateLifecycleSeq;dialog.dataset.epoch=SESSION_EPOCH;
+  document.body.appendChild(dialog);dialog.dataset.seq=stateLifecycleSeq;dialog.dataset.epoch=SESSION_EPOCH;dialog.dataset.theme=viewPreferences.consoleTheme;
   dialog.addEventListener('close',function(){if(dialog.fieldDispose)dialog.fieldDispose();dialog.remove();var target=dialog.fieldReturnTarget&&dialog.fieldReturnTarget.isConnected?dialog.fieldReturnTarget:back&&back.isConnected?back:backAction?document.querySelector('[data-field-action="'+backAction+'"]'):null;if(target)target.focus({preventScroll:true});});
   dialog.querySelectorAll('[data-field-close]').forEach(function(button){button.onclick=function(){dialog.close();};});
   dialog.showModal();refreshFieldDialogSafety();return dialog;
@@ -8461,10 +8710,12 @@ function fieldDialog(title,html){
 function refreshFieldDialogSafety(){
   var dialog=document.querySelector('dialog.field-dialog[open]');if(!dialog)return;
   var box=dialog.querySelector('.field-dialog-safety'),found=latestFound(),danger=S.safety.manned||found&&S.ui.ackFound<foundAlarmKey(found);
-  var text=S.safety.manned?'유인기 진입 · 전 기체 즉시 착륙':danger?'미확인 발견 경보 · 전체 상태 확인 필요':flightVerdict(new Date()).txt+' · '+flightVerdict(new Date()).why[0];
+  var text=S.safety.manned?'유인기 진입 · 전 기체 즉시 착륙':danger?'미확인 발견 경보 · 전체 상태 확인 필요':'현재 비행 판정: '+flightVerdict(new Date()).txt+' · '+flightVerdict(new Date()).why[0];
   if(!SAVE_STATUS.ok)text+=' · 저장 실패: '+SAVE_STATUS.message;
   if(box.querySelector('span').textContent!==text)box.querySelector('span').textContent=text;
   box.classList.toggle('danger',!!danger);box.setAttribute('aria-live',danger?'assertive':'polite');
+  /* 평소에는 저장 단추 옆에 '닫기'처럼 보이는 단추가 하나 더 있으면 헷갈린다. 경보가 있을 때만 꺼낸다. */
+  var close=box.querySelector('[data-field-close]');if(close)close.hidden=!danger;
 }
 function fieldStatus(dialog,text,kind){
   var host=dialog.querySelector('.field-status');if(host&&host.textContent!==text)host.textContent=text;
@@ -8481,21 +8732,51 @@ function fieldStatus(dialog,text,kind){
   });
 }
 function fieldDialogCurrent(dialog){return dialog.open&&Number(dialog.dataset.seq)===stateLifecycleSeq&&dialog.dataset.epoch===SESSION_EPOCH&&ensureEditor();}
-function openFieldMessage(){
+function openFieldMessage(kindWanted){
   if(!ensureEditor())return;
   var initial={situation:S.mission.situationMessage||'',order:S.mission.priorityOrder||''};
-  var dialog=fieldDialog('전달사항 작성','<label>표시 용도<select id="fieldMessageKind"><option value="situation">현장 상황 공유</option><option value="order">현재 우선 지시</option></select></label>'
-    +'<label>표출할 문장<textarea id="fieldMessageText" maxlength="240"></textarea></label><p>입력 중인 초안은 표출하지 않습니다. 표출 버튼을 눌러야 현황에 반영되고 활동기록에 남습니다. 현장 상황 공유는 우선 지시와 별도로 표시합니다.</p>'
-    +'<div class="field-row"><button type="button" class="btn primary" id="fieldMessagePublish">표출</button><button type="button" class="btn" id="fieldMessageClear">초안 비우기</button><button type="button" class="btn" data-field-close>취소</button></div>');
+  var LABEL={order:'현재 우선 지시',situation:'현장 상황 공유'},MAX={order:80,situation:240};
+  var HELP={order:'모든 화면 맨 위에 크게 고정되는 지시입니다. 80자 이내로 짧게 씁니다. 올리면 이전 지시를 대신합니다.',
+    situation:'우선 지시 아래 한 줄에 따로 보이는 현장 소식입니다. 우선 지시는 바뀌지 않습니다.'};
+  /* 이 창은 '현재 우선 지시' 옆에서 열리므로 우선 지시가 기본이다. 무엇을 바꾸는지 단추 이름에 그대로 적는다. */
+  var dialog=fieldDialog('지시·상황 전달','<div class="message-kind" role="radiogroup" aria-label="무엇을 바꿀까요">'
+      +['order','situation'].map(function(k){return '<button type="button" class="btn" role="radio" data-message-kind="'+k+'">'+LABEL[k]+'</button>';}).join('')+'</div>'
+    +'<p class="message-help" data-message-help></p>'
+    +'<div class="message-current"><b>지금 화면에 표시 중</b><span data-message-current></span></div>'
+    +'<label><span data-message-label>새 문장</span><textarea id="fieldMessageText" maxlength="240"></textarea></label>'
+    +'<p class="message-count" data-message-count aria-live="polite"></p>'
+    +'<div class="field-row"><button type="button" class="btn primary" id="fieldMessagePublish">올리기</button><button type="button" class="btn" id="fieldMessageClear">입력 비우기</button><button type="button" class="btn" data-field-close>취소</button></div>'
+    +'<p class="note">입력 중인 문장은 화면에 나가지 않습니다. 올리기를 눌러야 현황 화면에 반영되고 활동기록에 남습니다.</p>'
+    +'<select id="fieldMessageKind" hidden aria-hidden="true" tabindex="-1"><option value="order">'+LABEL.order+'</option><option value="situation">'+LABEL.situation+'</option></select>');
   var kind=dialog.querySelector('#fieldMessageKind'),text=dialog.querySelector('#fieldMessageText'),drafts=Object.assign({},initial);
-  text.value=drafts.situation;var last='situation';
-  kind.onchange=function(){drafts[last]=text.value;last=kind.value;text.maxLength=last==='order'?80:240;text.value=drafts[last];};
-  dialog.querySelector('#fieldMessageClear').onclick=function(){text.value='';text.focus();};
+  var last=kindWanted==='situation'?'situation':'order';kind.value=last;text.value=drafts[last];
+  function sync(){
+    var k=kind.value;text.maxLength=MAX[k];
+    dialog.querySelectorAll('[data-message-kind]').forEach(function(b){var on=b.dataset.messageKind===k;b.setAttribute('aria-checked',String(on));b.classList.toggle('on',on);b.tabIndex=on?0:-1;});
+    dialog.querySelector('[data-message-help]').textContent=HELP[k];
+    var shown=initial[k];
+    var full=String(S.mission.orders||'').trim();
+    if(!shown&&k==='order')shown=full&&priorityText()===full?'(비어 있음) 지금은 지휘부 지시 전문이 대신 보입니다: '+full:'(비어 있음)';
+    dialog.querySelector('[data-message-current]').textContent=shown||'(비어 있음)';
+    dialog.querySelector('[data-message-label]').textContent='새 '+LABEL[k];
+    dialog.querySelector('[data-message-count]').textContent=text.value.length+' / '+MAX[k]+'자';
+    var publish=dialog.querySelector('#fieldMessagePublish'),typed=!!text.value.trim();
+    publish.textContent=typed||!initial[k]?LABEL[k]+'로 올리기':LABEL[k]+' 지우기';
+    publish.disabled=!typed&&!initial[k];
+  }
+  function choose(k){if(k===kind.value)return;drafts[last]=text.value;last=k;kind.value=k;text.value=drafts[k];sync();}
+  kind.onchange=function(){var k=kind.value;kind.value=last;choose(k);};
+  dialog.querySelectorAll('[data-message-kind]').forEach(function(b){
+    b.onclick=function(){choose(b.dataset.messageKind);};
+    b.onkeydown=function(ev){if(ev.key==='ArrowLeft'||ev.key==='ArrowRight'||ev.key==='ArrowUp'||ev.key==='ArrowDown'){ev.preventDefault();choose(kind.value==='order'?'situation':'order');dialog.querySelector('[data-message-kind="'+kind.value+'"]').focus();}};
+  });
+  text.oninput=sync;sync();
+  dialog.querySelector('#fieldMessageClear').onclick=function(){text.value='';sync();text.focus();};
   dialog.querySelector('#fieldMessagePublish').onclick=function(){
     if(!fieldDialogCurrent(dialog)){fieldStatus(dialog,'상황 또는 편집권이 바뀌었습니다. 초안을 보관하고 다시 열어 주세요.');return;}
     var key=kind.value==='order'?'priorityOrder':'situationMessage',value=text.value.trim(),old=S.mission[key]||'';
     if(old!==initial[kind.value]){fieldStatus(dialog,'다른 변경으로 원문이 달라졌습니다. 초안을 보관한 뒤 다시 확인하세요.');return;}
-    if(value.length>(kind.value==='order'?80:240)){fieldStatus(dialog,'문장 길이를 줄여 주세요.');return;}
+    if(value.length>MAX[kind.value]){fieldStatus(dialog,'문장 길이를 줄여 주세요.');return;}
     if(value===old){dialog.close();return;}
     if(!requireEventSlots(1,'전달사항 표출'))return;
     S.mission[key]=value;if(key==='situationMessage')S.mission.messageAt=Date.now();
@@ -8503,6 +8784,44 @@ function openFieldMessage(){
     if(!commit()){fieldStatus(dialog,'저장하지 못해 표출하지 않았습니다. 초안은 남아 있으니 다시 시도하세요.');return;}
     dialog.close();
   };
+  text.focus();
+}
+/* 기록 정정·취소: 원래 문장을 보면서 사유와 고친 내용을 한 창에서 쓴다.
+   브라우저 기본 입력창 두 번은 휴대폰에서 원문을 가리고, 사유 칸이 빈 줄 알기 어렵다. */
+var EVENT_FIX_REASONS=['오입력','중복 기록','시각 오류','대상 오류'];
+function openEventFix(eid,isFix,fromHistory,root){
+  var oe=null;S.events.forEach(function(e){if(e.id===eid)oe=e;});if(!oe||oe.voided)return;
+  if(!requireEventSlots(isFix?2:1,isFix?'기록 정정':'기록 취소',oe.emergency===true))return;
+  var dialog=fieldDialog(isFix?'기록 정정':'기록 취소',
+    '<div class="message-current"><b>원래 기록 · '+esc(shortDateTime(oe.t))+' · '+esc(EV_TYPE[oe.type]||oe.type)+(oe.zone?' · '+esc(oe.zone):'')+'</b><span>'+esc(oe.text)+'</span></div>'
+    +'<label>'+(isFix?'정정':'취소')+' 사유 (필수)<input id="eventFixReason" maxlength="80" autocomplete="off" value="오입력"></label>'
+    +'<div class="fix-reasons" role="group" aria-label="자주 쓰는 사유">'+EVENT_FIX_REASONS.map(function(r){return '<button type="button" class="btn" data-fix-reason="'+esc(r)+'">'+esc(r)+'</button>';}).join('')+'</div>'
+    +(isFix?'<label>고친 내용<textarea id="eventFixText" maxlength="500"></textarea></label><p class="note">대상·시각·구역을 바꾸려면 이 기록을 취소하고 새로 기록하세요.</p>'
+      :'<p class="note">기록은 지우지 않고 취소 표시와 사유를 남깁니다. 현황 화면 기록에서는 빠집니다.</p>')
+    +'<p class="field-error" data-field-feedback role="alert" hidden></p>'
+    +'<div class="field-row"><button type="button" class="btn '+(isFix?'primary':'danger')+'" id="eventFixApply">'+(isFix?'정정 저장':'이 기록 취소')+'</button><button type="button" class="btn" data-field-close>닫기</button></div>');
+  var reason=dialog.querySelector('#eventFixReason'),text=dialog.querySelector('#eventFixText');
+  if(text)text.value=oe.text||'';
+  dialog.querySelectorAll('[data-fix-reason]').forEach(function(btn){btn.onclick=function(){reason.value=btn.dataset.fixReason;reason.focus();};});
+  dialog.querySelector('#eventFixApply').onclick=function(){
+    if(!fieldDialogCurrent(dialog)||oe.voided||S.events.indexOf(oe)<0){fieldStatus(dialog,'기록이 이미 바뀌었습니다. 창을 닫고 다시 확인하세요.','err');return;}
+    var why=reason.value.trim();
+    if(!why){fieldStatus(dialog,'감사기록을 위해 사유를 적어 주세요.','err');reason.focus();return;}
+    var ntx=text?text.value.trim():'';
+    if(isFix&&!ntx){fieldStatus(dialog,'고친 내용을 적어 주세요. 기록을 없애려면 기록 취소를 사용하세요.','err');text.focus();return;}
+    if(isFix&&ntx===String(oe.text||'').trim()){fieldStatus(dialog,'원래 기록과 같습니다. 고친 내용을 적어 주세요.','err');text.focus();return;}
+    if(!requireEventSlots(isFix?2:1,isFix?'기록 정정':'기록 취소',oe.emergency===true))return;
+    oe.voided=true;oe.voidedAt=Date.now();oe.voidReason=why;
+    if(isFix){
+      addEvent(oe.type,ntx,oe.zone,true,oe.t,oe);
+      addEvent('correction',shortDateTime(oe.t)+' 기록 정정 · '+why,oe.zone,true,undefined,{emergency:oe.emergency===true,gridGeneration:oe.gridGeneration});
+    }else addEvent('correction',shortDateTime(oe.t)+' 기록 취소 · '+why,oe.zone,true,undefined,{emergency:oe.emergency===true,gridGeneration:oe.gridGeneration});
+    if(!commit()){fieldStatus(dialog,'저장하지 못해 바꾸지 않았습니다. 다시 시도하세요.','err');return;}
+    dialog.fieldReturnTarget=null;dialog.close();
+    var host=root&&root.isConnected?root:$('consoleRoot');
+    if(fromHistory&&host)focusEventHistoryResults(host);
+  };
+  (text||reason).focus();if(text)text.setSelectionRange(text.value.length,text.value.length);
 }
 function openCoordinatePicker(){
   if(!ensureEditor())return;
@@ -8861,7 +9180,7 @@ $('drawer').addEventListener('click', function(ev){
 });
 
 document.addEventListener('keydown', function(ev){
-  if(document.querySelector('dialog.field-dialog[open]'))return;
+  if(document.querySelector('dialog.field-dialog[open],dialog.replay-dialog[open]'))return;
   if(ev.key==='Tab'&&mapExpandedTarget)return;
   if(ev.key==='Tab'&&!$('drawer').hidden){
     var fs=drawerFocusable();
@@ -8916,7 +9235,7 @@ function themeControls(target){
 }
 function applyViewPreferences(){
   document.body.dataset.pageTheme=viewPreferences[MODE==='display'?'displayTheme':'consoleTheme'];
-  document.querySelectorAll('.cons').forEach(function(el){el.dataset.theme=viewPreferences.consoleTheme;});
+  document.querySelectorAll('.cons,dialog.field-dialog').forEach(function(el){el.dataset.theme=viewPreferences.consoleTheme;});
   $('board').dataset.theme=viewPreferences.displayTheme;
   document.querySelectorAll('[data-theme-target]').forEach(function(button){button.setAttribute('aria-pressed',String(viewPreferences[button.dataset.themeTarget+'Theme']===button.dataset.themeValue));});
   var toggle=$('displayThemeToggle');if(toggle){toggle.textContent=viewPreferences.displayTheme==='light'?'야간':'주간';toggle.setAttribute('aria-label','현황 화면 '+(viewPreferences.displayTheme==='light'?'야간':'주간')+' 테마로 전환');}
@@ -9039,15 +9358,46 @@ document.addEventListener('click',function(ev){
    S13. 부팅
    ========================================================================== */
 /* MAP_EQUIPMENT: manual placements share the map's original coordinate space. */
-var EQUIPMENT_TYPES={vehicle:'차량',pump:'펌프차',ambulance:'구급차',command:'지휘차',drone:'드론'};
-var equipmentDraft=null,equipmentGesture=null,equipmentPlacementClick=null;
+var EQUIPMENT_TYPES={team:'지상팀',dog:'수색견',rescue:'구조대',cp:'집결지·CP',drone:'드론',vehicle:'차량',pump:'펌프차',ambulance:'구급차',command:'지휘차'};
+/* 표식 묶음: 사람·장소·기체·차량. 묶음마다 색이 달라 지도에서 한눈에 갈린다. */
+var EQUIPMENT_GROUP={team:'people',dog:'people',rescue:'people',cp:'place',drone:'air',vehicle:'car',pump:'car',ambulance:'car',command:'car'};
+var equipmentDraft=null,equipmentGesture=null,equipmentPlacementClick=null,equipmentDrag=null,equipmentDragClick=null;
+/* 놓은 표식을 끌어 옮긴다. 8px 넘게 움직였을 때만 끌기로 보고, 그 뒤 따라오는 클릭(정보 창)은 삼킨다. */
+function equipmentDragHandle(type,ev){
+  var host=$('consMap'),d=equipmentDrag;
+  if(type==='pointerdown'){
+    var marker=ev.target.closest('.equipment-marker');
+    if(!marker||!marker.closest('#consMap')||!ownsEditorLock()||fieldEdit||typeof lineDraft!=='undefined'&&(lineDraft||circleDraft))return;
+    if(ev.button!=null&&ev.button!==0||ev.isPrimary===false)return;
+    equipmentDrag={id:marker.dataset.equipmentId,x:ev.clientX,y:ev.clientY,pid:ev.pointerId,moved:false,pt:null,scope:equipmentScope(),el:marker};
+    try{marker.setPointerCapture(ev.pointerId);}catch(e){}
+    return;
+  }
+  if(!d||d.pid!==ev.pointerId)return;
+  if(type==='pointermove'){
+    if(!d.moved&&Math.hypot(ev.clientX-d.x,ev.clientY-d.y)<8)return;
+    ev.preventDefault();d.moved=true;d.el.classList.add('dragging');
+    var pt=getMapPoint(host,ev.clientX,ev.clientY);if(!pt)return;d.pt=pt;
+    var pos=equipmentCss(host,pt.x,pt.y);d.el.style.left=pos.left;d.el.style.top=pos.top;return;
+  }
+  equipmentDrag=null;
+  if(type==='pointercancel'){if(d.moved)equipmentRenderAll();return;}
+  if(type!=='pointerup'||!d.moved)return;
+  equipmentDragClick={until:Date.now()+400,x:ev.clientX,y:ev.clientY};
+  var items=S.grid.equipment||[],old=items.find(function(p){return p.id===d.id;});
+  if(!d.pt||!old||d.scope!==equipmentScope()||!equipmentAllowed()){equipmentRenderAll();if(!d.pt)mapMsg('지도 범위 밖이라 옮기지 않았습니다.','warn');return;}
+  var moved=Object.assign({},old,{x:+d.pt.x.toFixed(5),y:+d.pt.y.toFixed(5),updatedAt:Date.now()});
+  if(equipmentApply(items.map(function(p){return p.id===old.id?moved:p;}))){mapMsg(equipmentName(moved)+' 위치를 옮겼습니다 · 수동 표시','ok');var m=$('consMap').querySelector('[data-equipment-id="'+moved.id+'"]');if(m)m.focus({preventScroll:true});}
+  else{equipmentRenderAll();mapMsg('위치를 저장하지 못했습니다. 이전 위치를 유지했습니다.','err');}
+}
+
 function equipmentNormalize(raw){
   if(raw===undefined)return [];
   if(!Array.isArray(raw)||raw.length>100)throw Error('지도 장비는 최대 100개까지 보관합니다.');
   var ids=Object.create(null),links=Object.create(null);
   return raw.map(function(p){
     if(!isPlainObject(p)||!/^[a-z0-9_-]{3,100}$/i.test(p.id||'')||ids[p.id])throw Error('지도 장비 식별자가 올바르지 않습니다.');
-    if(!['vehicle','pump','ambulance','command','drone'].includes(p.kind)||![p.x,p.y,p.updatedAt].every(Number.isFinite)||p.x<0||p.x>100||p.y<0||p.y>100||p.updatedAt<0||p.updatedAt>Number.MAX_SAFE_INTEGER)throw Error('지도 장비의 종류·위치·수정시각을 확인하세요.');
+    if(!['vehicle','pump','ambulance','command','drone','team','dog','rescue','cp'].includes(p.kind)||![p.x,p.y,p.updatedAt].every(Number.isFinite)||p.x<0||p.x>100||p.y<0||p.y>100||p.updatedAt<0||p.updatedAt>Number.MAX_SAFE_INTEGER)throw Error('지도 장비의 종류·위치·수정시각을 확인하세요.');
     ids[p.id]=true;var droneId=p.kind==='drone'?sanText(p.droneId,80):'',role=p.kind==='drone'&&p.positionRole==='reported'?'reported':'team';
     if(droneId&&!/^[a-z0-9_-]{3,80}$/i.test(droneId))throw Error('연결 기체 식별자를 확인하세요.');
     if(droneId){var key=droneId+':'+role;if(links[key])throw Error('같은 기체·위치 종류의 중복 배치를 확인하세요.');links[key]=true;}
@@ -9058,15 +9408,28 @@ function equipmentScope(){return [SESSION_EPOCH,stateLifecycleSeq,S.grid.generat
 function equipmentName(item){var d=item.droneId&&S.drones.find(function(d){return d.id===item.droneId;});return d&&d.name||item.name||EQUIPMENT_TYPES[item.kind];}
 function equipmentRole(item){return item.kind==='drone'?(item.positionRole==='reported'?'기체 보고 위치':'조종팀·이착륙 지점'):'';}
 function equipmentIcon(kind){
-  var shape=kind==='drone'?'<circle cx="5" cy="5" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="m7 7 10 10M7 17 17 7"/><rect x="9" y="9" width="6" height="6" rx="1"/>'
-    :'<path d="M3 17V7h11v10M14 10h4l3 4v3H3M4 7V5h9v2"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>'
+  var shape={
+    drone:'<circle cx="5" cy="5" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="m7 7 10 10M7 17 17 7"/><rect x="9" y="9" width="6" height="6" rx="1"/>',
+    team:'<circle cx="8" cy="6" r="2.6"/><path d="M3.5 20v-4.5a4.5 4.5 0 0 1 9 0V20"/><circle cx="17" cy="7.5" r="2.2"/><path d="M14.2 12.6a4 4 0 0 1 6.3 3.2V20"/>',
+    dog:'<path d="M5 10.5 4 6l3.5 2h5L16 6l-1 4.5"/><path d="M5 10.5c0 2.8 1.6 4.5 4 4.5h3c2.4 0 4-1.7 4-4.5"/><path d="M16 14.5l3 1.5v4M6 15v5M12 15v5"/><circle cx="8.6" cy="10.8" r=".6" fill="currentColor"/><circle cx="12.4" cy="10.8" r=".6" fill="currentColor"/>',
+    rescue:'<circle cx="12" cy="5" r="2.6"/><path d="M6.5 21v-6a5.5 5.5 0 0 1 11 0v6"/><path d="M12 12.5v5M9.5 15h5"/>',
+    cp:'<path d="M6 21V3"/><path d="M6 4h11l-2.5 3.5L17 11H6"/><path d="M3 21h7"/>'
+  }[kind];
+  if(!shape)shape='<path d="M3 17V7h11v10M14 10h4l3 4v3H3M4 7V5h9v2"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>'
     +(kind==='pump'?'<circle cx="8.5" cy="11.5" r="2.5"/><path d="M8.5 9v5M6 11.5h5"/>':kind==='ambulance'?'<path d="M9 9v5M6.5 11.5h5"/>':kind==='command'?'<path d="M17 10V3l4 2-4 2"/>':'');
   return '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+shape+'</svg>';
+}
+/* 지도 위 표식의 화면 위치. 사진·저장 지도는 비율, 온라인 지도는 투영한 화면 좌표. */
+function equipmentCss(host,x,y){
+  var rec=onlineHosts[host.id];
+  if(isOnlineMap()&&rec&&rec.adapter&&geoOK()){var tl=rec.adapter.project({lat:S.grid.geo.north,lon:S.grid.geo.west}),pt=rec.adapter.project(geoAt(x/100,y/100));return {left:pt.x-tl.x+'px',top:pt.y-tl.y+'px'};}
+  return {left:x+'%',top:y+'%'};
 }
 function equipmentAllowed(){
   if(!ensureEditor())return false;
   if(fieldEdit){mapMsg('진행 중인 구역 초안을 먼저 저장하거나 취소한 뒤 장비를 배치하세요.','warn');return false;}
-  if(!S.grid.hasMap&&!geoOK()){mapMsg('사진 또는 온라인·저장 지도를 먼저 준비한 뒤 장비를 배치하세요.','warn');return false;}
+  if(typeof lineDraft!=='undefined'&&(lineDraft||circleDraft)){mapMsg('그리던 선·범위를 먼저 저장하거나 취소하세요.','warn');return false;}
+  if(!mapStageReady()){mapMsg('지도를 먼저 준비하거나 지도 없이 격자로 시작한 뒤 표식을 놓으세요.','warn');return false;}
   return mapEditsAllowed('view')&&ensureMapReviewed();
 }
 function equipmentApply(items){
@@ -9150,10 +9513,10 @@ function equipmentDialog(kind,id){
 function equipmentMount(){
   var workspace=$('consMapWorkspace'),host=$('consMap');if(!workspace||!host)return;
   var panel=workspace.querySelector('[data-equipment-tools]');
-  if(!panel){panel=document.createElement('details');panel.className='equipment-tools';panel.dataset.equipmentTools='';panel.open=true;panel.innerHTML='<summary data-equipment-heading>장비 배치</summary><div class="equipment-body"><div class="equipment-palette">'+Object.keys(EQUIPMENT_TYPES).map(function(kind){return '<button type="button" class="btn" data-equipment-kind="'+kind+'">'+equipmentIcon(kind)+'<span>'+EQUIPMENT_TYPES[kind]+'</span></button>';}).join('')+'</div><p class="note">종류 선택 → 지도에서 위치 선택 · 수동 표시이며 실시간 위치가 아닙니다.</p><details><summary data-equipment-summary></summary><div class="equipment-list"></div></details></div>';workspace.insertBefore(panel,host);}
+  if(!panel){panel=document.createElement('details');panel.className='equipment-tools';panel.dataset.equipmentTools='';panel.open=true;panel.innerHTML='<summary data-equipment-heading>지도 표시·그리기</summary><div class="equipment-body"><div class="draw-group" data-draw-group="marks"><b class="draw-group-h">표식 놓기</b><div class="equipment-palette">'+Object.keys(EQUIPMENT_TYPES).map(function(kind){return '<button type="button" class="btn" data-group="'+EQUIPMENT_GROUP[kind]+'" data-equipment-kind="'+kind+'">'+equipmentIcon(kind)+'<span>'+EQUIPMENT_TYPES[kind]+'</span></button>';}).join('')+'</div></div><p class="note">종류 선택 → 지도에서 위치 선택 · 놓은 표식은 끌어서 옮깁니다 · 수동 표시이며 실시간 위치가 아닙니다.</p><details><summary data-equipment-summary></summary><div class="equipment-list"></div></details></div>';host.after(panel);}
   panel.querySelectorAll('[data-equipment-kind]').forEach(function(b){b.disabled=!ownsEditorLock();});
-  var items=S.grid.equipment||[];panel.querySelector('[data-equipment-summary]').textContent='배치한 장비 '+items.length+'개 · 목록에서 찾기';
-  panel.querySelector('[data-equipment-heading]').textContent='장비 배치 · '+items.length+'개';
+  var items=S.grid.equipment||[];panel.querySelector('[data-equipment-summary]').textContent='놓은 표식 '+items.length+'개 · 목록에서 찾기';
+  panel.querySelector('[data-equipment-heading]').textContent='지도 표시·그리기 · 표식 '+items.length+'개 · 선 '+(S.grid.lines||[]).length+'개';
   panel.querySelector('.equipment-list').innerHTML=items.length?items.map(function(p){return '<button type="button" class="btn" data-equipment-open="'+esc(p.id)+'">'+equipmentIcon(p.kind)+'<span>'+esc(equipmentName(p))+(equipmentRole(p)?' · '+esc(equipmentRole(p)):'')+'</span></button>';}).join(''):'<p class="note">배치할 장비 종류를 위에서 선택하세요.</p>';
 }
 function equipmentPaint(host){
@@ -9165,12 +9528,12 @@ function equipmentPaint(host){
   var signature=JSON.stringify(items.map(function(p){return [p,equipmentName(p)];}));
   if(layer.dataset.signature!==signature){
     layer.dataset.signature=signature;
-    layer.innerHTML=items.map(function(p){var label=equipmentName(p),role=equipmentRole(p),shortRole=p.kind==='drone'?(p.positionRole==='reported'?'기체·수동':'조종팀'):'';return '<button type="button" class="equipment-marker" data-equipment-id="'+esc(p.id)+'" aria-label="'+esc(label+(role?' · '+role:'')+' · 수동 표시 · '+shortDateTime(p.updatedAt)+' 수정 · 배치 정보')+'">'+equipmentIcon(p.kind)+'<span class="equipment-label">'+esc(label)+(role?'<small>'+esc(shortRole)+'</small>':'')+'</span></button>';}).join('');
+    layer.innerHTML=items.map(function(p){var label=equipmentName(p),role=equipmentRole(p),shortRole=p.kind==='drone'?(p.positionRole==='reported'?'기체·수동':'조종팀'):'';return '<button type="button" class="equipment-marker" data-kind="'+esc(p.kind)+'" data-group="'+esc(EQUIPMENT_GROUP[p.kind]||'car')+'" data-equipment-id="'+esc(p.id)+'" aria-label="'+esc(label+(role?' · '+role:'')+' · 수동 표시 · '+shortDateTime(p.updatedAt)+' 수정 · 배치 정보')+'">'+equipmentIcon(p.kind)+'<span class="equipment-label">'+esc(label)+(role?'<small>'+esc(shortRole)+'</small>':'')+'</span></button>';}).join('');
   }
   items.forEach(function(p){
     var el=layer.querySelector('[data-equipment-id="'+p.id+'"]');
-    if(online){var tl=rec.adapter.project({lat:S.grid.geo.north,lon:S.grid.geo.west}),pt=rec.adapter.project(geoAt(p.x/100,p.y/100));el.style.left=pt.x-tl.x+'px';el.style.top=pt.y-tl.y+'px';}
-    else{el.style.left=p.x+'%';el.style.top=p.y+'%';}
+    if(equipmentDrag&&equipmentDrag.moved&&equipmentDrag.id===p.id)return;
+    var pos=equipmentCss(host,p.x,p.y);el.style.left=pos.left;el.style.top=pos.top;
   });
   var bar=host.querySelector('.equipment-placing');
   if(host.id==='consMap'&&equipmentDraft){
@@ -9208,19 +9571,23 @@ closeMapWorkspace=function(){var result=equipmentCloseMapBase();var panel=$('con
 document.addEventListener('click',function(ev){
   var kind=ev.target.closest('[data-equipment-kind]'),marker=ev.target.closest('[data-equipment-id],[data-equipment-open]'),cancel=ev.target.closest('[data-equipment-action="cancel"]');
   if(kind){equipmentDialog(kind.dataset.equipmentKind);return;}
+  /* 끌기를 끝낸 바로 그 손짓의 클릭만 삼킨다(같은 자리·0.4초 안). 다음 클릭은 정보 창을 연다. */
+  var dragged=equipmentDragClick;equipmentDragClick=null;
+  if(marker&&dragged&&Date.now()<dragged.until&&Math.hypot(ev.clientX-dragged.x,ev.clientY-dragged.y)<=12&&marker.matches('.equipment-marker')){ev.preventDefault();return;}
   if(marker){if(equipmentDraft){mapMsg('지도에서 배치를 마치거나 배치 취소를 누른 뒤 정보를 확인하세요.','warn');return;}equipmentDialog('',marker.dataset.equipmentId||marker.dataset.equipmentOpen);return;}
   if(cancel){equipmentCancel();mapMsg('장비 배치를 취소했습니다. 기존 배치는 유지했습니다.','ok');}
 });
 /* A touch may dispatch its click after placement has replaced the target cell
    with a new marker. Consume that gesture's click, then allow the next tap. */
-document.addEventListener('pointerdown',function(){equipmentPlacementClick=null;},true);
+document.addEventListener('pointerdown',function(){equipmentPlacementClick=null;equipmentDragClick=null;},true);
 document.addEventListener('click',function(ev){
   var placed=equipmentPlacementClick;if(!placed)return;
   equipmentPlacementClick=null;
   if(ev.detail>0&&Date.now()<=placed.until&&Math.hypot(ev.clientX-placed.x,ev.clientY-placed.y)<=16){ev.preventDefault();ev.stopImmediatePropagation();}
 },true);
 ['pointerdown','pointermove','pointerup','pointercancel'].forEach(function(type){document.addEventListener(type,function(ev){
-  if(ev.target.closest('.equipment-placing')||!equipmentDraft&&ev.target.closest('.equipment-marker')){ev.stopImmediatePropagation();return;}
+  if(ev.target.closest('.equipment-placing')){ev.stopImmediatePropagation();return;}
+  if(!equipmentDraft&&(ev.target.closest('.equipment-marker')||equipmentDrag&&equipmentDrag.pid===ev.pointerId)){ev.stopImmediatePropagation();equipmentDragHandle(type,ev);return;}
   if(!equipmentDraft||!ev.target.closest('#consMap'))return;
   ev.stopImmediatePropagation();
   if(type==='pointerdown'){
@@ -9248,9 +9615,300 @@ var equipmentEditBase=setMapEditMode;
 setMapEditMode=function(mode){equipmentCancel();return equipmentEditBase(mode);};
 /* MAP_EQUIPMENT_END */
 
+/* MAP_DRAW: 지도 위 선 긋기(이동 경로·수색 동선·통제선)와 원 범위.
+   선은 지도 원본 비율 좌표(0~1)로 저장해 사진·저장 지도·온라인 지도와 벽 화면에 같은 자리로 그린다.
+   원 범위는 24각형 자유 구역으로 저장해 기존 구역 상태·담당·이력 처리를 그대로 쓴다. */
+var LINE_TYPES={route:'이동 경로',search:'수색 동선',control:'통제선'};
+var LINE_HELP={route:'사람·차량이 이동한 길 · 끝에 화살표',search:'수색팀·드론이 훑은 길 · 점선',control:'출입 통제·위험 경계 · 굵은 빨간 점선'};
+var lineDraft=null,lineGesture=null,circleDraft=null;
+function linesNormalize(raw){
+  if(!Array.isArray(raw))return [];
+  var seen=Object.create(null);
+  return raw.slice(0,40).map(function(l){
+    if(!l||typeof l!=='object'||Array.isArray(l)||!/^[a-z0-9_-]{3,100}$/i.test(l.id||'')||seen[l.id])return null;
+    if(['route','search','control'].indexOf(l.kind)<0||!Array.isArray(l.points)||l.points.length<2||l.points.length>64)return null;
+    var pts=[];
+    for(var i=0;i<l.points.length;i++){var p=l.points[i];if(!p||typeof p.x!=='number'||typeof p.y!=='number'||!isFinite(p.x)||!isFinite(p.y)||p.x<0||p.x>1||p.y<0||p.y>1)return null;pts.push({x:p.x,y:p.y});}
+    seen[l.id]=true;
+    return {id:l.id,kind:l.kind,name:String(l.name==null?'':l.name).slice(0,80),points:pts,updatedAt:typeof l.updatedAt==='number'&&isFinite(l.updatedAt)&&l.updatedAt>=0?l.updatedAt:0};
+  }).filter(Boolean);
+}
+/* 길이: 좌표 보정이 있으면 실거리, 없으면 입력한 지도 폭으로 어림한다. */
+function lineMeters(points){
+  var total=0,w=mapWidthMeters(),aspect=fieldAspect()||1;
+  for(var i=1;i<points.length;i++){
+    var a=points[i-1],b=points[i];
+    if(geoOK()){var ga=geoAt(a.x,a.y),gb=geoAt(b.x,b.y),mid=(ga.lat+gb.lat)/2*RAD;total+=Math.hypot((gb.lon-ga.lon)*MPD_LAT*Math.cos(mid),(gb.lat-ga.lat)*MPD_LAT);}
+    else total+=Math.hypot((b.x-a.x)*w,(b.y-a.y)*w/aspect);
+  }
+  return total;
+}
+function fmtMeters(m){return m>=1000?(m/1000).toFixed(m>=10000?0:1)+'km':Math.round(m/10)*10+'m';}
+function lineLabel(line){return (line.name||LINE_TYPES[line.kind])+' · '+(geoOK()?'':'약 ')+fmtMeters(lineMeters(line.points));}
+function lineAllowed(){
+  if(!ensureEditor())return false;
+  if(fieldEdit){mapMsg('진행 중인 구역 초안을 먼저 저장하거나 취소하세요.','warn');return false;}
+  if(equipmentDraft){mapMsg('표식 배치를 먼저 마치거나 취소하세요.','warn');return false;}
+  if(!mapStageReady()){mapMsg('지도를 먼저 준비하거나 지도 없이 격자로 시작하세요.','warn');return false;}
+  return mapEditsAllowed('view')&&ensureMapReviewed();
+}
+function linesApply(items){
+  if(!ensureEditor())return false;
+  var next=JSON.parse(JSON.stringify(S));next.grid.lines=linesNormalize(items);touchState(next);
+  if(!persistCandidate(next))return false;
+  cancelMapInteraction();S=next;lastSeenUpdated=S.meta.updated;broadcast();renderAll();return true;
+}
+function drawCancel(silent){
+  var had=!!(lineDraft||circleDraft);lineDraft=null;circleDraft=null;lineGesture=null;
+  var host=$('consMap');if(host){var bar=host.querySelector('.line-editbar');if(bar)bar.remove();host.classList.remove('line-drawing');}
+  fieldPaintAll();if(had&&!silent)mapMsg('그리기를 취소했습니다. 저장된 선·범위는 그대로입니다.','ok');
+}
+function lineBegin(item,original){
+  if(!lineAllowed())return false;
+  setMapEditMode('view');setPinMode(null);
+  lineDraft={item:Object.assign({},item),points:(item.points||[]).map(function(p){return {x:p.x,y:p.y};}),original:original?JSON.stringify(original):'',scope:equipmentScope()};
+  lineEditbar();fieldPaintAll();focusFieldMap();
+  mapMsg(LINE_TYPES[item.kind]+' 그리기 · 지도를 눌러 점을 찍고, 찍은 점은 끌어 옮깁니다. 다 그렸으면 선 저장.','ok');
+  return true;
+}
+function lineEditbar(){
+  var host=$('consMap');if(!host)return;var bar=host.querySelector('.line-editbar');
+  if(!lineDraft&&!circleDraft){if(bar)bar.remove();host.classList.remove('line-drawing');return;}
+  host.classList.add('line-drawing');
+  if(!bar){bar=document.createElement('div');bar.className='line-editbar';['pointerdown','pointermove','pointerup','pointercancel'].forEach(function(type){bar.addEventListener(type,function(ev){ev.stopPropagation();});});host.appendChild(bar);}
+  var mode=lineDraft?'line':'circle';
+  if(bar.dataset.mode!==mode){bar.dataset.mode=mode;bar.innerHTML=lineDraft
+    ?'<button type="button" class="btn primary" data-draw-action="line-save">선 저장</button><button type="button" class="btn" data-draw-action="line-undo">점 취소</button><button type="button" class="btn" data-draw-action="cancel">그리기 취소</button><span data-draw-count></span>'
+    :'<button type="button" class="btn" data-draw-action="cancel">그리기 취소</button><span data-draw-count></span>';}
+  var count=bar.querySelector('[data-draw-count]');
+  if(lineDraft)count.textContent=LINE_TYPES[lineDraft.item.kind]+' · 점 '+lineDraft.points.length+'개'+(lineDraft.points.length>1?' · '+(geoOK()?'':'약 ')+fmtMeters(lineMeters(lineDraft.points)):'')+(lineDraft.points.length<2?' · 점 2개 이상':'');
+  else count.textContent='원 범위 · 중심을 누른 채 끌어 반경을 정하세요'+(circleDraft.r?' · 반경 '+(geoOK()?'':'약 ')+fmtMeters(circleDraft.rm):'');
+  var save=bar.querySelector('[data-draw-action="line-save"]');if(save)save.disabled=lineDraft.points.length<2;
+}
+function lineSave(){
+  var d=lineDraft;if(!d)return false;
+  if(d.scope!==equipmentScope()||!lineAllowed()){drawCancel(true);mapMsg('지도나 편집권이 바뀌어 저장하지 않았습니다.','warn');return false;}
+  if(d.points.length<2){mapMsg('점을 2개 이상 찍어야 선이 됩니다.','warn');return false;}
+  var items=S.grid.lines||[],old=items.find(function(l){return l.id===d.item.id;});
+  if(d.original&&(!old||JSON.stringify(old)!==d.original)){drawCancel(true);mapMsg('선 정보가 바뀌어 저장하지 않았습니다. 다시 선택하세요.','warn');return false;}
+  if(!old&&items.length>=40){mapMsg('선은 최대 40개입니다. 필요 없는 선을 지우세요.','warn');return false;}
+  var line=Object.assign({},d.item,{points:d.points.map(function(p){return {x:+p.x.toFixed(5),y:+p.y.toFixed(5)};}),updatedAt:Date.now()});
+  var next=old?items.map(function(l){return l.id===old.id?line:l;}):items.concat([line]);
+  lineDraft=null;lineEditbar();
+  if(!linesApply(next)){lineDraft=d;lineEditbar();fieldPaintAll();mapMsg('선을 저장하지 못했습니다. 그리던 선은 남아 있습니다.','err');return false;}
+  mapMsg(lineLabel(line)+' 저장 · 현황 화면에도 표시합니다.','ok');return true;
+}
+function lineDialog(kind,id){
+  var existing=id&&(S.grid.lines||[]).find(function(l){return l.id===id;});
+  if(!existing&&!lineAllowed())return;
+  if(existing)kind=existing.kind;if(!LINE_TYPES[kind])return;
+  var editable=ownsEditorLock(),scope=equipmentScope(),original=existing?JSON.stringify(existing):'';
+  var suggested=existing?existing.name:LINE_TYPES[kind]+' '+((S.grid.lines||[]).filter(function(l){return l.kind===kind;}).length+1);
+  var html='<div class="message-kind line-kind" role="radiogroup" aria-label="선 종류">'+Object.keys(LINE_TYPES).map(function(k){return '<button type="button" class="btn" role="radio" data-line-kind="'+k+'"'+(!editable?' disabled':'')+'><svg class="line-swatch k-'+k+'" viewBox="0 0 40 10" aria-hidden="true"><line x1="2" y1="5" x2="38" y2="5"/></svg>'+LINE_TYPES[k]+'</button>';}).join('')+'</div>'
+    +'<p class="message-help" data-line-help></p>'
+    +'<label class="f"><span>선 이름</span><input id="lineName" maxlength="80" value="'+esc(suggested)+'"'+(!editable?' readonly':'')+'></label>'
+    +(existing?'<p>점 '+existing.points.length+'개 · 길이 '+esc((geoOK()?'':'약 ')+fmtMeters(lineMeters(existing.points)))+' · '+esc(shortDateTime(existing.updatedAt))+' 수정</p>':'<p>시작을 누른 뒤 지도에서 지나간 곳을 차례로 누르세요. 찍은 점은 끌어서 옮기고, 다 그렸으면 지도 아래 <b>선 저장</b>을 누릅니다.</p>')
+    +'<div class="field-row">'+(editable?(existing?'<button type="button" class="btn primary" data-line-action="save">이름·종류 저장</button><button type="button" class="btn" data-line-action="edit">점 고치기</button><button type="button" class="btn danger" data-line-action="remove">선 지우기</button>':'<button type="button" class="btn primary" data-line-action="start">지도에 그리기 시작</button>'):'')+'<button type="button" class="btn" data-field-close>닫기</button></div>';
+  var dialog=fieldDialog(existing?'선 정보':'선 긋기',html),name=dialog.querySelector('#lineName'),chosen=kind;
+  function sync(){dialog.querySelectorAll('[data-line-kind]').forEach(function(b){var on=b.dataset.lineKind===chosen;b.setAttribute('aria-checked',String(on));b.classList.toggle('on',on);});dialog.querySelector('[data-line-help]').textContent=LINE_HELP[chosen];
+    if(!existing&&/^(이동 경로|수색 동선|통제선) \d+$/.test(name.value))name.value=LINE_TYPES[chosen]+' '+((S.grid.lines||[]).filter(function(l){return l.kind===chosen;}).length+1);}
+  dialog.querySelectorAll('[data-line-kind]').forEach(function(b){b.onclick=function(){chosen=b.dataset.lineKind;sync();};});sync();
+  dialog.querySelectorAll('[data-line-action]').forEach(function(button){button.onclick=function(){
+    if(!fieldDialogCurrent(dialog)||scope!==equipmentScope()){fieldStatus(dialog,'지도 또는 편집권이 바뀌었습니다. 닫고 다시 선택하세요.');return;}
+    var current=existing&&(S.grid.lines||[]).find(function(l){return l.id===existing.id;});
+    if(existing&&(!current||JSON.stringify(current)!==original)){fieldStatus(dialog,'선 정보가 바뀌었습니다. 닫고 다시 확인하세요.');return;}
+    var action=button.dataset.lineAction,label=name.value.trim();
+    if(action==='remove'){
+      if(!confirm((existing.name||LINE_TYPES[existing.kind])+' 선을 지울까요? 활동기록은 그대로입니다.'))return;
+      if(linesApply(S.grid.lines.filter(function(l){return l.id!==existing.id;}))){dialog.close();mapMsg('선을 지웠습니다.','ok');}else fieldStatus(dialog,'저장 실패 · 선을 그대로 두었습니다.');return;
+    }
+    if(!label){fieldStatus(dialog,'선 이름을 입력하세요.');name.focus();return;}
+    if(action==='save'){var item=Object.assign({},existing,{name:label,kind:chosen,updatedAt:Date.now()});if(linesApply(S.grid.lines.map(function(l){return l.id===item.id?item:l;}))){dialog.close();mapMsg('선 정보를 저장했습니다.','ok');}else fieldStatus(dialog,'저장 실패 · 입력은 유지했습니다.');return;}
+    var draft=existing?Object.assign({},existing,{name:label,kind:chosen}):{id:uid(),kind:chosen,name:label,points:[],updatedAt:0};
+    /* 창을 닫으면 초점이 지도 아래 단추로 돌아가며 화면이 지도에서 벗어난다. 지도로 돌려보낸다. */
+    dialog.fieldReturnTarget=$('consMap');dialog.close();lineBegin(draft,existing?current:null);
+  };});
+}
+function areaDialog(shape){
+  if(!lineAllowed())return;
+  var n=(S.grid.regions||[]).length+1;
+  var html='<p>'+(shape==='circle'?'시작을 누른 뒤 지도에서 원의 <b>중심을 누른 채 바깥쪽으로 끌어</b> 반경을 정합니다. 놓으면 꼭짓점으로 바뀌어 다듬을 수 있고, <b>구역 저장</b>으로 남깁니다.':'시작을 누른 뒤 지도에서 범위의 모서리를 차례로 누릅니다(3~32점). 다 그렸으면 <b>구역 저장</b>을 누릅니다.')+'</p>'
+    +'<label class="f"><span>범위 이름</span><input id="areaName" maxlength="80" value="'+esc((shape==='circle'?'원 범위 ':'범위 ')+n)+'"></label>'
+    +'<div class="f2"><label class="f"><span>상태</span><select id="areaState">'+CELL_ST.map(function(name,i){return '<option value="'+i+'">'+esc(name)+'</option>';}).join('')+'</select></label>'
+    +'<label class="f"><span>담당</span><input id="areaBy" maxlength="80" placeholder="예: 1조, 수색견"></label></div>'
+    +'<div class="field-row"><button type="button" class="btn primary" data-area-action="start">지도에 그리기 시작</button><button type="button" class="btn" data-field-close>닫기</button></div>';
+  var dialog=fieldDialog(shape==='circle'?'원 범위 그리기':'범위 그리기',html);
+  dialog.querySelector('[data-area-action="start"]').onclick=function(){
+    if(!fieldDialogCurrent(dialog))return;
+    var name=dialog.querySelector('#areaName').value.trim();if(!name){fieldStatus(dialog,'범위 이름을 입력하세요.');return;}
+    var meta={id:'',name:name,s:Number(dialog.querySelector('#areaState').value),by:dialog.querySelector('#areaBy').value.trim()};
+    dialog.fieldReturnTarget=$('consMap');dialog.close();
+    if(!lineAllowed())return;
+    if(!fieldForm)mountFieldTools();Object.assign(fieldForm,meta);
+    if(shape==='circle'){setMapEditMode('view');setPinMode(null);circleDraft={meta:meta,c:null,r:0,rm:0,scope:equipmentScope()};lineEditbar();fieldPaintAll();focusFieldMap();mapMsg('원 범위 · 지도에서 중심을 누른 채 끌어 반경을 정하세요.','ok');}
+    else{beginFieldEdit('region');fieldHint('범위 · 지도를 눌러 모서리를 찍고, 찍은 점은 끌어 옮깁니다. 다 그렸으면 구역 저장.');}
+  };
+}
+/* 화면 픽셀 반경을 지도 비율 좌표의 원(24각형)으로 바꾼다. 지도 밖으로 나간 부분은 가장자리에 맞춘다. */
+function circlePoints(host,c,rpx){
+  var o=fieldPixels(host,{x:0,y:0}),ex=fieldPixels(host,{x:1,y:0}),ey=fieldPixels(host,{x:0,y:1});
+  var fw=Math.max(1,Math.hypot(ex.x-o.x,ex.y-o.y)),fh=Math.max(1,Math.hypot(ey.x-o.x,ey.y-o.y)),out=[];
+  for(var i=0;i<24;i++){var a=i/24*Math.PI*2,p={x:clamp(c.x+Math.cos(a)*rpx/fw,0,1),y:clamp(c.y+Math.sin(a)*rpx/fh,0,1)};
+    var last=out[out.length-1];if(!last||Math.hypot(last.x-p.x,last.y-p.y)>1e-4)out.push(p);}
+  if(out.length>2&&Math.hypot(out[0].x-out[out.length-1].x,out[0].y-out[out.length-1].y)<=1e-4)out.pop();
+  return out;
+}
+function circleRadiusMeters(host,c,rpx){var pts=circlePoints(host,c,rpx);return pts.length?lineMeters([c,pts[0]]):0;}
+function circleFinish(){
+  var d=circleDraft,host=$('consMap');circleDraft=null;lineEditbar();
+  if(!d||!d.c||d.r<10){fieldPaintAll();mapMsg('반경이 너무 작습니다. 중심을 누른 채 더 끌어 주세요.','warn');circleDraft=d&&Object.assign(d,{c:null,r:0});lineEditbar();return;}
+  var pts=circlePoints(host,d.c,d.r);
+  try{FieldGeometry.polygon(pts);}catch(error){mapMsg(error.message,'warn');circleDraft=Object.assign(d,{c:null,r:0});lineEditbar();fieldPaintAll();return;}
+  if(!fieldForm)mountFieldTools();Object.assign(fieldForm,d.meta);
+  fieldEdit={mode:'region',regionId:'',originalRegion:'',points:pts,seq:stateLifecycleSeq,epoch:SESSION_EPOCH,generation:S.grid.generation,mapVer:S.grid.mapVer,mapId:S.grid.mapId,drag:null};
+  mountFieldTools();fieldPaintAll();
+  fieldHint('원 범위 초안 · 반경 '+(geoOK()?'':'약 ')+fmtMeters(d.rm)+' · 꼭짓점을 끌어 다듬은 뒤 구역 저장을 누르세요.');
+  mapMsg('원 범위 초안을 만들었습니다. 지도 아래 구역 저장을 눌러야 남습니다.','ok');
+}
+function linePaint(host){
+  if(!host)return;var fit=host.querySelector('.mapfit');if(!fit)return;
+  var box=fit.getBoundingClientRect();if(!box.width||!box.height||isOnlineMap()&&!onlineMapReady(host))return;
+  var lines=(mapLayers.lines===false?[]:(S.grid.lines||[])).slice(),consoleHost=host.id==='consMap';
+  if(consoleHost&&lineDraft&&lineDraft.scope!==equipmentScope())drawCancel(true);
+  /* 지도를 다시 만들면 안의 막대도 사라진다. 그리는 중이면 매번 다시 붙인다. */
+  if(consoleHost&&(lineDraft||circleDraft)&&!host.querySelector('.line-editbar'))lineEditbar();
+  var draftId=consoleHost&&lineDraft?lineDraft.item.id:'';
+  var content='',hid=host.id;
+  content+='<defs>'+Object.keys(LINE_TYPES).map(function(k){return '<marker id="arrow-'+hid+'-'+k+'" class="k-'+k+'" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z"/></marker>';}).join('')+'</defs>';
+  function pts(points){return points.map(function(p){var q=fieldPixels(host,p);return q.x.toFixed(1)+','+q.y.toFixed(1);}).join(' ');}
+  lines.forEach(function(l){
+    if(l.id===draftId)return;
+    var px=l.points.map(function(p){return fieldPixels(host,p);}),best=0,bi=0;
+    for(var i=1;i<px.length;i++){var len=Math.hypot(px[i].x-px[i-1].x,px[i].y-px[i-1].y);if(len>best){best=len;bi=i;}}
+    var mid={x:(px[bi].x+px[bi-1].x)/2,y:(px[bi].y+px[bi-1].y)/2},p=pts(l.points);
+    content+='<g class="map-line k-'+l.kind+'" data-line-id="'+esc(l.id)+'"><title>'+esc(lineLabel(l))+'</title>'
+      +'<polyline class="casing" points="'+p+'"/><polyline class="ln"'+(l.kind==='route'?' marker-end="url(#arrow-'+hid+'-route)"':'')+' points="'+p+'"/>'
+      +'<circle class="start" cx="'+px[0].x.toFixed(1)+'" cy="'+px[0].y.toFixed(1)+'" r="4"/>'
+      +(consoleHost?'<polyline class="hit" points="'+p+'"/>':'')
+      +'<text x="'+mid.x.toFixed(1)+'" y="'+(mid.y-9).toFixed(1)+'" text-anchor="middle">'+esc(l.name||LINE_TYPES[l.kind])+'</text></g>';
+  });
+  if(consoleHost&&lineDraft){
+    var dp=lineDraft.points,k=lineDraft.item.kind;
+    if(dp.length>1)content+='<g class="map-line draft-line k-'+k+'"><polyline class="casing" points="'+pts(dp)+'"/><polyline class="ln"'+(k==='route'?' marker-end="url(#arrow-'+hid+'-route)"':'')+' points="'+pts(dp)+'"/></g>';
+    content+=dp.map(function(p,i){var q=fieldPixels(host,p);return '<g class="line-vertex"><circle cx="'+q.x.toFixed(1)+'" cy="'+q.y.toFixed(1)+'" r="7"/><text x="'+(q.x+10).toFixed(1)+'" y="'+(q.y-9).toFixed(1)+'">'+(i+1)+'</text></g>';}).join('');
+  }
+  if(consoleHost&&circleDraft&&circleDraft.c){
+    var cq=fieldPixels(host,circleDraft.c);
+    content+='<g class="circle-draft"><circle cx="'+cq.x.toFixed(1)+'" cy="'+cq.y.toFixed(1)+'" r="'+Math.max(0,circleDraft.r).toFixed(1)+'"/><circle class="center" cx="'+cq.x.toFixed(1)+'" cy="'+cq.y.toFixed(1)+'" r="5"/>'
+      +(circleDraft.r>10?'<text x="'+cq.x.toFixed(1)+'" y="'+(cq.y-circleDraft.r-8).toFixed(1)+'" text-anchor="middle">반경 '+esc((geoOK()?'':'약 ')+fmtMeters(circleDraft.rm))+'</text>':'')+'</g>';
+  }
+  if(content.indexOf('<g')<0)return;
+  var el=document.createElementNS('http://www.w3.org/2000/svg','svg');el.setAttribute('class','field-overlay field-line-layer');
+  el.setAttribute('viewBox','0 0 '+box.width+' '+box.height);el.setAttribute('preserveAspectRatio','none');el.innerHTML=content;fit.appendChild(el);
+}
+var drawPaintBase=fieldPaintMap;
+fieldPaintMap=function(host){drawPaintBase(host);linePaint(host);};
+var drawMountBase=equipmentMount;
+equipmentMount=function(){
+  drawMountBase();
+  var panel=$('consMapWorkspace')&&$('consMapWorkspace').querySelector('[data-equipment-tools]');if(!panel)return;
+  var body=panel.querySelector('.equipment-body');
+  if(!body.querySelector('[data-draw-group="lines"]')){
+    body.insertAdjacentHTML('afterbegin','<div class="draw-group" data-draw-group="lines"><b class="draw-group-h">선 긋기</b><div class="equipment-palette">'
+      +Object.keys(LINE_TYPES).map(function(k){return '<button type="button" class="btn" data-draw-line="'+k+'"><svg class="line-swatch k-'+k+'" viewBox="0 0 40 10" aria-hidden="true"><line x1="2" y1="5" x2="38" y2="5"/></svg><span>'+LINE_TYPES[k]+'</span></button>';}).join('')+'</div></div>'
+      +'<div class="draw-group" data-draw-group="areas"><b class="draw-group-h">범위 그리기</b><div class="equipment-palette">'
+      +'<button type="button" class="btn" data-draw-area="poly"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 7 11 3l9 5-2 10-11 3z"/></svg><span>다각형 범위</span></button>'
+      +'<button type="button" class="btn" data-draw-area="circle"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><path d="M12 12h8.5" stroke-dasharray="2 2"/></svg><span>원 범위</span></button></div></div>');
+  }
+  body.querySelectorAll('[data-draw-line],[data-draw-area]').forEach(function(b){b.disabled=!ownsEditorLock();});
+  var lines=S.grid.lines||[],list=panel.querySelector('.equipment-list'),summary=panel.querySelector('[data-equipment-summary]');
+  if(lines.length){
+    if(!(S.grid.equipment||[]).length)list.innerHTML='';
+    list.insertAdjacentHTML('beforeend',lines.map(function(l){return '<button type="button" class="btn" data-line-open="'+esc(l.id)+'"><svg class="line-swatch k-'+l.kind+'" viewBox="0 0 40 10" aria-hidden="true"><line x1="2" y1="5" x2="38" y2="5"/></svg><span>'+esc(lineLabel(l))+'</span></button>';}).join(''));
+  }
+  summary.textContent='놓은 표식 '+(S.grid.equipment||[]).length+'개 · 선 '+lines.length+'개 · 목록에서 찾기';
+};
+var drawPinBase=setPinMode;
+setPinMode=function(mode,root){if(mode&&(lineDraft||circleDraft))drawCancel(true);return drawPinBase(mode,root);};
+var drawEditBase=setMapEditMode;
+setMapEditMode=function(mode){if(mode==='paint'&&(lineDraft||circleDraft))drawCancel(true);return drawEditBase(mode);};
+document.addEventListener('input',function(ev){if(ev.target.getAttribute&&ev.target.getAttribute('data-map-layer')==='lines')fieldPaintAll();});
+/* 지도 위 도구 줄의 바로가기: 지도 아래 그리기 도구를 펼치고 첫 단추로 초점을 옮긴다. */
+document.addEventListener('click',function(ev){
+  var jump=ev.target.closest('[data-draw-jump]');if(!jump)return;
+  var panel=$('consMapWorkspace')&&$('consMapWorkspace').querySelector('[data-equipment-tools]');if(!panel)return;
+  var toolPanel=panel.closest('[data-map-tools-panel]');if(toolPanel&&toolPanel.hidden){var toggle=document.querySelector('[data-map-tools-toggle]');if(toggle)toggle.click();}
+  panel.open=true;panel.scrollIntoView({block:'nearest',behavior:'smooth'});
+  var first=panel.querySelector('[data-draw-line]');if(first)first.focus({preventScroll:true});
+});
+document.addEventListener('click',function(ev){
+  var b=ev.target.closest('[data-draw-line],[data-draw-area],[data-draw-action],[data-line-open]');
+  var hit=!b&&ev.target.closest&&ev.target.closest('#consMap .map-line:not(.draft-line)');
+  if(hit&&!lineDraft&&!circleDraft&&!fieldEdit&&!equipmentDraft){lineDialog('',hit.dataset.lineId);return;}
+  if(!b)return;
+  if(b.dataset.drawLine){if(lineDraft||circleDraft){mapMsg('그리던 선·범위를 먼저 저장하거나 취소하세요.','warn');return;}lineDialog(b.dataset.drawLine);return;}
+  if(b.dataset.drawArea){if(lineDraft||circleDraft){mapMsg('그리던 선·범위를 먼저 저장하거나 취소하세요.','warn');return;}areaDialog(b.dataset.drawArea);return;}
+  if(b.dataset.lineOpen){lineDialog('',b.dataset.lineOpen);return;}
+  var action=b.dataset.drawAction;
+  if(action==='cancel')drawCancel();
+  if(action==='line-save')lineSave();
+  if(action==='line-undo'&&lineDraft){lineDraft.points.pop();lineEditbar();fieldPaintAll();}
+});
+['pointerdown','pointermove','pointerup','pointercancel'].forEach(function(type){document.addEventListener(type,function(ev){
+  if(!lineDraft&&!circleDraft)return;
+  if(!ev.target.closest('#consMap')||ev.target.closest('.line-editbar,.field-editbar,.map-tools,.map-view-controls'))return;
+  ev.stopImmediatePropagation();
+  var host=$('consMap'),pt=getMapPoint(host,ev.clientX,ev.clientY),p=pt&&{x:pt.x/100,y:pt.y/100};
+  if(type==='pointerdown'){
+    if(ev.button!=null&&ev.button!==0||ev.isPrimary===false)return;ev.preventDefault();
+    var vertex=-1;
+    if(lineDraft&&p){var fit=host.querySelector('.mapfit').getBoundingClientRect();lineDraft.points.forEach(function(q,i){var a=fieldPixels(host,q),b=fieldPixels(host,p);if(Math.hypot(a.x-b.x,a.y-b.y)<14)vertex=i;});}
+    lineGesture={x:ev.clientX,y:ev.clientY,id:ev.pointerId,vertex:vertex,start:p,before:lineDraft?lineDraft.points.map(function(q){return {x:q.x,y:q.y};}):null};
+    if(circleDraft&&p){circleDraft.c=p;circleDraft.r=0;circleDraft.rm=0;}
+    try{host.setPointerCapture(ev.pointerId);}catch(e){}
+    return;
+  }
+  var g=lineGesture;if(!g||g.id!==ev.pointerId)return;
+  if(type==='pointercancel'){lineGesture=null;if(lineDraft&&g.before)lineDraft.points=g.before;if(circleDraft){circleDraft.c=null;circleDraft.r=0;}lineEditbar();fieldPaintAll();return;}
+  if(type==='pointermove'){
+    if(!p)return;ev.preventDefault();
+    if(lineDraft&&g.vertex>=0){lineDraft.points[g.vertex]=p;lineEditbar();fieldPaintMap(host);}
+    else if(circleDraft&&circleDraft.c){var c=fieldPixels(host,circleDraft.c),q=fieldPixels(host,p);circleDraft.r=Math.hypot(q.x-c.x,q.y-c.y);circleDraft.rm=circleRadiusMeters(host,circleDraft.c,circleDraft.r);lineEditbar();fieldPaintMap(host);}
+    return;
+  }
+  if(type==='pointerup'){
+    lineGesture=null;ev.preventDefault();
+    if(circleDraft){if(circleDraft.c)circleFinish();return;}
+    if(lineDraft&&g.vertex<0&&Math.hypot(ev.clientX-g.x,ev.clientY-g.y)<8){
+      if(!p){mapMsg('지도 범위 안을 누르세요.','warn');return;}
+      if(lineDraft.points.length>=64){mapMsg('선 하나는 점 64개까지입니다. 저장한 뒤 새 선으로 이어 그리세요.','warn');return;}
+      lineDraft.points.push(p);
+    }
+    lineEditbar();fieldPaintAll();
+  }
+},true);});
+document.addEventListener('keydown',function(ev){
+  if(!lineDraft&&!circleDraft)return;
+  if(ev.key==='Escape'&&!document.querySelector('dialog.field-dialog[open]')){ev.preventDefault();ev.stopImmediatePropagation();drawCancel();return;}
+  if(lineDraft&&(ev.key==='Enter'||ev.key===' ')&&ev.target.closest&&ev.target.closest('#consMap')&&ev.target.matches('.gcell')){
+    ev.preventDefault();ev.stopImmediatePropagation();var m=/^([A-L])(\d{1,2})$/.exec(ev.target.dataset.cell);if(!m)return;
+    var q=FieldGeometry.point(S.grid.layout,(Number(m[2])-.5)/gridCols(),(m[1].charCodeAt(0)-65+.5)/gridRows());
+    if(lineDraft.points.length<64)lineDraft.points.push({x:clamp(q.x,0,1),y:clamp(q.y,0,1)});lineEditbar();fieldPaintAll();
+  }
+},true);
+/* MAP_DRAW_END */
+
 /* MAP_STAGE_LAYOUT: preparation and tool panels are view state, never mission data. */
 var mapStageView={scope:'',choice:'',choices:false},mapStageToolsOpen=false;
-function mapStageReady(){return !!(S.grid.hasMap||geoOK());}
+/* 지도 사진이 없어도 무전으로 받은 구역 완료는 격자에 칠할 수 있어야 한다. 사용자가 '격자로 시작'을 고르거나
+   이미 칠한 칸이 있으면 격자만으로 준비된 것으로 본다. 나중에 지도를 넣으면 기존 확인창·복구본 절차를 그대로 탄다. */
+var mapGridOnly={scope:'',on:false};
+function mapGridOnlyScope(){return [SESSION_EPOCH,stateLifecycleSeq,S.grid.generation].join('|');}
+function mapGridOnlyOn(){
+  if(mapGridOnly.scope===mapGridOnlyScope()&&mapGridOnly.on)return true;
+  return Object.keys(S.grid.cells||{}).some(function(k){var c=S.grid.cells[k];return c&&(c.s||c.by);});
+}
+function mapStageReady(){return !!(S.grid.hasMap||geoOK()||mapGridOnlyOn());}
 function mapStageState(){
   var scope=[SESSION_EPOCH,stateLifecycleSeq,S.grid.generation].join('|');
   if(mapStageView.scope!==scope)mapStageView={scope:scope,choice:S.grid.source==='naver'||S.grid.source==='google'?'online':'',choices:!mapStageReady()};
@@ -9265,8 +9923,9 @@ function mapStageMount(){
   var ready=mapStageReady(),state=mapStageState(),choices=quick.querySelector('[data-map-source-choices]');
   workspace.classList.toggle('map-needs-source',!ready);quick.classList.toggle('stage-prepared',ready);
   var current=quick.querySelector('[data-map-stage-current]'),change=quick.querySelector('[data-stage-action="change"]');
-  current.textContent=ready?'사용 중: '+(S.grid.source==='image'?'사진 지도':onlineSourceName(effectiveMapSource())):'지도 준비';
-  change.hidden=!ready;change.textContent=state.choices?'지도 선택 닫기':'지도 바꾸기';change.setAttribute('aria-expanded',String(state.choices));
+  var gridOnly=ready&&!S.grid.hasMap&&!geoOK();
+  current.textContent=!ready?'지도 준비':gridOnly?'사용 중: 격자만 · 지도 사진 없음':'사용 중: '+(S.grid.source==='image'?'사진 지도':onlineSourceName(effectiveMapSource()));
+  change.hidden=!ready;change.textContent=state.choices?'지도 선택 닫기':gridOnly?'지도 넣기':'지도 바꾸기';change.setAttribute('aria-expanded',String(state.choices));
   choices.open=!ready||state.choices;
   var online=quick.querySelector('[data-map-stage-online]'),bar=workspace.querySelector('[data-map-position-tools="consMap"]');
   online.hidden=state.choice!=='online';
@@ -9325,7 +9984,16 @@ openMapWorkspace=function(id){mapStageToolsOpen=false;var result=stageOpenMapBas
 closeMapWorkspace=function(){var workspace=mapDialog&&mapDialog.querySelector('[data-map-workspace]');mapStageToolsOpen=false;mapStageRestoreTools(workspace);var result=stageCloseMapBase();mapStageMount();return result;};
 document.addEventListener('click',function(ev){
   var stage=ev.target.closest('[data-stage-action]');
-  if(stage){var state=mapStageState();if(stage.dataset.stageAction==='online')mapStageChoose('online',true);else{state.choices=!state.choices;mapStageMount();}return;}
+  if(stage){var state=mapStageState();if(stage.dataset.stageAction==='online')mapStageChoose('online',true);
+    else if(stage.dataset.stageAction==='gridonly'){
+      if(!ensureEditor())return;
+      mapGridOnly={scope:mapGridOnlyScope(),on:true};state.choices=false;state.choice='';mapStageMount();
+      if(typeof mountFieldTools==='function')mountFieldTools();renderGridAll();
+      var paint=document.querySelector('[data-map-host="consMap"][data-map-action="paint"]');
+      if(paint&&paint.offsetParent){paint.focus({preventScroll:true});paint.scrollIntoView({block:'nearest'});}
+      mapMsg('지도 사진 없이 격자로 시작합니다. 구역 칠하기를 누른 뒤 칸을 누르세요. 지도는 나중에 넣을 수 있습니다.','ok');
+    }
+    else{state.choices=!state.choices;mapStageMount();}return;}
   var toggle=ev.target.closest('[data-map-tools-toggle]');
   if(toggle){mapStageToolsOpen=!mapStageToolsOpen;mapStagePanelSync();if(mapStageToolsOpen){var close=mapDialog.querySelector('[data-map-tools-close]');if(close)close.focus({preventScroll:true});}return;}
   if(ev.target.closest('[data-map-tools-close]')){mapStagePanelClose(true);return;}
@@ -9341,9 +10009,13 @@ document.addEventListener('keydown',function(ev){
 /* MAP_STAGE_LAYOUT_END */
 
 /* BOARD_WALL: 벽 화면 보조 동작. 업무 자료는 바꾸지 않고 보이는 방식만 다룬다. */
-var wallIdleTimer=0,wallPageTimer=0;
+/* 시간 기준(밀리초). 검사에서 줄여 쓸 수 있도록 변수로 둔다.
+   첫 쪽 16초·다음 쪽 8초 / 마우스·초점으로 붙잡는 시간 30초 / 기록 목록은 최근 3쪽만 / 입력 창 없음 안내 20초 */
+var WALL_FIRST_MS=16000,WALL_NEXT_MS=8000,WALL_HOLD_MS=30000,WALL_LOG_PAGES=3,WALL_OFFLINE_MS=20000;
+var wallIdleTimer=0,wallPageTimer=0,wallLastInput=0;
 function wallBoardActive(){var b=$('board');return !!(b&&!b.hidden&&MODE==='display'&&window.matchMedia('(min-width:1001px)').matches);}
 function wallWake(){
+  wallLastInput=Date.now();
   var b=$('board');if(!b)return;b.classList.remove('wall-idle');
   clearTimeout(wallIdleTimer);wallIdleTimer=setTimeout(function(){var bd=$('board');if(bd)bd.classList.add('wall-idle');},4000);
 }
@@ -9351,9 +10023,26 @@ function wallWake(){
 var wallBaseBoardOffset=setBoardOffset;
 setBoardOffset=function(bn,shown){var b=$('board');if(b)b.classList.toggle('banner-on',!!shown);return wallBaseBoardOffset(bn,shown);};
 /* 화면에 다 들어가지 않는 목록은 몇 초마다 다음 쪽으로 넘긴다. 첫 쪽(최신·중요)은 두 배로 오래 보인다.
-   마우스를 올리거나 초점이 들어가 있으면 멈춘다. */
-var WALL_LISTS=['subjBody','crewBody','droneBody','logBody','battBody','safetyBody'];
+   - 쪽은 항목(기체 카드·기록 한 줄) 경계에서 시작한다. 항목이 반쯤 잘린 채 쪽이 시작되지 않는다.
+   - 기록 목록은 최근 몇 쪽만 돈다. 기록이 수백 건 쌓여도 최신 기록이 오래 사라지지 않는다.
+   - 마우스를 올리거나 초점이 들어가 있으면 멈추지만, 조작이 없으면 다시 넘긴다(방치된 마우스 대비). */
+var WALL_LISTS={subjBody:':scope > *',battBody:':scope > *',crewBody:'.crew-row',safetyBody:'.safety-row,.wx',droneBody:'.drone',logBody:'.log-row'};
 var wallPages={};
+function wallPageStarts(list,selector,view,total,maxPages){
+  var starts=[0],items=list.querySelectorAll(selector),base=list.scrollTop-list.getBoundingClientRect().top;
+  for(var i=0;i<items.length&&starts.length<maxPages;i++){
+    var r=items[i].getBoundingClientRect();if(!r.height)continue;
+    var top=r.top+base,bottom=r.bottom+base;
+    /* 아래 여백 몇 픽셀이 넘친 정도로는 쪽을 새로 만들지 않는다(10px 여유). */
+    while(bottom>starts[starts.length-1]+view+10&&starts.length<maxPages){
+      var cur=starts[starts.length-1];
+      starts.push(top-4>cur+1?top-4:cur+view);   /* 항목이 한 쪽보다 길면 그 항목 안에서 이어 넘긴다 */
+    }
+  }
+  /* 항목을 찾지 못한 목록만 높이로 균등하게 나눈다. 항목이 여유값 안에 모두 들어가면 한 쪽으로 둔다. */
+  if(starts.length===1&&!items.length)for(var s=view;s<total-4&&starts.length<maxPages;s+=view)starts.push(s);
+  return starts;
+}
 function wallPageBadge(list,text){
   var head=list.parentElement&&list.parentElement.querySelector('.card-h');if(!head)return;
   var badge=head.querySelector('.wall-page');
@@ -9363,30 +10052,64 @@ function wallPageBadge(list,text){
 }
 function wallPageTick(){
   var now=Date.now(),reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  WALL_LISTS.forEach(function(id){
+  var active=wallBoardActive(),recent=now-wallLastInput<WALL_HOLD_MS;
+  Object.keys(WALL_LISTS).forEach(function(id){
     var list=$(id);if(!list)return;
-    var st=wallPages[id]||(wallPages[id]={page:0,at:now});
-    var view=list.clientHeight,total=list.scrollHeight;
-    if(!wallBoardActive()||!view||total<=view+4){list.classList.remove('wall-paged');wallPageBadge(list,'');st.page=0;st.at=now;return;}
+    var st=wallPages[id]||(wallPages[id]={page:0,at:now,pad:0});
+    /* 마지막 쪽을 항목 경계에 맞추려고 넣은 아래 여백(pad)은 실제 내용 높이에서 뺀다. */
+    var view=list.clientHeight,total=list.scrollHeight-st.pad;
+    var starts=active&&view&&total>view+4?wallPageStarts(list,WALL_LISTS[id],view,total,id==='logBody'?WALL_LOG_PAGES:60):[0],pages=starts.length;
+    if(pages<2){   /* 넘치지 않거나, 아래 여백 몇 픽셀만 넘쳐 넘길 쪽이 없다 */
+      if(st.pad){list.style.removeProperty('--wall-pad');st.pad=0;}
+      if(list.classList.contains('wall-paged')){list.classList.remove('wall-paged');list.scrollTop=0;}
+      wallPageBadge(list,'');st.page=0;st.at=now;return;
+    }
     list.classList.add('wall-paged');
-    var pages=Math.ceil((total-4)/view);if(st.page>=pages)st.page=0;
-    var card=list.parentElement,held=card&&(card.matches(':hover')||card.contains(document.activeElement));
-    var dwell=st.page===0?16000:8000;
-    if(!held&&now-st.at>=dwell){st.page=(st.page+1)%pages;st.at=now;}
+    if(st.page>=pages)st.page=0;
+    var card=list.parentElement,held=recent&&card&&(card.matches(':hover')||card.contains(document.activeElement));
     if(held)st.at=now;
-    var top=st.page===pages-1&&st.page>0?total-view:st.page*view;
+    else if(now-st.at>=(st.page===0?WALL_FIRST_MS:WALL_NEXT_MS)){st.page=(st.page+1)%pages;st.at=now;}
+    var pad=Math.max(0,Math.ceil(starts[pages-1]+view-total));
+    if(pad!==st.pad){st.pad=pad;if(pad)list.style.setProperty('--wall-pad',pad+'px');else list.style.removeProperty('--wall-pad');}
+    var top=starts[st.page];
     if(!held&&Math.abs(list.scrollTop-top)>2)list.scrollTo({top:top,behavior:reduce?'auto':'smooth'});
     wallPageBadge(list,(st.page+1)+'/'+pages+' 쪽');
   });
 }
-/* 마지막 입력 시각: 화면이 멈춘 것인지 상황이 조용한 것인지 구분하게 한다. */
+/* 마지막으로 자료가 바뀐 시각. 사람의 입력뿐 아니라 자동 기상 갱신도 포함하므로 '자료 갱신'이라 부른다.
+   입력 창이 살아 있는지는 아래 wallOfflineCheck 가 따로 알린다. */
 function wallTwo(n){return (n<10?'0':'')+n;}
 function wallFreshness(){
   var el=$('hUpdated');if(!el)return;var u=S.meta&&S.meta.updated;
   if(!u){if(el.textContent)el.textContent='';return;}
-  var d=new Date(u),m=Math.max(0,Math.floor((Date.now()-u)/60000));
-  var text='입력 갱신 '+wallTwo(d.getHours())+':'+wallTwo(d.getMinutes())+' · '+(m<1?'방금':m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전');
+  var d=new Date(u),today=new Date(),m=Math.max(0,Math.floor((Date.now()-u)/60000));
+  var sameDay=d.getFullYear()===today.getFullYear()&&d.getMonth()===today.getMonth()&&d.getDate()===today.getDate();
+  /* 며칠 전 자료를 오늘 시각으로 읽지 않도록, 오늘이 아니면 날짜를 함께 적는다. */
+  var text='자료 갱신 '+(sameDay?wallTwo(d.getHours())+':'+wallTwo(d.getMinutes()):shortDateTime(u))+' · '+(m<1?'방금':m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전');
   if(el.textContent!==text)el.textContent=text;el.classList.toggle('stale',m>=15);
+}
+/* 입력 창이 닫히면 현황 화면은 마지막 내용에서 멈춘다. 시계는 계속 가므로 보는 사람은 알 수 없다.
+   편집권(15초 임대, 5초 갱신)을 가진 창이 일정 시간 없으면 머리 아래에 알린다.
+   이 창의 서랍(Ctrl+E)으로 입력 중이면 이 창이 편집권을 가지므로 알리지 않는다. */
+function wallFitPriority(){
+  var el=document.querySelector('#displayPriority [data-priority-text]');if(!el)return;
+  var chars=String(Math.max(12,Math.ceil(el.textContent.length/2)+1));
+  if(el.style.getPropertyValue('--prio-chars')!==chars)el.style.setProperty('--prio-chars',chars);
+}
+var wallBaseRefreshPriority=refreshPriorityInstructions;
+refreshPriorityInstructions=function(){var result=wallBaseRefreshPriority.apply(this,arguments);wallFitPriority();return result;};
+var wallNoEditorSince=0;
+function wallOfflineCheck(){
+  var el=$('wallOffline');if(!el)return;
+  if(!STORAGE_OK){if(!el.hidden)el.hidden=true;return;}
+  var now=Date.now(),lock=readEditorLock();
+  if(lock&&lock.expires>now){wallNoEditorSince=0;if(!el.hidden)el.hidden=true;return;}
+  if(!wallNoEditorSince)wallNoEditorSince=now;
+  if(now-wallNoEditorSince<WALL_OFFLINE_MS)return;
+  var u=S.meta&&S.meta.updated;
+  var text='입력 창이 닫혀 있습니다 · 이 화면은 '+(u?shortDateTime(u)+' 내용에서 ':'')+'멈춰 있습니다. 입력 화면을 다시 열거나 Ctrl+E로 이 창에서 입력하세요.';
+  if(el.textContent!==text)el.textContent=text;
+  if(el.hidden)el.hidden=false;
 }
 /* 바뀐 것 강조: 현황 창을 연 뒤 새로 들어온 기록과 상태가 바뀐 칸을 잠시 표시한다. 처음 연 순간의 내용은 표시하지 않는다. */
 var WALL_NEW_MS=90000,WALL_CELL_MS=60000;
@@ -9402,7 +10125,16 @@ renderLog=function(){
   if(MODE!=='display')return;
   var now=Date.now(),fresh=false;
   if(wallSeenEvents===null){wallSeenEvents={};S.events.forEach(function(e){wallSeenEvents[e.id]=1;});}
-  else S.events.forEach(function(e){if(!wallSeenEvents[e.id]){wallSeenEvents[e.id]=1;wallNewEvents[e.id]=now+WALL_NEW_MS;fresh=true;}});
+  else{
+    var added=[],retained=0;
+    S.events.forEach(function(e){if(wallSeenEvents[e.id])retained++;else added.push(e.id);});
+    /* 예제·백업 불러오기·복구처럼 기록이 한꺼번에 바뀌면 새 기록으로 치지 않는다.
+       (한 번에 8건 이상 들어오거나, 있던 기록이 하나도 남지 않고 여러 건으로 바뀐 경우) */
+    var bulk=added.length>=8||(added.length>1&&retained===0&&Object.keys(wallSeenEvents).length>0);
+    added.forEach(function(id){wallSeenEvents[id]=1;if(!bulk)wallNewEvents[id]=now+WALL_NEW_MS;});
+    if(bulk){wallNewEvents={};wallChangedCells={};wallPrevCells=null;}
+    fresh=added.length>0;
+  }
   if(fresh&&wallPages.logBody){wallPages.logBody.page=0;wallPages.logBody.at=now;var lb=$('logBody');if(lb)lb.scrollTop=0;}
   wallMarkEvents();
 };
@@ -9423,7 +10155,7 @@ function wallExpireMarks(){
   if(wrap)wrap.querySelectorAll('.gcell.wall-changed').forEach(function(el){if(!(wallChangedCells[el.dataset.cell]>now))el.classList.remove('wall-changed');});
   wallMarkEvents();
 }
-if(MODE==='display'){wallWake();wallPageTimer=setInterval(function(){wallPageTick();wallFreshness();wallExpireMarks();},1000);wallFreshness();}
+if(MODE==='display'){wallWake();wallPageTimer=setInterval(function(){wallPageTick();wallFreshness();wallFitPriority();wallOfflineCheck();wallExpireMarks();},1000);wallFreshness();}
 /* BOARD_WALL_END */
 
 /* BRIEFING: 교대 브리핑·상급 보고용 한 장 요약. 현재 상태를 읽기만 하고 새 창에 인쇄용으로 그린다. */
@@ -9442,10 +10174,21 @@ function briefingHtml(){
   }
   grid+='</table>';
   function pinText(label,pin){if(!pin)return '';var g=geoOK()?geoAt(pin.x/100,pin.y/100):null;return '<li>'+label+': 지도 '+Math.round(pin.x)+'%, '+Math.round(pin.y)+'%'+(g?' · '+esc(fmtLatLon(g)):'')+'</li>';}
-  var drones=S.drones.map(function(d){return '<tr><td>'+esc(d.name||'기체')+'</td><td>'+esc(DRONE_ST[d.status]||'-')+'</td><td>'+Math.round(num(d.battery,0))+'%<br><small>'+esc(batteryStamp(d,now.getTime()))+'</small></td><td>'+esc(d.zone||'—')+'</td><td>'+esc(d.pilot||'-')+(d.observer?' · '+esc(d.observer):'')+'</td></tr>';}).join('')||'<tr><td colspan="5">등록 기체 없음</td></tr>';
+  var stampBreak=S.drones.length>6?' ':'<br>';   /* 기체가 많으면 배터리 확인시각을 같은 줄에 둔다 */
+  var drones=S.drones.map(function(d){return '<tr><td>'+esc(d.name||'기체')+'</td><td>'+esc(DRONE_ST[d.status]||'-')+'</td><td>'+Math.round(num(d.battery,0))+'%'+stampBreak+'<small>'+esc(batteryStamp(d,now.getTime()))+'</small></td><td>'+esc(d.zone||'—')+'</td><td>'+esc(d.pilot||'-')+(d.observer?' · '+esc(d.observer):'')+'</td></tr>';}).join('')||'<tr><td colspan="5">등록 기체 없음</td></tr>';
   var active=S.crew.filter(function(c){return !c.outAt;});
+  /* 인원 12명까지는 표, 그보다 많으면 여러 단으로 흘려 종이를 아낀다. 30명을 넘으면 전체 폭을 쓴다. */
+  var crewFlow=active.length>12,crewWide=active.length>30;
   var crew=active.map(function(c){var from=tms(c.inAt),span=from?now.getTime()-from:0,tired=c.role==='조종'&&span>SHIFT_WARN_MIN*60000;
-    return '<tr'+(tired?' class="hot"':'')+'><td>'+esc(c.name||'-')+'</td><td>'+esc(c.role||'-')+'</td><td>'+(from?durHM(span):'-')+(tired?' · 교대 권고':'')+'</td></tr>';}).join('')||'<tr><td colspan="3">현행 인원 없음</td></tr>';
+    var name=esc(c.name||'-'),role=esc(c.role||'-'),dur=(from?durHM(span):'-')+(tired?' · 교대 권고':'');
+    return crewFlow?'<span'+(tired?' class="hot"':'')+'><b>'+name+'</b> '+role+' '+dur+'</span>'
+      :'<tr'+(tired?' class="hot"':'')+'><td>'+name+'</td><td>'+role+'</td><td>'+dur+'</td></tr>';}).join('');
+  var crewBlock='<h2>현행 인원 '+active.length+'명</h2>'+(crewFlow?'<div class="crewflow'+(crewWide?' wide':'')+'">'+crew+'</div>'
+    :'<table><tr><th>이름</th><th>역할</th><th>투입</th></tr>'+(crew||'<tr><td colspan="3">현행 인원 없음</td></tr>')+'</table>');
+  /* 격자와 따로 관리하는 자유 구역, 지도에 놓은 장비, 현장 상황 공유도 인계에 필요하다. */
+  var regionList=(S.grid.regions||[]).map(function(r){return '<span><b>'+esc(r.name||'이름 없음')+'</b> '+esc(CELL_ST[intv(r.s,0)]||'')+(r.by?' · '+esc(r.by):'')+'</span>';}).join('');
+  var equipList=(S.grid.equipment||[]).map(function(q){return '<span><b>'+esc(q.name||EQUIPMENT_TYPES[q.kind]||'장비')+'</b> '+esc(EQUIPMENT_TYPES[q.kind]||'')+' · '+esc(shortDateTime(q.updatedAt))+' 배치</span>';}).join('');
+  var share=(S.mission.situationMessage||'').trim();
   var appr={unknown:'미확인',none:'미신청',pending:'신청중',done:'승인완료',na:'해당없음'}[S.safety.approval]||'-';
   var safety=[['유인기',S.safety.manned?'진입 · 즉시 착륙':'없음'],['비행승인',appr],['야간 특별승인',S.safety.nightApproval?'보유':'없음'],
     ['관제권/금지구역',((S.safety.ctrlZone?'관제권 ':'')+(S.safety.noFly?'금지구역':''))||'해당없음'],
@@ -9466,26 +10209,36 @@ function briefingHtml(){
     +'.two{display:grid;grid-template-columns:1.15fr 1fr;gap:12px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:3px 5px;vertical-align:top;text-align:left}'
     +'.g td{text-align:center;padding:2px;font-size:11px;line-height:1.2}.g td b{display:block;font-size:12px}.g td span,.g td small{display:block}.g th{background:#eee;text-align:center;font-size:11px}'
     +'.k-found td,.k-accident td{background:#FFE5E8}.k-heat td{background:#FFF3C9}.k-order td{background:#E6F2FC}tr.hot td{background:#FFE5E8}'
-    +'.ev td:nth-child(-n+2){white-space:nowrap;width:1%}ul{margin:4px 0;padding-left:18px}.foot{margin-top:10px;color:#555;font-size:11px;border-top:1px solid #aaa;padding-top:4px}'
+    +'.ev td:nth-child(-n+2){white-space:nowrap;width:1%}ul{margin:4px 0;padding-left:18px}'
+    +'.share{margin-top:6px;border:1px solid #888;border-left:4px solid #086A9D;border-radius:4px;padding:4px 8px;white-space:pre-wrap}'
+    +'.crewflow{columns:3;column-gap:10px}.crewflow.wide{columns:5}.crewflow span{display:block;break-inside:avoid;padding:1px 3px;border-bottom:1px solid #ccc}.crewflow span.hot{background:#FFE5E8}'
+    +'.chips{margin:4px 0}.chips span{display:inline-block;border:1px solid #999;border-radius:3px;padding:0 5px;margin:0 4px 3px 0}.foot{margin-top:10px;color:#555;font-size:11px;border-top:1px solid #aaa;padding-top:4px}'
     +'.bar{position:sticky;top:0;display:flex;gap:8px;justify-content:flex-end;margin:-8mm 0 6mm}.bar button{font:inherit;font-weight:700;padding:8px 14px;min-height:44px;cursor:pointer}'
-    +'@media print{.bar{display:none}body{padding:0;font-size:10.5px;line-height:1.3}h1{font-size:17px}h2{font-size:12px;margin:7px 0 3px}.kpi b{font-size:16px}.prio{font-size:13px;padding:4px 6px}td,th{padding:1px 4px}.g td{font-size:9.5px}.g td b{font-size:10.5px}.foot{margin-top:6px}@page{size:A4;margin:9mm}}';
-  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>STAY UP 상황 요약 '+esc(stamp)+'</title><style>'+css+'</style></head><body>'
+    +'@media print{.bar{display:none}body{padding:0;font-size:10.5px;line-height:1.3}h1{font-size:17px}h2{font-size:12px;margin:7px 0 3px}.kpi b{font-size:16px}.prio{font-size:13px;padding:4px 6px}td,th{padding:1px 4px}.g td{font-size:9.5px}.g td b{font-size:10.5px}.foot{margin-top:6px}@page{size:A4;margin:9mm}'
+    /* 기체·인원이 많은 요약은 간격과 글자를 조금 더 조여 한 장에 담는다 */
+    +'body.dense{font-size:9.8px;line-height:1.25}body.dense h2{margin:5px 0 2px}body.dense .kpi,body.dense .prio{margin-top:5px}body.dense .share{margin-top:4px;padding:2px 6px}body.dense .foot{margin-top:4px;font-size:9px}body.dense .g td{font-size:9px}body.dense .crewflow span{padding:0 3px}}';
+  var dense=S.drones.length>6||active.length>12||(S.grid.regions||[]).length+(S.grid.equipment||[]).length>6;
+  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>STAY UP 상황 요약 '+esc(stamp)+'</title><style>'+css+'</style></head><body'+(dense?' class="dense"':'')+'>'
     +'<div class="bar"><button type="button" onclick="window.print()">인쇄 · PDF 저장</button><button type="button" onclick="window.close()">닫기</button></div>'
     +'<div class="top"><div><h1>'+(PRACTICE_MODE?'[연습] ':'')+esc(S.mission.title||'상황명 미입력')+'</h1><div>'+esc(S.mission.location||'수색 장소 미입력')+'</div></div>'
     +'<div class="meta">교대·보고용 상황 요약<br>작성 '+esc(stamp)+' · STAY UP v'+esc(APP_VERSION)+'</div></div>'
     +'<div class="kpi">'+k.map(function(x){return '<div class="lv-'+esc(x[1].lv)+'"><small>'+x[0]+'</small><b>'+esc(x[1].v)+(x[1].u?' '+esc(x[1].u):'')+'</b><small>'+esc(x[1].detail||x[1].s||'')+'</small></div>';}).join('')+'</div>'
     +'<div class="prio">현재 우선 지시 · '+esc(prio||'미입력')+'</div>'
+    +(share?'<div class="share"><b>현장 상황 공유</b>'+(S.mission.messageAt?' · '+esc(shortDateTime(S.mission.messageAt)):'')+' · '+esc(share)+'</div>':'')
     +(f?'<div class="found">발견 · '+esc(shortDateTime(f.t))+' '+(f.zone?esc(f.zone)+' ':'')+esc(f.text)+'</div>':'')
     +'<div class="two"><div><h2>수색구역 · 진행 '+st.pct+'%</h2>'+grid
       +'<div>완료 '+st.n[2]+' · 수색중 '+st.n[1]+' · 재수색 '+st.n[3]+' · 미수색 '+st.n[0]+' (전체 '+st.total+')</div>'
       +'<ul>'+pinText('최종목격',S.grid.pinLast)+pinText('발견',S.grid.pinFound)+'</ul>'
+      +(regionList?'<div class="chips"><b>자유 구역 '+(S.grid.regions||[]).length+'개</b> (격자 진행률과 별도) '+regionList+'</div>':'')
     +'</div><div><h2>대상자</h2><div><b>'+esc(S.subject.name||'성명 미상')+'</b> '+(S.subject.age===0||S.subject.age?esc(S.subject.age)+'세 ':'')+esc(S.subject.sex||'')
       +'<br>상의 '+esc(S.subject.topText||'미상')+' · 하의 '+esc(S.subject.botText||'미상')
       +'<br>실종 '+esc((S.subject.missingAt||'-').replace('T',' '))+' · 최종목격 '+esc(S.subject.lastSeenPlace||'-')
       +(S.subject.notes?'<br>특이사항 '+esc(S.subject.notes):'')+'</div>'
       +'<h2>안전 · 기상</h2><table>'+safety.map(function(x){return '<tr><th>'+x[0]+'</th><td>'+esc(x[1])+'</td></tr>';}).join('')+'</table></div></div>'
     +'<h2>기체</h2><table><tr><th>기체</th><th>상태</th><th>배터리</th><th>담당</th><th>조종·관측</th></tr>'+drones+'</table>'
-    +'<div class="two"><div><h2>중요 기록 (최근 8건)</h2><table class="ev">'+evRows(keyEv)+'</table></div><div><h2>현행 인원 '+active.length+'명</h2><table><tr><th>이름</th><th>역할</th><th>투입</th></tr>'+crew+'</table></div></div>'
+    +(equipList?'<div class="chips"><b>지도 장비 배치 '+(S.grid.equipment||[]).length+'개</b> (수동 표시) '+equipList+'</div>':'')
+    +(crewWide?crewBlock+'<h2>중요 기록 (최근 8건)</h2><table class="ev">'+evRows(keyEv)+'</table>'
+      :'<div class="two"><div><h2>중요 기록 (최근 8건)</h2><table class="ev">'+evRows(keyEv)+'</table></div><div>'+crewBlock+'</div></div>')
     +'<h2>최근 활동 (8건)</h2><table class="ev">'+evRows(recent)+'</table>'
     +'<div class="foot">입력값 기준 요약입니다. 배터리·기상은 수동 입력 또는 모델값이며 실측·실시간 정보가 아닙니다. 개인정보가 포함될 수 있으니 출력물과 PDF는 업무 목적 외로 보관·전달하지 마십시오.</div>'
     +'</body></html>';
@@ -9500,9 +10253,14 @@ function replayZoneIds(text){
   }
   return Object.keys(out);
 }
+/* 지도 교체·격자 변경·구역 초기화는 이전 구역을 이력(S.grid.history)에 남기고 새로 시작한다.
+   그 시각보다 먼저 남긴 기록은 이전 구역의 것이므로 지금 격자의 다시 보기에서 뺀다.
+   발생시각(t)은 과거로 지정할 수 있으므로 실제로 기록한 시각(recordedAt)으로 가른다. */
+function replayCutoff(){var at=0;(S.grid.history||[]).forEach(function(h){if(h&&h.at>at)at=h.at;});return at;}
+function replayIsZoneRecord(e){return !e.voided&&(e.type==='zone'||(e.zoneStates&&typeof e.zoneStates==='object'&&Object.keys(e.zoneStates).length>0));}
 function replaySteps(){
-  var cells={},steps=[],R=gridRows(),C=gridCols();
-  S.events.filter(function(e){return !e.voided;}).sort(function(a,b){return a.t-b.t;}).forEach(function(e){
+  var cells={},steps=[],R=gridRows(),C=gridCols(),cutoff=replayCutoff();
+  S.events.filter(function(e){return !e.voided&&num(e.recordedAt,e.t)>=cutoff;}).sort(function(a,b){return a.t-b.t;}).forEach(function(e){
     var ch=null;
     if(e.zoneStates&&typeof e.zoneStates==='object'){ch={};Object.keys(e.zoneStates).forEach(function(k){var m=/^([A-L])(\d{1,2})$/.exec(k);if(m&&m[1].charCodeAt(0)-65<R&&+m[2]<=C)ch[k]=clamp(intv(e.zoneStates[k],0),0,3);});}
     if((!ch||!Object.keys(ch).length)&&e.type==='zone'){var ids=replayZoneIds(e.zone+' '+e.text);if(ids.length){ch={};ids.forEach(function(k){ch[k]=2;});}}
@@ -9515,6 +10273,7 @@ function replaySteps(){
 var replayTimer=0;
 function openReplay(opener){
   var steps=replaySteps(),R=gridRows(),C=gridCols(),dlg=document.createElement('dialog');
+  var cutoff=replayCutoff(),excluded=cutoff?S.events.filter(function(e){return replayIsZoneRecord(e)&&num(e.recordedAt,e.t)<cutoff;}).length:0;
   dlg.className='replay-dialog';dlg.setAttribute('aria-labelledby','replayTitle');
   var table='<table class="replay-grid" aria-label="구역 상태"><tr><th></th>';
   for(var c=1;c<=C;c++)table+='<th scope="col">'+c+'</th>';table+='</tr>';
@@ -9522,6 +10281,7 @@ function openReplay(opener){
   table+='</table>';
   dlg.innerHTML='<div class="replay-head"><h2 id="replayTitle">수색 진행 다시 보기</h2><button type="button" class="btn" data-replay="close">닫기</button></div>'
     +'<p class="note">구역 <b>완료·정정</b>으로 남은 기록만 시간순으로 다시 그립니다. 수색중 표시만 바꾼 칸은 기록이 없어 나오지 않으므로 지금 지도와 다를 수 있습니다. 업무 자료는 바뀌지 않습니다.</p>'
+    +(excluded?'<p class="note" data-replay-excluded>지도·격자를 바꾼 '+esc(shortDateTime(cutoff))+' 이전의 구역 기록 '+excluded+'건은 이전 구역의 것이라 뺐습니다. 이전 구역은 수색 지도의 변경 전 구역 이력에서 확인하세요.</p>':'')
     +(steps.length?table
       +'<div class="replay-now" role="status" aria-live="polite"></div>'
       +'<div class="replay-controls"><button type="button" class="btn primary" data-replay="play">재생</button>'

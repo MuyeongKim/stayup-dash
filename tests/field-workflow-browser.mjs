@@ -42,7 +42,10 @@ try{
  check('지도·후보 이미지 복사 검증과 새 저장공간 분리',await page.evaluate(()=>IDB_NAME==='stayup.dash.v4'&&KEY==='stayup.dash4.v1'&&aiImageIds(S).every(id=>!!aiCache[id])&&getSnapshots().length>0));
  check('실제 지도 이미지 바이트도 이관 후 동일',await page.evaluate(image=>MAPDATA===image,storedMap));
  const popup=context.waitForEvent('page');await page.locator('#btnOpenDisplay').click();const display=await popup;await display.waitForFunction(()=>typeof S==='object'&&S.meta.v===4);
- await page.locator('[data-field-action="message"]').click();await page.locator('#fieldMessageText').fill('가상: 하류 수색 중, 도로 진입 확인 바랍니다.');
+ await page.locator('[data-field-action="message"]').click();
+ check('지시·상황 전달 창은 우선 지시를 기본으로 열고 올릴 대상을 단추 이름에 적음',await page.locator('[data-message-kind="order"]').getAttribute('aria-checked')==='true'&&(await page.locator('#fieldMessagePublish').innerText()).includes('현재 우선 지시'));
+ await page.locator('[data-message-kind="situation"]').click();await page.locator('#fieldMessageText').fill('가상: 하류 수색 중, 도로 진입 확인 바랍니다.');
+ check('현장 상황 공유를 고르면 올리기 단추도 상황 공유로 바뀜',(await page.locator('#fieldMessagePublish').innerText()).includes('현장 상황 공유'));
  check('메시지 초안은 표출 전에 현황에 노출되지 않음',await display.locator('[data-situation-message]').isHidden());
  await page.locator('#fieldMessagePublish').click();await display.waitForFunction(()=>S.mission.situationMessage.includes('하류 수색'));
  check('상황 공유는 지시 전문·기존 대응을 보존하며 두 창에 반영',await display.evaluate(orders=>S.mission.orders===orders&&S.ai.candidates[0].responseNote==='기존 후보 대응',original.state.mission.orders));

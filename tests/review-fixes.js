@@ -234,8 +234,9 @@ async function reviewEventHistoryAndEmergency(){
   historySearch.value='과거기록 찾기 대상';historySearch.dispatchEvent(new W.Event('input',{bubbles:true}));
   var oldEdit=W.document.querySelector('#eventHistory [data-act="correctevent"][data-eid="'+oldestId+'"]');
   ok('최근 30건 밖의 기록도 전체 이력 검색으로 찾아 정정할 수 있다',!!oldEdit);
-  W.prompt=function(message){return message.indexOf('사유')>=0?'과거기록 검증 사유':'과거기록 정정된 내용';};
   oldEdit.click();
+  W.document.getElementById('eventFixReason').value='과거기록 검증 사유';W.document.getElementById('eventFixText').value='과거기록 정정된 내용';
+  W.document.getElementById('eventFixApply').click();
   var originalEvent=W.S.events.find(function(event){return event.id===oldestId;});
   ok('오래된 기록 정정은 원본 무효화·대체 내용·정정 사유를 함께 남긴다',
     originalEvent.voided&&W.S.events.some(function(event){return event.text==='과거기록 정정된 내용';})
