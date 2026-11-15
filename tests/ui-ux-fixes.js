@@ -273,7 +273,8 @@ async function uxDroneRiskVisibility(){
   ok('위험 시간 갱신은 버튼과 키보드 포커스를 유지하면서 오래된 확인을 알린다',
     summary.querySelector('[data-drone-risk-id="'+third.id+'"]')===sameWarning
     &&W.document.activeElement===sameWarning&&sameWarning.textContent.indexOf('확인')>=0);
-  third.battery=80;third.batteryUpdatedAt=Date.now();W.refreshDroneRisks();
+  /* 2026-11-16: 벽 화면 기체 한눈에는 조종자 확인 필요 기체도 위험으로 보인다. 저배터리만 해결된 경우를 보려고 조종자는 현행 조종 인원으로 둔다. */
+  third.battery=80;third.batteryUpdatedAt=Date.now();third.pilot=W.S.drones[0].pilot;W.refreshDroneRisks();
   ok('저배터리 원인이 해결되면 해당 위험 항목을 제거한다',
     !summary.querySelector('[data-drone-risk-id="'+third.id+'"]'));
   frame.style.width=oldWidth;frame.style.height=oldHeight;await reload();
