@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "build": "4ed7a5e7d1410559c201b01b",
+  "build": "c446e3ec359ba69aea7ef5b8",
   "assets": [
     {
       "path": "stayup-dash.html",
-      "sha256": "e6365a485df8ef6e67372c6e7ea47f10f40e67593974d23b66fca04003bc2812"
+      "sha256": "b37a8307739b59e266662fb3d7101d9c8d3cce5e61d44392c6b8ae1400bbd830"
     },
     {
       "path": "offline-map-engine.js",
