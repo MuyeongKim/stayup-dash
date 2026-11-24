@@ -333,6 +333,18 @@ try{
     await page.evaluate(()=>{S.mission.priorityOrder='손으로 바꾼 지시';commit();});
     check('기록 없이 바뀐 지시는 시각을 붙이지 않음',(await page.locator('#consolePriority [data-priority-label]').innerText())==='현재 우선 지시');
     await context.close();}
+  /* 12월 8일 시연 준비(2026-11-24): 프로젝터 크기 · 쉬운 말 */
+  {const {context,page}=await open();
+    const display=await wall(context,page,1024,768);
+    for(const [w,h] of [[1024,768],[1280,720]]){
+      await display.setViewportSize({width:w,height:h});await display.waitForTimeout(900);
+      const r=await display.evaluate(()=>{const cb=document.getElementById('mapWrap').closest('.card-b'),R=cb.getBoundingClientRect().right;const row=document.querySelector('#logBody .log-row'),lt=row.querySelector('.lt').getBoundingClientRect(),lx=row.querySelector('.lx').getBoundingClientRect();
+        return {noScroll:document.documentElement.scrollWidth<=innerWidth+1,out:[...cb.querySelectorAll('*')].filter(e=>{const x=e.getBoundingClientRect();return x.width>0&&x.right>R+1&&!e.closest('#mapWrap');}).map(e=>e.id||e.className),stacked:lx.top>=lt.bottom-2,kpi:[...document.querySelectorAll('.kpi-v')].every(v=>v.scrollWidth<=v.clientWidth+2)};});
+      check(w+'×'+h+' 프로젝터 크기: 가로 넘침·지도 아래 줄 잘림 없고 좁은 기록은 내용을 아래 줄로',r.noScroll&&!r.out.length&&r.stacked&&r.kpi,r);
+    }
+    check('벽 화면은 좌표가 없으면 지도 위 % 값을 적지 않음',await display.evaluate(()=>{const p=document.querySelector('[data-map-position="mapWrap"]');return !p||p.hidden||!/%/.test(p.textContent);}));
+    check('쉬운 말: 24시간 기준 · 충전된 배터리로 N시간 M분 · 풍속·돌풍 한계 · 걸음 시속',await display.evaluate(()=>{const t=document.body.innerText;return t.includes('24시간 기준')&&t.includes('충전된 배터리로')&&/^(\d+시간 )?\d+분$/.test(document.querySelector('.endur .ev').textContent.trim())&&t.includes('풍속·돌풍 한계')&&t.includes('걸음 시속')&&!/계수 \d/.test(t)&&!/기준 24h/.test(t);}));
+    await context.close();}
   /* 4. 휴대폰 위험 줄 */
   {const {context,page}=await open({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
     await page.waitForTimeout(1300);const line=page.locator('[data-brief-attn]');

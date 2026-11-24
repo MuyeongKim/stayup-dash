@@ -1224,6 +1224,12 @@ html{scrollbar-color:var(--control-border) transparent}
 .crew-dur.tired{color:var(--warn);font-weight:800}
 /* 1366 벽 화면: 대상자 칸 제목줄(이름표·쪽·감지기)이 두 줄로 밀리지 않게 감지기 표를 조금 작게 */
 @media (max-width:1500px){.board #subjTracker .tag{font-size:.78rem;padding:.05rem .35rem;white-space:nowrap}}
+/* 프로젝터 폭(1024·1280): 좁은 기록 칸은 시각·종류 줄 아래로 내용을 내려 한 글자씩 꺾이지 않게 */
+.board .card-log .card-b{container-type:inline-size}
+@container (max-width:340px){.log-row{grid-template-columns:max-content minmax(0,1fr)}.log-row .lx{grid-column:1/-1}}
+.board .card-h .tag{white-space:nowrap}
+/* 뒤쪽 낮은 화면 규칙보다 앞서도록 #board로 적는다 */
+@media (min-width:1001px) and (max-width:1199px){#board .batt-cell{padding-left:0;padding-right:0}#board .batt-cell .bl{font-size:12px;letter-spacing:-.05em;white-space:nowrap}#board .radchip{padding-left:6px;padding-right:6px}#board .radchip .rl{font-size:12px}#board .radchip .rv{font-size:20px}#board .legend{gap:.45rem}#board .cov{column-gap:.45rem}#board .cov-pct{font-size:26px}}
 .dq-f{display:inline-flex;align-items:center;gap:6px;margin:0}.dq-f>span{font-size:13px;color:var(--muted);white-space:nowrap}
 .dq-f select{min-width:0;max-width:100%}
 .dq-f input{width:5.5em;min-height:44px;font-size:18px;font-weight:800;text-align:right}.dq-f em{font-style:normal;font-weight:700}
@@ -1842,6 +1848,8 @@ body.mode-console[data-page-theme="light"] #dimmer,body.light-console-open #dimm
   .board .wall-paged{scrollbar-width:none}
   .board .wall-paged::-webkit-scrollbar{display:none}
   .board .wall-paged::after{content:"";display:block;height:var(--wall-pad,0px)}
+  /* 넘기는 목록의 아래 끝은 살짝 흐리게: 다음 쪽 항목이 반쯤 잘려 보이는 대신 '이어짐'으로 읽힌다 */
+  .board .wall-paged{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 16px),transparent)}
   /* 지도가 주인공: 안전·기상은 지도 아래 한 줄 띠로 줄이고, 양옆 열을 조금 좁혀 지도 면적을 넓힌다.
      긴 값(인접기관 등)은 한 줄로 자르고 전체 문장은 마우스 설명·입력 화면에 남는다. */
   .board .cols{grid-template-columns:calc(20 * var(--unit)) minmax(0,1fr) calc(24 * var(--unit))}
@@ -3698,7 +3706,7 @@ function kpiGolden(now){
        durHM 은 숫자와 콜론만 만들어내므로 그대로 붙여도 안전하다. */
     v: left <= 0 ? '초과' : durHM(left),
     u: left <= 0 ? '' : '남음',
-    s: '실종 후 '+durHM(passed)+' 경과 · 기준 '+GOLDEN_HOURS+'h',
+    s: '실종 후 '+durHM(passed)+' 경과 · '+GOLDEN_HOURS+'시간 기준',
     lv: left <= 0 ? 'crit' : (ph < 8 ? 'ok' : (ph < 16 ? 'warn' : 'danger'))
   };
 }
@@ -3799,8 +3807,8 @@ function renderBatteries(){
       + '<div class="batt-cell charging"><div class="bn num">'+intv(b.charging,0)+'</div><div class="bl">충전중</div></div>'
       + '<div class="batt-cell empty"><div class="bn num">'+intv(b.empty,0)+'</div><div class="bl">소진</div></div>'
     + '</div>'
-    + '<div class="endur '+lv+'"><div class="el">지속 운용 가능<br>동시 '+intv(b.concurrent,2)+'대 · 항속 '+num(b.avgFlightMin,25)+'분</div>'
-      + '<div class="ev num">'+eh.toFixed(1)+'<small style="font-size:1rem"> h</small></div></div>';
+    + '<div class="endur '+lv+'"><div class="el">충전된 배터리로<br>'+intv(b.concurrent,2)+'대 동시 비행 시</div>'
+      + '<div class="ev num">'+durHtml(durHM(Math.round(eh*60)*60000))+'</div></div>';
   $('battGen').innerHTML = b.generator
     ? '<span class="tag cool">발전기 가동</span>' : '<span class="tag">발전기 정지</span>';
 }
@@ -5229,7 +5237,7 @@ function renderGridStats(){
   var rad = moveRadiusKm(new Date());
   $('radChip').innerHTML = rad == null
     ? '<span class="rl">이동 추정반경<br>실종시각 미입력</span>'
-    : '<span class="rl">이동 추정반경<br>보행 '+num(S.subject.walkSpeed,2)+'km/h · 계수 '+num(S.subject.decay,0.35)
+    : '<span class="rl">이동 추정반경<br>걸음 시속 '+num(S.subject.walkSpeed,2)+'km 기준'
       + '</span><span class="rv num">'+rad.toFixed(1)+'<small>km</small></span>';
   $('gridMeta').innerHTML = gridRows()+'×'+gridCols()+' = <b>'+st.total+'</b> 구역'
     + ' · 완료 <b>'+n[2]+'</b> · 지도폭 '+Math.round(mapWidthMeters())+'m'
@@ -5267,7 +5275,7 @@ function renderSafety(){
     + cell('기온', (w.temp==null?'—':w.temp+' °C'), '')
     + cell('강수', w.rain===null?'미확인':(w.rain?'있음':(w.precip==null?'없음':w.precip+'%')),
         !ws.ok?'warn':(w.rain ? 'danger' : (w.precip!=null && w.precip>=60 ? 'warn' : 'ok')))
-    + cell('지속 / 돌풍 한계', (windLimit===null?'미설정':windLimit)+' / '+(gustLimit===null?'미설정':gustLimit)+' m/s', windLimit===null||gustLimit===null?'warn':'')
+    + cell('풍속·돌풍 한계', (windLimit===null?'미설정':windLimit)+' / '+(gustLimit===null?'미설정':gustLimit)+' m/s', windLimit===null||gustLimit===null?'warn':'')
     + '</div>';
   $('safetyBody').innerHTML = html;
   var src={auto:'자동 모델',manual:'수동 관측',none:'미입력'}[w.src]||'미입력';
@@ -5833,15 +5841,18 @@ function updateMapWorkspaceUi(host){
   }
   var position=workspace.querySelector('[data-map-position]');
   if(position){
-    var points=[];
+    /* 벽 화면은 무전으로 불러 줄 좌표가 있을 때만 적는다(좌표 보정 전 지도 위 % 값은 보는 사람에게 뜻이 없다). */
+    var points=[],onWall=position.dataset.mapPosition==='mapWrap';
     [['pinLast','최종목격'],['pinFound','발견']].forEach(function(p){
       var point=S.grid[p[0]];if(!point)return;
       var coords=geoOK()?geoAt(point.x/100,point.y/100):null;
-      points.push(p[1]+' '+(coords?fmtLatLon(coords):'원본 '+point.x+'%, '+point.y+'%'));
+      if(coords)points.push(p[1]+' '+fmtLatLon(coords));
+      else if(!onWall)points.push(p[1]+' 지도 위 '+point.x+'%, '+point.y+'% (좌표 보정 전)');
     });
-    var text=points.join(' · ')||(isOnlineMap()?onlineSourceName(effectiveMapSource())+' · 고정 수색 범위 · 가로 '+Math.round(mapWidthMeters())+'m':S.grid.hasMap?'사진 '+S.grid.mapW+'×'+S.grid.mapH+' · '+(geoOK()?'좌표 보정됨':'좌표 미보정'):'지도·사진 미적용');
-    if(S.grid.spatialReview)text='지도·표식 재확인 필요 · '+text;
+    var text=points.join(' · ')||(onWall?'':isOnlineMap()?onlineSourceName(effectiveMapSource())+' · 고정 수색 범위 · 가로 '+Math.round(mapWidthMeters())+'m':S.grid.hasMap?'사진 '+S.grid.mapW+'×'+S.grid.mapH+' · '+(geoOK()?'좌표 보정됨':'좌표 미보정'):'지도·사진 미적용');
+    if(S.grid.spatialReview)text='지도·표식 재확인 필요'+(text?' · '+text:'');
     if(position.textContent!==text)position.textContent=text;
+    if(position.hidden!==!text)position.hidden=!text;
   }
   updateMapDialogStatus();updateOfflineUi();
 }
