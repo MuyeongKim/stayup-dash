@@ -52,7 +52,7 @@ try{
     const pilot=await page.evaluate(()=>S.drones[0].pilot);
     await page.evaluate(n=>{const i=S.crew.findIndex(c=>c.name===n);S.crew[i].outAt=localDateTime(new Date());S.crew.push({id:'night_new_pilot',name:'조종 새',role:'조종',inAt:localDateTime(new Date(Date.now()-60000)),outAt:''});commit();},pilot);
     check('조종자가 교대로 빠지면 인원 관리에 교대 반영 줄과 새 조종자 기본값',await page.locator('[data-drone-quick="crew"] .dq-row.pilot').isVisible()&&await page.locator('[data-drone-quick="crew"] [data-dq-pilot]').inputValue()==='조종 새');
-    check('지금 확인에 조종자 확인 필요(위험)',await page.evaluate(()=>attentionItems().some(a=>a.lv==='danger'&&a.text.includes('조종자 확인 필요'))));
+    check('지금 확인에 조종자 확인 필요(주의 · 판정은 제한 비행)',await page.evaluate(()=>attentionItems().some(a=>a.lv==='warn'&&a.text.includes('조종자 확인 필요'))&&flightVerdict(new Date()).txt==='제한 비행'));
     await page.locator('[data-drone-quick="crew"] [data-dq-act="pilot"]').click();
     check('조종자 바꾸기로 판정이 다시 비행 가능 쪽으로 돌아오고 안내가 남음',await page.evaluate(()=>S.drones[0].pilot==='조종 새'&&!flightVerdict(new Date()).why.some(w=>w.includes('조종자'))&&S.events.at(-1).text.includes('조종자 변경'))&&(await page.locator('[data-drone-quick="crew"] .dq-msg').innerText()).includes('조종 새'));
     /* 1. 재고 미입력 문구 */
@@ -133,7 +133,7 @@ try{
     check('벽 화면 오른쪽 위에 기체 한눈에 목록(비행 기체 먼저)',await display.evaluate(()=>{const t=document.getElementById('droneRiskSummary').innerText;return t.includes('기체 한눈에')&&t.indexOf('1호기')<t.indexOf('3호기');}));
     await page.locator('#tab-quick').click();
     const row=page.locator('[data-drone-quick="quick"] .dq-row:not(.swap):not(.pilot):not(.manned)').first();
-    check('빠른 갱신 잔량 칸은 비어 있고 마지막 값은 흐린 안내로만',await row.locator('[data-dq-batt]').inputValue()===''&&(await row.locator('[data-dq-batt]').getAttribute('placeholder')).includes('68'));
+    check('빠른 갱신 잔량 칸은 비어 있고 흐린 숫자는 지금 추정값(마지막 입력은 설명에)',await row.locator('[data-dq-batt]').inputValue()===''&&/^추정 \d+$/.test(await row.locator('[data-dq-batt]').getAttribute('placeholder'))&&(await row.locator('[data-dq-batt]').getAttribute('title')).includes('마지막 입력 68%'));
     await row.locator('[data-dq-act="batt"]').click();
     check('빈 잔량 칸으로 확인을 누르면 저장하지 않고 안내',await page.evaluate(()=>{const i=document.querySelector('[data-drone-quick="quick"] [data-dq-batt]');return S.drones[0].battery===68&&i.getAttribute('aria-invalid')==='true'&&i.nextElementSibling.textContent.includes('잔량');}));
     await row.locator('[data-dq-act="land"]').click();
@@ -246,14 +246,14 @@ try{
   {const {context,page}=await open();
     await page.evaluate(()=>{const d3=S.drones[2];d3.status='flying';d3.tookOffAt=localDateTime(new Date(Date.now()-6*60000));d3.zone='E5';d3.battery=92;d3.batteryUpdatedAt=Date.now()-60000;commit();});
     const display=await wall(context,page);
-    check('지금 확인의 조종자 확인 필요 기체가 기체 한눈에서도 위험',await display.evaluate(()=>{const r=document.querySelector('#droneRiskSummary [data-drone-risk-id]:not(.calm)');return [...document.querySelectorAll('#droneRiskSummary .drone-risk-item.danger')].some(b=>b.textContent.startsWith('3호기 · 조종자 확인 필요'));}));
+    check('지금 확인의 조종자 확인 필요 기체가 기체 한눈에서도 확인 필요(주의)',await display.evaluate(()=>[...document.querySelectorAll('#droneRiskSummary .drone-risk-item.warn')].some(b=>b.textContent.startsWith('3호기 · 조종자 확인 필요'))));
     check('비행 판정 문구도 조종자 확인 필요로 같은 말',(await display.locator('#kFlight').innerText()).includes('3호기 조종자 확인 필요'));
     check('지도에 확인 대기 중인 열원 칸',(await display.locator('#mapWrap .heat-zone').innerText()).includes('열원 C3'));
-    check('밤에는 일몰까지 대신 일출까지 남은 시간',await display.evaluate(()=>{const k=kpiSunset(new Date(new Date().setHours(2,0,0,0)));return k.l==='일출까지'&&/^\d+:\d\d$/.test(k.v);}));
+    check('밤에는 일몰까지 대신 일출까지 남은 시간',await display.evaluate(()=>{const k=kpiSunset(new Date(new Date().setHours(2,0,0,0)));return k.l==='일출까지'&&/^(\d+시간 )?\d+분$/.test(k.v);}));
     await page.locator('#tab-quick').click();
     await page.waitForTimeout(1500);
     check('1초 갱신 뒤에도 조종자 확인 줄 글·추정 잔량이 유지됨',await page.evaluate(()=>{const p=document.querySelector('[data-drone-quick="quick"] .dq-row.pilot .dq-state'),a=document.querySelector('[data-drone-quick="quick"] .dq-row:not(.swap):not(.pilot) [data-dq-state]');return p&&p.textContent.startsWith('조종자 확인 필요')&&a&&/추정 \d+%/.test(a.textContent);}));
-    check('새 조종자 후보에 교대 권고 대상 표시',(await page.locator('[data-drone-quick="quick"] [data-dq-pilot]').first().innerText()).includes('교대 권고'));
+    check('새 조종자 후보 중 오래 근무한 사람은 근무 시간·휴식 필요로(추천처럼 읽히지 않게)',/근무 \d+시간 \d+분 · 본인도 휴식 필요/.test(await page.locator('[data-drone-quick="quick"] [data-dq-pilot]').first().innerText()));
     check('배터리 교체가 30분을 넘으면 지금 확인에 교체 완료 확인',await page.evaluate(()=>attentionItems().some(a=>/^2호기 교체 \d+분째 · 교체 완료 확인$/.test(a.text))));
     check('교체 중 기체는 몇 분째인지와 재고 변화(9 → 8개)를 보여 줌',await page.evaluate(()=>{const r=document.querySelector('[data-drone-quick="quick"] .dq-row.swap');return /교체 중 · \d+분째/.test(r.textContent)&&r.textContent.includes('재고 9 → 8개');}));
     await page.locator('[data-drone-quick="heat"] [data-dq-act="heatfound"]').click();
@@ -286,6 +286,52 @@ try{
     check('유인기 경보 중 모두 착륙 기록도 배터리교체 단계로',await page.evaluate(()=>S.drones[0].status==='swap'&&S.drones[2].status==='swap'));
     await page.evaluate(()=>setMannedAlert(false));
     check('브리핑 오후·PM 표기를 오후 시각으로, 1시간마다는 시각으로 보지 않음',await page.evaluate(()=>{const n=new Date();n.setHours(17,55,0,0);const r=b=>{S.mission.briefing=b;return attentionItems(n.getTime()).some(a=>a.text==='지휘 브리핑 18:00 · 5분 후');};const ok=r('오후 6시')&&r('6:00 PM');S.mission.briefing='1시간마다';const n2=new Date();n2.setHours(0,50,0,0);return ok&&!attentionItems(n2.getTime()).some(a=>a.text.startsWith('지휘 브리핑'));}));
+    await context.close();}
+  /* 판정 등급·시간 표기 통일(2026-11-16 아침) */
+  {const {context,page}=await open();
+    check('시간 길이는 시간·분으로(시각 HH:MM과 구분)',await page.evaluate(()=>durHM(15*3600e3+39*60e3)==='15시간 39분'&&durHM(45*60e3)==='45분'&&kpiGolden(new Date()).v.includes('시간')));
+    const display=await wall(context,page);
+    check('벽 상단 숫자·인원 근무·기체 비행시간에 단위가 붙고 칸을 넘지 않음',await display.evaluate(()=>{const ok=id=>{const e=document.getElementById(id);return /(시간|분)/.test(e.textContent)&&e.scrollWidth<=e.clientWidth+1;};const el=[...document.querySelectorAll('.drone .d-el')].filter(e=>e.textContent!=='—');const crew=document.querySelector('#crewBody .ct');return ok('vGolden')&&ok('vElapsed')&&el.length&&el.every(e=>/분$/.test(e.textContent)&&e.scrollWidth<=e.clientWidth+1)&&/시간 \d+분$/.test(crew.textContent);}));
+    check('대상자 칸은 감지기 미착용으로(감지된 것 없음으로 읽히지 않게)',(await display.locator('body').innerText()).includes('감지기 미착용'));
+    await context.close();}
+  /* 재검증(2026-11-24): 비행 불가 사유가 지금 확인에 · 인원 관리 근무 표시 */
+  {const {context,page}=await open();
+    await page.evaluate(()=>{S.safety.nightApproval=true;S.weather.observedAt=Date.now();S.weather.wind=15;commit();});
+    check('비행 중 풍속이 한계를 넘으면 지금 확인에 비행 불가 · 회수 판단(위험)',await page.evaluate(()=>attentionItems().some(a=>a.lv==='danger'&&/^비행 불가 · 풍속 15m\/s \(한계 \d+\) · 회수 판단$/.test(a.text))));
+    await page.evaluate(()=>{S.weather.wind=4;S.safety.noFly=true;S.safety.approval='pending';S.drones.forEach(d=>{d.status='ready';d.tookOffAt='';});commit();});
+    check('떠 있는 기체가 없으면 이륙 금지(주의)로, 확인할 것 없음으로 보이지 않음',await page.evaluate(()=>attentionItems().some(a=>a.lv==='warn'&&a.text==='이륙 금지 · 비행금지구역 · 승인완료 확인 필요')));
+    await page.evaluate(()=>{S.safety.noFly=false;S.safety.approval='done';commit();setMannedAlert(true);});
+    check('유인기 진입은 이미 있는 항목으로만(같은 사유를 두 번 올리지 않음)',await page.evaluate(()=>!attentionItems().some(a=>/^(비행 불가|이륙 금지) · 유인기/.test(a.text))));
+    await page.evaluate(()=>setMannedAlert(false));
+    await page.locator('#tab-crew').click();
+    check('인원 관리에 근무 시간·교대 권고·조종 중 기체',await page.evaluate(()=>[...document.querySelectorAll('#sec-crew .crew-dur.tired')].some(e=>/^근무 \d+시간 \d+분 · 교대 권고/.test(e.textContent))));
+    await context.close();}
+  /* 재검증 검토 반영(2026-11-24): 조종자 사유 말·순서 · 벽 카드 문구 · 우선 지시 시각 · 노트북 판정 색 */
+  {const {context,page}=await open();
+    const why=()=>page.evaluate(()=>flightVerdict(new Date()).why.find(w=>w.startsWith('1호기 조종자')));
+    const pilot=await page.evaluate(()=>{const p=S.drones[0].pilot;S.crew.find(c=>c.name===p).outAt=localDateTime(new Date());commit();return p;});
+    check('조종자 사유: 교대 종료',(await why())==='1호기 조종자 확인 필요('+pilot+' 교대 종료)',await why());
+    check('지금 확인에서 조종자 확인이 열원감지보다 앞(판정 첫 사유와 같은 순서)',await page.evaluate(()=>{const a=attentionItems().map(i=>i.text);const p=a.indexOf('1호기 조종자 확인 필요'),h=a.findIndex(t=>t.startsWith('열원감지'));return p>=0&&(h<0||p<h);}));
+    await page.evaluate(()=>{S.drones[0].pilot='명부밖';commit();});
+    check('조종자 사유: 명부에 없음',(await why())==='1호기 조종자 확인 필요(명부밖 명부에 없음)',await why());
+    const obs=await page.evaluate(()=>{const c=S.crew.find(c=>c.role!=='조종'&&!c.outAt);S.drones[0].pilot=c.name;commit();return c.name;});
+    check('조종자 사유: 조종 역할 아님',(await why())==='1호기 조종자 확인 필요('+obs+' 조종 역할 아님)',await why());
+    await page.evaluate(()=>{S.crew.push({id:uid(),name:'늦은조종',role:'조종',inAt:localDateTime(new Date(Date.now()+3600e3)),outAt:''});S.drones[0].pilot='늦은조종';commit();});
+    check('조종자 사유: 투입 시각 전',(await why())==='1호기 조종자 확인 필요(늦은조종 투입 시각 전)',await why());
+    await page.locator('#tab-quick').click();
+    check('입력 화면 조종자 줄도 같은 말',(await page.locator('[data-drone-quick="quick"] .dq-row.pilot .dq-state').first().innerText()).includes('늦은조종 투입 시각 전'));
+    check('노트북 판정 줄은 제한 비행이면 주의 색·▲',await page.evaluate(()=>{const e=document.getElementById('consoleVerdictReason');return document.getElementById('verdictHelp').dataset.verdictLevel==='warn'&&getComputedStyle(e,'::before').content.includes('▲');}));
+    await page.evaluate(()=>{S.safety.nightApproval=true;S.weather.observedAt=Date.now();S.weather.wind=15;commit();});await page.waitForTimeout(300);
+    check('노트북 판정 줄은 비행 불가면 위험 색·■',await page.evaluate(()=>{const e=document.getElementById('consoleVerdictReason');return document.getElementById('verdictHelp').dataset.verdictLevel==='danger'&&e.textContent.startsWith('비행 불가')&&getComputedStyle(e,'::before').content.includes('■')&&getComputedStyle(e).color!==getComputedStyle(document.getElementById('verdictCount')).color;}));
+    await page.evaluate(()=>{S.weather.wind=4;commit();});
+    await page.locator('[data-field-action="message"]').first().click();await page.locator('#fieldMessageText').fill('B구역 하천변 우선 수색');await page.locator('#fieldMessagePublish').click();
+    const stamp=/^현재 우선 지시 · \d\d:\d\d 지시$/;
+    check('우선 지시를 올리면 입력 화면 제목에 올린 시각',stamp.test(await page.locator('#consolePriority [data-priority-label]').innerText()));
+    const display=await wall(context,page);
+    check('벽 화면 우선 지시 제목에도 올린 시각',stamp.test(await display.locator('#displayPriorityLabel').innerText()));
+    check('벽 카드 추정 설명은 짧게(확인시각 없음·입력 요청 반복 없음)',await display.evaluate(()=>[...document.querySelectorAll('.drone .d-est')].every(e=>!e.textContent.includes('확인시각 없음')&&!e.textContent.includes('실제 잔량을 확인'))));
+    await page.evaluate(()=>{S.mission.priorityOrder='손으로 바꾼 지시';commit();});
+    check('기록 없이 바뀐 지시는 시각을 붙이지 않음',(await page.locator('#consolePriority [data-priority-label]').innerText())==='현재 우선 지시');
     await context.close();}
   /* 4. 휴대폰 위험 줄 */
   {const {context,page}=await open({viewport:{width:390,height:844},isMobile:true,hasTouch:true});

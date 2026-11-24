@@ -266,8 +266,11 @@ async function run(){
   W.S.safety.agencies = '';
   W.S.crew.find(function(c){ return c.name === '홍○○'; }).outAt = W.localDateTime(new Date());
   W.commit();
-  ok('비행 중 기체의 조종자 교대 종료는 비행 불가',
-    W.flightVerdict(new Date()).lv === 'danger');
+  /* 2026-11-16: 기체 하나의 조종자 문제는 전체 '비행 불가'가 아니라 '제한 비행'으로 낮췄다.
+     그래도 '비행 가능'으로는 보이지 않고 사유 맨 앞에 남아야 한다(fail-open 방지는 그대로). */
+  function pilotFlagged(word){var v=W.flightVerdict(new Date());
+    return v.lv!=='ok'&&v.lv!=='danger'&&v.txt!=='비행 가능'&&v.why[0].indexOf('조종자')>=0&&(!word||v.why[0].indexOf(word)>=0);}
+  ok('비행 중 기체의 조종자 교대 종료는 비행 가능으로 보이지 않고 사유 맨 앞에 조종자',pilotFlagged());
 
   W.S.crew.push({id:W.uid(), name:'홍○○', role:'조종',
     inAt:W.localDateTime(new Date()), outAt:''}); W.commit();
@@ -276,16 +279,14 @@ async function run(){
 
   var flying=W.S.drones.find(function(d){return d.status==='flying';});
   flying.pilot='';W.commit();
-  ok('비행 중 조종자 공란은 비행 불가',
-    W.flightVerdict(new Date()).lv==='danger'
-    && W.flightVerdict(new Date()).why.some(function(x){return x.indexOf('미지정')>=0;}));
+  ok('비행 중 조종자 공란은 조종자 미지정으로 제한 비행',pilotFlagged('미지정'));
   flying.pilot='김○○';W.commit();
-  ok('이름이 같아도 관측 역할은 조종자로 인정하지 않는다',W.flightVerdict(new Date()).lv==='danger');
+  ok('이름이 같아도 관측 역할은 조종자로 인정하지 않는다',pilotFlagged());
   flying.pilot='명부외';W.commit();
-  ok('명부에 없는 비행 중 조종자는 비행 불가',W.flightVerdict(new Date()).lv==='danger');
+  ok('명부에 없는 비행 중 조종자는 비행 가능으로 보이지 않음',pilotFlagged());
   var activePilot=W.S.crew.find(function(c){return c.name==='홍○○'&&!c.outAt;});
   flying.pilot='홍○○';activePilot.role='조종';activePilot.inAt=W.localDateTime(new Date(Date.now()+10*60000));W.commit();
-  ok('미래에 투입 예정인 조종자는 현행 조종자로 인정하지 않는다',W.flightVerdict(new Date()).lv==='danger');
+  ok('미래에 투입 예정인 조종자는 현행 조종자로 인정하지 않는다',pilotFlagged());
   activePilot.inAt=W.localDateTime(new Date(Date.now()-60*60000));W.commit();
   flying.pilot='홍○○';flying.status='commloss';W.commit();
   var commVerdict=W.flightVerdict(new Date());

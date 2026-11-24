@@ -42,7 +42,7 @@ try{
   display.on('pageerror',e=>errors.push('현황:'+e.message));await display.setViewportSize({width:1920,height:1080});
   await display.waitForFunction(()=>typeof S==='object'&&S.drones.length>0);await display.waitForTimeout(1500);
   const card=await display.evaluate(()=>{const c=document.querySelector('.drone[data-id]');return {badge:c.querySelector('.d-ret').hidden?'':c.querySelector('.d-ret').textContent,ret:c.dataset.ret,rm:c.querySelector('.d-rm').textContent,est:c.querySelector('.d-est').hidden?'':c.querySelector('.d-est').textContent,next:document.getElementById('droneRiskSummary').innerText};});
-  check('벽 화면 기체 카드에 즉시 복귀 배지·남은 비행·추정 잔량 안내',card.badge.includes('즉시 복귀')&&card.ret==='danger'&&/약 \d+분/.test(card.rm)&&card.est.includes('추정 잔량'),card);
+  check('벽 화면 기체 카드에 즉시 복귀 배지·남은 비행·추정 잔량 안내',card.badge.includes('즉시 복귀')&&card.ret==='danger'&&/약 \d+분/.test(card.rm)&&/마지막 (입력|확인) \d+%.* · 비행 중 쓴 만큼 뺀 추정/.test(card.est),card);
   check('기체 한눈에 목록이 모든 기체를 보이고 1호기 즉시 복귀를 맨 위에',card.next.includes('기체 한눈에')&&card.next.indexOf('1호기')<card.next.indexOf('2호기')&&card.next.includes('즉시 복귀'),card);
   const chips=await display.evaluate(()=>[...document.querySelectorAll('#mapWrap .drone-chip')].map(c=>c.dataset.lv+':'+c.textContent));
   check('비행 중 기체가 담당구역 칸에 자동 표시',chips.length===1&&chips[0].includes('1호기')&&chips[0].startsWith('danger'),chips);
